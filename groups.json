@@ -1,1 +1,28 @@
-{"RAILS": ["+12V [V]", "+3.3V [V]", "+5V [V]"], "HOTSPOT": ["GPU Hot Spot Temperature (Max) [\u00b0C]", "GPU Temperature [\u00b0C]"]}
+{
+    "groups": {
+        "RAILS": [
+            "+12V [V]",
+            "+3.3V [V]",
+            "+5V [V]"
+        ],
+        "HOTSPOT": [
+            "GPU Hot Spot Temperature (Max) [\u00b0C]",
+            "GPU Temperature [\u00b0C]"
+        ],
+        "Stutter analysis": [
+            "Core 0 Clock (perf #4/5) [MHz]",
+            "GPU Clock (Effective) [MHz]",
+            "Frame Time Presented (99%) [ms]",
+            "Total Board Power (TBP) [W]"
+        ],
+        "GPU DELTA": [
+            "GPU Hot Spot Temperature [\u00b0C]",
+            "GPU Temperature [\u00b0C]"
+        ]
+    },
+    "settings": {
+        "dark_mode": true,
+        "multi_mode": true,
+        "delta_mode": false
+    }
+}
