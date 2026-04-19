@@ -3,11 +3,13 @@ name: Build HD2 LOG VIEWER
 on:
   push:
     tags:
-      - 'v*' # Triggers only when you push a tag like v1.0, v1.1, etc.
+      - 'v*'
 
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write 
 
     steps:
     - name: Checkout Code
@@ -25,11 +27,19 @@ jobs:
 
     - name: Build EXE
       run: |
-        python -m PyInstaller --noconsole --onefile --add-data "groups.json;." HD2_LOG_VIEWER.pyw
+        python -m PyInstaller --noconsole --onefile HD2_LOG_VIEWER.pyw
+
+    - name: Prepare Release Package
+      shell: powershell
+      run: |
+        New-Item -ItemType Directory -Force -Path release_pkg
+        Copy-Item "dist/HD2_LOG_VIEWER.exe" -Destination "release_pkg/"
+        Copy-Item "groups.json" -Destination "release_pkg/"
+        Compress-Archive -Path release_pkg/* -DestinationPath HD2_LOG_VIEWER_v.zip
 
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/HD2_LOG_VIEWER.exe
+        files: HD2_LOG_VIEWER_v.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
