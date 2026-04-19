@@ -361,3 +361,18 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# --- HD2 LOG VIEWER Specifics ---
+
+# PyInstaller temporary build folders
+build/
+dist/
+*.spec
+
+# Python Virtual Environments
+venv/
+venv_build/
+env/
+.env/
+
+# Data & Config (Keep your local dev groups private if desired)
+# groups.json  <-- Uncomment this if you don't want to share your custom groups
