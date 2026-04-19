@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: write 
+      contents: write
 
     steps:
     - name: Checkout Code
@@ -30,15 +30,22 @@ jobs:
         python -m PyInstaller --noconsole --onefile HD2_LOG_VIEWER.pyw
 
     - name: Prepare Release Package
+      shell: pwsh
       run: |
+       
         mkdir release_pkg
-        cp dist/HD2_LOG_VIEWER.exe release_pkg/
-        cp groups.json release_pkg/
-        compress-archive -Path release_pkg/* -DestinationPath HD2_LOG_VIEWER_v1.zip
+        
+        
+        copy-item "dist/HD2_LOG_VIEWER.exe" -Destination "release_pkg/"
+        copy-item "groups.json" -Destination "release_pkg/"
+        
+        
+        Compress-Archive -Path release_pkg/* -DestinationPath "HD2_LOG_VIEWER_${{ github.ref_name }}.zip"
 
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
-        files: dist/HD2_LOG_VIEWER.exe
+        
+        files: HD2_LOG_VIEWER_${{ github.ref_name }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
