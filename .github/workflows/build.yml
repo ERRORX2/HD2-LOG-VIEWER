@@ -25,11 +25,18 @@ jobs:
 
     - name: Build EXE
       run: |
-        python -m PyInstaller --noconsole --onefile --add-data "groups.json;." HD2_LOG_VIEWER.pyw
+        python -m PyInstaller --noconsole --onefile HD2_LOG_VIEWER.pyw
+
+    - name: Prepare Release Package
+      run: |
+        mkdir release_pkg
+        cp dist/HD2_LOG_VIEWER.exe release_pkg/
+        cp groups.json release_pkg/
+        compress-archive -Path release_pkg/* -DestinationPath HD2_LOG_VIEWER_v1.zip
 
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/HD2_LOG_VIEWER.exe
+        files: HD2_LOG_VIEWER_v1.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
