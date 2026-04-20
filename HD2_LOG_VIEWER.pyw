@@ -14,6 +14,7 @@ import os
 
 GROUPS_FILE = "groups.json"
 
+# --- CONFIGURATION PERSISTENCE ---
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False):
     config = {
         "groups": groups_dict, 
@@ -42,6 +43,7 @@ def load_config() -> Tuple[Dict, bool, bool, bool]:
             return data if isinstance(data, dict) else {}, False, False, False
     except: return {}, False, False, False
 
+# --- DATA PROCESSING ---
 class TelemetryAnalyzer:
     def __init__(self, file_path: str):
         self.path = Path(file_path)
@@ -80,11 +82,17 @@ class TelemetryAnalyzer:
             else: break
         self.df.ffill(inplace=True)
 
+# --- MAIN APPLICATION ---
 class TelemetryApp:
     def __init__(self, root: tk.Tk, analyzer: TelemetryAnalyzer):
         self.root = root
         self.analyzer = analyzer
         self.df = analyzer.df
+        
+        # Comparison logic state
+        self.ref_df = None
+        self.compare_mode = False
+        
         self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode = load_config()
         
         self.vars = {}
@@ -110,14 +118,14 @@ class TelemetryApp:
         toast = tk.Toplevel(self.root)
         toast.overrideredirect(True)
         toast.attributes("-topmost", True)
-        bg = "#333333" if self.is_dark else "#eeeeee"
-        fg = "white" if self.is_dark else "black"
+        bg = "#333333" if self.is_dark else "#2c3e50"
+        fg = "white"
         label = tk.Label(toast, text=message, bg=bg, fg=fg, padx=20, pady=10, 
                          font=('Segoe UI', 10, 'bold'), relief='flat')
         label.pack()
         self.root.update_idletasks()
         x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (toast.winfo_width() // 2)
-        y = self.root.winfo_y() + self.root.winfo_height() - 100
+        y = self.root.winfo_y() + self.root.winfo_height() - 150
         toast.geometry(f"+{x}+{y}")
         self.root.after(duration, toast.destroy)
 
@@ -129,40 +137,63 @@ class TelemetryApp:
 
     def _toggle_multi(self):
         self.multi_mode = not self.multi_mode
-        self.multi_btn.config(text="📊 Multiplot: ON" if self.multi_mode else "📊 Multiplot: OFF")
+        self.multi_btn.config(text="📊 Multi: ON" if self.multi_mode else "📊 Multi: OFF")
         self.update_plot()
         save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
 
     def _toggle_delta(self):
         self.delta_mode = not self.delta_mode
-        self.delta_btn.config(text="Δ Delta Mode: ON" if self.delta_mode else "Δ Delta Mode: OFF")
+        self.delta_btn.config(text="Δ Delta: ON" if self.delta_mode else "Δ Delta: OFF")
         self.update_plot()
         save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
 
+    def _toggle_compare(self):
+        if self.ref_df is None:
+            messagebox.showinfo("Comparison", "Please set a reference first by clicking 'Set Ref'")
+            return
+        self.compare_mode = not self.compare_mode
+        self.compare_btn.config(text="🔍 Compare: ON" if self.compare_mode else "🔍 Compare: OFF")
+        self.update_plot()
+
+    def _set_reference(self):
+        self.ref_df = self.df.copy()
+        self.show_toast("Current log saved as Reference")
+        self.compare_btn.config(state="normal")
+
     def _apply_theme_colors(self):
-        bg, fg = ("#1e1e1e", "#ffffff") if self.is_dark else ("#f0f0f0", "#000000")
+        bg, fg = ("#121212", "#e0e0e0") if self.is_dark else ("#f8f9fa", "#212529")
+        accent = "#3498db" if not self.is_dark else "#1f6aa5"
+        
         self.style = ttk.Style()
         self.style.theme_use('clam')
-        self.style.configure(".", background=bg, foreground=fg, fieldbackground=bg)
+        self.style.configure(".", background=bg, foreground=fg, fieldbackground=bg, font=('Segoe UI', 9))
         self.style.configure("TFrame", background=bg)
-        self.style.configure("TLabelframe", background=bg, foreground=fg)
-        self.style.configure("TLabelframe.Label", background=bg, foreground=fg)
+        self.style.configure("TLabelframe", background=bg, foreground=fg, bordercolor="#444444")
+        self.style.configure("TLabelframe.Label", background=bg, foreground=accent, font=('Segoe UI', 9, 'bold'))
         self.style.configure("TLabel", background=bg, foreground=fg)
+        self.style.configure("TButton", padding=3)
+        self.style.configure("Action.TButton", font=('Segoe UI', 9, 'bold'))
+        self.style.configure("Delete.TButton", foreground="#ff4d4d", font=('Segoe UI', 9, 'bold'))
+        self.style.configure("Issue.TButton", foreground="#ff9800", font=('Segoe UI', 9, 'bold'))
         self.style.configure("TCheckbutton", background=bg, foreground=fg)
         self.style.configure("Alert.TCheckbutton", background=bg, foreground="#ff4d4d", font=('Segoe UI', 9, 'bold'))
-        self.style.configure("Delete.TButton", foreground="#ff4d4d")
         self.style.map("TCheckbutton", background=[('active', bg)])
+        
         self.root.configure(bg=bg)
         self.canvas_checklist.configure(bg=bg)
         self.scroll_frame.configure(bg=bg)
+        self.preset_canvas.configure(bg=bg)
+        self.grp_f.configure(bg=bg)
+        
         for hdr in self.header_widgets.values():
-            hdr.configure(bg=bg, fg="#62a1ff" if self.is_dark else "#2c3e50")
+            hdr.configure(bg=bg, fg="#3498db" if self.is_dark else "#2c3e50")
 
     def _is_critical(self, col: str) -> bool:
         name = col.upper()
         series = self.df[col].dropna()
         if series.empty: return False
         if "FREQUENCY LIMIT" in name: return False
+        if "ACCUMULATED" in name: return False
         if "[%]" in name and "LIMIT" in name: return series.max() >= 99.0
         for rail, (low, high) in self.volt_rails.items():
             if rail in name:
@@ -170,7 +201,7 @@ class TelemetryApp:
         limit_keywords = ['THROTTLING', 'RELIABILITY', 'PERFCAP']
         if any(x in name for x in limit_keywords):
             if series.max() >= 0.9: return True
-        if any(x in name for x in ['TEMP', '°C']):
+        if any(x in name for x in ['TEMP', '°C', 'HOTSPOT']):
             for key, limit in self.temp_limits.items():
                 if key in name:
                     if series.max() >= limit: return True
@@ -178,98 +209,166 @@ class TelemetryApp:
         return False
 
     def _setup_ui(self):
-        self.root.title(f"HD2 LOG VIEWER - {self.analyzer.path.name}")
-        self.root.geometry("1550x900")
+        self.root.title(f"Log Viewer Pro - {self.analyzer.path.name}")
+        self.root.geometry("1600x950")
+        self.root.minsize(1000, 700)
         for widget in self.root.winfo_children(): widget.destroy()
 
-        self.left = ttk.Frame(self.root, width=420, padding="10")
-        self.left.pack(side=tk.LEFT, fill=tk.Y)
-        self.right = ttk.Frame(self.root, padding="10")
-        self.right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self.paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
+        self.paned.pack(fill=tk.BOTH, expand=True)
 
+        # --- LEFT SIDEBAR ---
+        self.left = ttk.Frame(self.paned, padding="10")
+        self.paned.add(self.left, weight=1)
+        
         top = ttk.Frame(self.left)
         top.pack(fill=tk.X, pady=(0, 10))
-        ttk.Label(top, text="Telemetry Controls", font=('Segoe UI', 11, 'bold')).pack(side=tk.LEFT)
-        ttk.Button(top, text="◐ Theme", command=self._toggle_theme, width=10).pack(side=tk.RIGHT, padx=5)
+        ttk.Label(top, text="DASHBOARD", font=('Segoe UI', 12, 'bold')).pack(side=tk.LEFT)
+        ttk.Button(top, text="◐", command=self._toggle_theme, width=3).pack(side=tk.RIGHT)
+
+        # View Modes
+        mode_f = ttk.LabelFrame(self.left, text=" View Settings ", padding=8)
+        mode_f.pack(fill=tk.X, pady=5)
         
-        self.multi_btn = ttk.Button(self.left, text="📊 Multiplot: ON" if self.multi_mode else "📊 Multiplot: OFF", command=self._toggle_multi)
-        self.multi_btn.pack(fill=tk.X, pady=2)
+        btn_row1 = ttk.Frame(mode_f)
+        btn_row1.pack(fill=tk.X, pady=2)
+        self.multi_btn = ttk.Button(btn_row1, text="📊 Multi: ON" if self.multi_mode else "📊 Multi: OFF", command=self._toggle_multi)
+        self.multi_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        self.delta_btn = ttk.Button(btn_row1, text="Δ Delta: ON" if self.delta_mode else "Δ Delta: OFF", command=self._toggle_delta)
+        self.delta_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
-        self.delta_btn = ttk.Button(self.left, text="Δ Delta Mode: ON" if self.delta_mode else "Δ Delta Mode: OFF", command=self._toggle_delta)
-        self.delta_btn.pack(fill=tk.X, pady=2)
+        btn_row2 = ttk.Frame(mode_f)
+        btn_row2.pack(fill=tk.X, pady=2)
+        ttk.Button(btn_row2, text="📌 Set Ref", command=self._set_reference).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        self.compare_btn = ttk.Button(btn_row2, text="🔍 Compare: OFF", command=self._toggle_compare, state="disabled" if self.ref_df is None else "normal")
+        self.compare_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
-        self.grp_f = ttk.LabelFrame(self.left, text=" Saved Groups ", padding=10)
-        self.grp_f.pack(fill=tk.X, pady=5); self._refresh_group_buttons()
+        # --- PRESETS SECTION ---
+        preset_master_f = ttk.LabelFrame(self.left, text=" Presets ", padding=5)
+        preset_master_f.pack(fill=tk.X, pady=5)
+        
+        self.preset_canvas = tk.Canvas(preset_master_f, height=140, highlightthickness=0)
+        self.preset_scroll = ttk.Scrollbar(preset_master_f, orient="vertical", command=self.preset_canvas.yview)
+        self.grp_f = tk.Frame(self.preset_canvas)
+        
+        self.grp_f.columnconfigure(0, weight=1)
+        self.preset_window = self.preset_canvas.create_window((0,0), window=self.grp_f, anchor="nw")
+        
+        def _on_canvas_resize(event):
+            self.preset_canvas.itemconfig(self.preset_window, width=event.width)
+        self.preset_canvas.bind("<Configure>", _on_canvas_resize)
+        self.grp_f.bind("<Configure>", lambda e: self.preset_canvas.configure(scrollregion=self.preset_canvas.bbox("all")))
+        self.preset_canvas.configure(yscrollcommand=self.preset_scroll.set)
+        self.preset_canvas.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.preset_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        def _on_preset_mw(event): self.preset_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        self.preset_canvas.bind("<Enter>", lambda _: self.preset_canvas.bind_all("<MouseWheel>", _on_preset_mw))
+        self.preset_canvas.bind("<Leave>", lambda _: self.preset_canvas.unbind_all("<MouseWheel>"))
+        
+        self._refresh_group_buttons()
 
         ent_f = ttk.Frame(self.left)
         ent_f.pack(fill=tk.X, pady=5)
-        ttk.Label(ent_f, text="Group Name:", font=('Segoe UI', 9)).pack(side=tk.LEFT, padx=(0,5))
-        self.name_var = tk.StringVar(value="")
-        ttk.Entry(ent_f, textvariable=self.name_var).pack(side=tk.LEFT, expand=True, fill=tk.X)
-        ttk.Button(ent_f, text="Save", command=self._save_group).pack(side=tk.LEFT, padx=5)
+        self.name_var = tk.StringVar()
+        ttk.Entry(ent_f, textvariable=self.name_var).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0,5))
+        ttk.Button(ent_f, text="Save", command=self._save_group, width=8).pack(side=tk.RIGHT)
+        ttk.Button(self.left, text="📋 Import from Clipboard", command=self._import_from_clipboard).pack(fill=tk.X, pady=2)
+
+        # --- SENSOR SELECTION ---
+        search_f = ttk.LabelFrame(self.left, text=" Sensor Selection ", padding=8)
+        search_f.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        ttk.Button(self.left, text="📋 Import Group from Clipboard", command=self._import_from_clipboard).pack(fill=tk.X, pady=2)
+        self.filter_btn = ttk.Button(search_f, text="🚨 Detect Out-of-Spec Issues", style="Issue.TButton", command=self._toggle_filter)
+        self.filter_btn.pack(fill=tk.X, pady=(0, 8))
 
-        self.filter_btn = ttk.Button(self.left, text="🚨 Filter Out-of-Spec", command=self._toggle_filter)
-        self.filter_btn.pack(fill=tk.X, pady=2)
-
-        ttk.Label(self.left, text="Search Sensors:").pack(fill=tk.X, pady=(5,0))
+        search_top = ttk.Frame(search_f)
+        search_top.pack(fill=tk.X, pady=(0, 5))
+        ttk.Label(search_top, text="🔍 Search:").pack(side=tk.LEFT, padx=(0,5))
         self.search_var = tk.StringVar(); self.search_var.trace_add("write", lambda *a: self._filter_sensors())
-        ttk.Entry(self.left, textvariable=self.search_var).pack(fill=tk.X, pady=(2, 10))
+        ttk.Entry(search_top, textvariable=self.search_var).pack(side=tk.LEFT, expand=True, fill=tk.X)
 
-        self.canv_f = ttk.Frame(self.left); self.canv_f.pack(fill=tk.BOTH, expand=True)
+        self.canv_f = ttk.Frame(search_f)
+        self.canv_f.pack(fill=tk.BOTH, expand=True)
         self.canvas_checklist = tk.Canvas(self.canv_f, highlightthickness=0)
         sc = ttk.Scrollbar(self.canv_f, orient="vertical", command=self.canvas_checklist.yview)
         self.scroll_frame = tk.Frame(self.canvas_checklist)
         self.scroll_frame.bind("<Configure>", lambda e: self.canvas_checklist.configure(scrollregion=self.canvas_checklist.bbox("all")))
         self.canvas_checklist.create_window((0,0), window=self.scroll_frame, anchor="nw")
         self.canvas_checklist.configure(yscrollcommand=sc.set)
+        
+        def _on_checklist_mw(event): self.canvas_checklist.yview_scroll(int(-1*(event.delta/120)), "units")
+        self.canvas_checklist.bind("<Enter>", lambda _: self.canvas_checklist.bind_all("<MouseWheel>", _on_checklist_mw))
+        self.canvas_checklist.bind("<Leave>", lambda _: self.canvas_checklist.unbind_all("<MouseWheel>"))
+        
         self.canvas_checklist.pack(side=tk.LEFT, fill=tk.BOTH, expand=True); sc.pack(side=tk.RIGHT, fill=tk.Y)
         self._build_checklist()
 
-        btn_frame = ttk.Frame(self.left); btn_frame.pack(fill=tk.X, pady=10)
-        ttk.Button(btn_frame, text="Import CSV", command=self._import_new_csv).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
-        ttk.Button(btn_frame, text="Clear", command=self._clear_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
-        ttk.Button(btn_frame, text="Export PNG", command=self._export).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
+        btn_frame = ttk.Frame(self.left); btn_frame.pack(fill=tk.X, pady=(10, 0))
+        ttk.Button(btn_frame, text="New CSV", command=self._import_new_csv).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        ttk.Button(btn_frame, text="Clear", command=self._clear_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        ttk.Button(btn_frame, text="Export PNG", command=self._export, style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
+        # --- RIGHT PLOT AREA ---
+        self.right = ttk.Frame(self.paned, padding="5")
+        self.paned.add(self.right, weight=4)
+        
         self.fig = plt.figure(figsize=(10, 6))
         self.canvas_widget = FigureCanvasTkAgg(self.fig, master=self.right)
         self.canvas_widget.mpl_connect('motion_notify_event', self._on_mouse_move)
         self.canvas_widget.mpl_connect('axes_leave_event', self._on_mouse_leave)
-        NavigationToolbar2Tk(self.canvas_widget, self.right, pack_toolbar=True)
+        
+        toolbar_f = ttk.Frame(self.right)
+        toolbar_f.pack(side=tk.TOP, fill=tk.X)
+        toolbar = NavigationToolbar2Tk(self.canvas_widget, toolbar_f, pack_toolbar=False)
+        toolbar.update()
+        toolbar.pack(side=tk.LEFT)
         self.canvas_widget.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
     def _build_checklist(self):
+        for w in self.scroll_frame.winfo_children(): w.destroy()
+        self.header_widgets = {}
+        self.cb_widgets = {}
         self.group_map = {}
         for col in self.df.columns:
             cat = self._get_category(col)
             if cat not in self.group_map: self.group_map[cat] = []
             self.group_map[cat].append(col)
-        self.sorted_cats = ["Processor (CPU)", "Graphics Card (GPU)", "Thermal / Temperatures"] + \
-                          sorted([c for c in self.group_map.keys() if c not in ["Processor (CPU)", "Graphics Card (GPU)", "Thermal / Temperatures"]])
+        
+        ui_order = ["Temperatures (°C)", "Utilization / Load (%)", "Clock Speeds (MHz)", "Power / Wattage (W)", "Voltage (V)", "Fan Speeds (RPM)"]
+        self.sorted_cats = [c for c in ui_order if c in self.group_map] + \
+                           sorted([c for c in self.group_map.keys() if c not in ui_order])
+                           
         for cat in self.sorted_cats:
-            if cat not in self.group_map: continue
-            h = tk.Label(self.scroll_frame, text=f"--- {cat} ---", font=('Arial', 9, 'bold'), anchor="w")
-            h.pack(fill=tk.X, pady=(10,0)); self.header_widgets[cat] = h
+            h = tk.Label(self.scroll_frame, text=f" {cat.upper()} ", font=('Segoe UI', 8, 'bold'), anchor="w")
+            h.pack(fill=tk.X, pady=(8,2)); self.header_widgets[cat] = h
             for col in sorted(self.group_map[cat]):
                 v = self.vars.get(col, tk.BooleanVar(value=False))
                 self.vars[col] = v
                 cb = ttk.Checkbutton(self.scroll_frame, text=col, variable=v, command=self.update_plot,
                                      style="Alert.TCheckbutton" if self._is_critical(col) else "TCheckbutton")
-                cb.pack(anchor=tk.W, padx=15); self.cb_widgets[col] = cb
+                cb.pack(anchor=tk.W, padx=12); self.cb_widgets[col] = cb
 
     def _get_category(self, n: str) -> str:
         u = n.upper()
+        if '°C' in u or 'TEMP' in u: return "Temperatures (°C)"
+        if '%' in u or 'USAGE' in u or 'UTILIZATION' in u: return "Utilization / Load (%)"
+        if 'MHZ' in u or 'CLOCK' in u: return "Clock Speeds (MHz)"
+        if ' W' in u or 'WATT' in u or 'POWER' in u: return "Power / Wattage (W)"
+        if ' V' in u or 'VOLT' in u or 'VCORE' in u: return "Voltage (V)"
+        if 'RPM' in u or 'FAN' in u: return "Fan Speeds (RPM)"
         if any(x in u for x in ['GPU', 'NVIDIA', 'GEFORCE', 'AMD', 'RTX', 'GTX']): return "Graphics Card (GPU)"
-        if any(x in u for x in ['CPU', 'CORE ', 'VCORE', 'AMD RYZEN', 'INTEL']): return "Processor (CPU)"
-        if any(x in u for x in ['TEMP', '°C', 'HOTSPOT']): return "Thermal / Temperatures"
+        if any(x in u for x in ['CPU', 'CORE ', 'AMD RYZEN', 'INTEL']): return "Processor (CPU)"
         return "Other Sensors"
 
     def _toggle_filter(self):
         self.filter_active = not self.filter_active
-        self.filter_btn.config(text="🚨 Show All Sensors" if self.filter_active else "🚨 Filter Out-of-Spec")
-        if self.filter_active: self._apply_issue_filter()
-        else: self._filter_sensors()
+        if self.filter_active:
+            self.filter_btn.config(text="✅ Showing All Sensors")
+            self._apply_issue_filter()
+        else:
+            self.filter_btn.config(text="🚨 Detect Out-of-Spec Issues")
+            self._filter_sensors()
 
     def _apply_issue_filter(self):
         for h in self.header_widgets.values(): h.pack_forget()
@@ -278,25 +377,28 @@ class TelemetryApp:
             if cat not in self.group_map: continue
             issues = [col for col in self.group_map[cat] if self._is_critical(col)]
             if issues:
-                self.header_widgets[cat].pack(fill=tk.X, pady=(10,0))
-                for col in sorted(issues): self.cb_widgets[col].pack(anchor=tk.W, padx=15)
+                self.header_widgets[cat].pack(fill=tk.X, pady=(8,0))
+                for col in sorted(issues): self.cb_widgets[col].pack(anchor=tk.W, padx=12)
 
     def _refresh_group_buttons(self):
         for w in self.grp_f.winfo_children(): w.destroy()
         self.grp_f.columnconfigure(0, weight=1)
+        self.grp_f.columnconfigure(1, weight=0)
+        self.grp_f.columnconfigure(2, weight=0)
+        
         for i, g in enumerate(sorted(self.custom_groups.keys())):
             btn = ttk.Button(self.grp_f, text=g, command=lambda n=g: self._apply_group(n))
-            btn.grid(row=i, column=0, sticky='ew', pady=1, padx=(0,2))
+            btn.grid(row=i, column=0, sticky='ew', pady=1, padx=(1,2))
             sh_btn = ttk.Button(self.grp_f, text="📋", width=3, command=lambda n=g: self._share_group(n))
             sh_btn.grid(row=i, column=1, pady=1, padx=1)
             del_btn = ttk.Button(self.grp_f, text="✕", width=3, command=lambda n=g: self._delete_group(n), style="Delete.TButton")
-            del_btn.grid(row=i, column=2, pady=1)
+            del_btn.grid(row=i, column=2, pady=1, padx=(1,4))
 
     def _share_group(self, n):
         data = {"name": n, "sensors": self.custom_groups[n]}
         self.root.clipboard_clear()
         self.root.clipboard_append(json.dumps(data))
-        self.show_toast(f"Copied '{n}' to Clipboard")
+        self.show_toast(f"Copied '{n}'")
 
     def _import_from_clipboard(self):
         try:
@@ -305,11 +407,11 @@ class TelemetryApp:
                 self.custom_groups[data["name"]] = data["sensors"]
                 save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
                 self._refresh_group_buttons()
-                self.show_toast(f"Imported Group: {data['name']}")
-        except: messagebox.showerror("Error", "Clipboard does not contain a valid group configuration.")
+                self.show_toast(f"Imported: {data['name']}")
+        except: messagebox.showerror("Error", "Invalid Clipboard Data")
 
     def _delete_group(self, n):
-        if messagebox.askyesno("Delete Group", f"Are you sure you want to delete '{n}'?"):
+        if messagebox.askyesno("Delete", f"Delete '{n}'?"):
             if n in self.custom_groups:
                 del self.custom_groups[n]
                 save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
@@ -328,7 +430,7 @@ class TelemetryApp:
             self.custom_groups[name] = sel
             save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
             self._refresh_group_buttons(); self.name_var.set("") 
-            self.show_toast(f"Saved Group: {name}")
+            self.show_toast(f"Saved: {name}")
 
     def _filter_sensors(self):
         if self.filter_active: return 
@@ -339,8 +441,8 @@ class TelemetryApp:
             if cat not in self.group_map: continue
             m = [col for col in self.group_map[cat] if q in col.upper()]
             if m:
-                self.header_widgets[cat].pack(fill=tk.X, pady=(10,0))
-                for col in sorted(m): self.cb_widgets[col].pack(anchor=tk.W, padx=15)
+                self.header_widgets[cat].pack(fill=tk.X, pady=(8,0))
+                for col in sorted(m): self.cb_widgets[col].pack(anchor=tk.W, padx=12)
 
     def _import_new_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
@@ -404,52 +506,117 @@ class TelemetryApp:
 
     def update_plot(self):
         self.fig.clear()
-        self.cursor_lines = []
-        self.cursor_text = None
+        self._clear_cursors()
         is_dark = self.is_dark
-        bg_color, text_color, grid_color = ("#1e1e1e", "white", "#444444") if is_dark else ("white", "black", "#b0b0b0")
+        bg_color, text_color, grid_color = ("#121212", "white", "#333333") if is_dark else ("white", "black", "#e0e0e0")
         self.fig.patch.set_facecolor(bg_color)
-        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
         sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
         
+        if self.delta_mode and self.multi_mode:
+            ax = self.fig.add_subplot(111); ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
+            ax.text(0.5, 0.5, "Turn off Multi Mode to use Delta", 
+                    ha='center', va='center', color='#ffcc00', fontsize=12, fontweight='bold')
+            self.canvas_widget.draw_idle()
+            return
+
         if not sel:
-            ax = self.fig.add_subplot(111); ax.set_facecolor("#252525" if is_dark else "#fdfdfd")
+            ax = self.fig.add_subplot(111); ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
             ax.text(0.5, 0.5, "No Sensors Selected", ha='center', va='center', color='gray')
+            self.canvas_widget.draw_idle()
+            return
+
+        def _draw_spec_zones(ax, col_name):
+            u_name = col_name.upper()
+            for rail, (low, high) in self.volt_rails.items():
+                if rail in u_name:
+                    ax.axhspan(low - 0.2, low, color='red', alpha=0.1, zorder=0)
+                    ax.axhspan(high, high + 0.2, color='red', alpha=0.1, zorder=0)
+                    ax.axhline(y=low, color='#ff4d4d', ls='--', lw=1, alpha=0.5, zorder=1)
+                    ax.axhline(y=high, color='#ff4d4d', ls='--', lw=1, alpha=0.5, zorder=1)
+                    break
+
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+        if self.multi_mode:
+            category_groups = {}
+            for col in sel:
+                cat = self._get_category(col)
+                if cat not in category_groups: category_groups[cat] = []
+                category_groups[cat].append(col)
+            
+            active_cats = [c for c in self.sorted_cats if c in category_groups]
+            num_plots = len(active_cats)
+            axes = []
+            color_idx = 0
+            
+            for i, cat_name in enumerate(active_cats):
+                ax = self.fig.add_subplot(num_plots, 1, i+1, sharex=axes[0] if axes else None)
+                axes.append(ax)
+                ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
+                ax.set_ylabel(cat_name, color=text_color, fontsize=8, fontweight='bold')
+                
+                for col_name in category_groups[cat_name]:
+                    main_color = colors[color_idx % len(colors)]
+                    
+                    # Reference plotting
+                    if self.compare_mode and self.ref_df is not None and col_name in self.ref_df.columns:
+                        ax.plot(self.ref_df.index, self.ref_df[col_name], 
+                                ls='--', lw=1, alpha=0.4, color=main_color, zorder=2)
+                    
+                    series = self.df[col_name].dropna()
+                    stats = f"Avg: {series.mean():.2f}"
+                    ax.plot(self.df.index, self.df[col_name], label=f"{col_name} ({stats})", 
+                            lw=1.5, color=main_color, zorder=3)
+                    _draw_spec_zones(ax, col_name)
+                    color_idx += 1
+                
+                ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
+                ax.tick_params(colors=text_color, labelsize=8)
+                l = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1), fontsize='x-small', frameon=False)
+                if l:
+                    for t in l.get_texts(): t.set_color(text_color)
+            for ax in axes[:-1]: plt.setp(ax.get_xticklabels(), visible=False)
+            self.fig.subplots_adjust(right=0.80, hspace=0.3)
+
         elif self.delta_mode and len(sel) >= 2:
-            ax = self.fig.add_subplot(111); ax.set_facecolor("#252525" if is_dark else "#fdfdfd")
+            ax = self.fig.add_subplot(111); ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
             s1, s2 = self.df[sel[0]], self.df[sel[1]]
             delta = (s1 - s2).abs()
-            ax.plot(self.df.index, s1, label=sel[0], alpha=0.4, ls='--')
-            ax.plot(self.df.index, s2, label=sel[1], alpha=0.4, ls='--')
-            ax.plot(self.df.index, delta, label=f"Δ Delta ({sel[0]} - {sel[1]})", color="#ffcc00", lw=2)
+            
+            # Reference Delta
+            if self.compare_mode and self.ref_df is not None and sel[0] in self.ref_df.columns and sel[1] in self.ref_df.columns:
+                ref_delta = (self.ref_df[sel[0]] - self.ref_df[sel[1]]).abs()
+                ax.plot(self.ref_df.index, ref_delta, color="#ffcc00", ls='--', alpha=0.3, lw=1, zorder=1)
+
+            ax.plot(self.df.index, s1, label=sel[0], alpha=0.4, ls='--', zorder=2)
+            ax.plot(self.df.index, s2, label=sel[1], alpha=0.4, ls='--', zorder=2)
+            ax.plot(self.df.index, delta, label=f"Δ Delta ({sel[0]} - {sel[1]})", color="#ffcc00", lw=2, zorder=3)
             ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
             ax.tick_params(colors=text_color, labelsize=8)
             l = ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize='x-small', frameon=False)
-            for t in l.get_texts(): t.set_color(text_color)
+            if l:
+                for t in l.get_texts(): t.set_color(text_color)
         else:
-            num_plots = len(sel) if self.multi_mode else 1
-            axes = []
+            ax = self.fig.add_subplot(111); ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
             for i, col_name in enumerate(sel):
-                color = colors[i % len(colors)]
-                series = self.df[col_name].dropna()
-                stats_str = f"Min: {series.min():.1f} | Max: {series.max():.1f} | Avg: {series.mean():.1f}"
-                if self.multi_mode:
-                    ax = self.fig.add_subplot(num_plots, 1, i+1, sharex=axes[0] if axes else None)
-                    axes.append(ax)
-                    ax.set_title(f"{col_name}  [{stats_str}]", color=color, fontsize=8, fontweight='bold', loc='left', pad=4)
-                else:
-                    if not axes: ax = self.fig.add_subplot(111); axes.append(ax)
-                    ax = axes[0]
-                ax.set_facecolor("#252525" if is_dark else "#fdfdfd")
-                ax.plot(self.df.index, self.df[col_name], label=f"{col_name}\n({stats_str})", lw=1.5, color=color)
-                ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
-                ax.tick_params(colors=text_color, labelsize=8)
-                if not self.multi_mode:
-                    l = ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize='x-small', frameon=False)
-                    for t in l.get_texts(): t.set_color(text_color)
-            if self.multi_mode:
-                for ax in axes[:-1]: plt.setp(ax.get_xticklabels(), visible=False)
-        self.fig.tight_layout(); self.fig.subplots_adjust(hspace=0.5 if self.multi_mode else 0.2)
+                main_color = colors[i % len(colors)]
+                
+                if self.compare_mode and self.ref_df is not None and col_name in self.ref_df.columns:
+                    ax.plot(self.ref_df.index, self.ref_df[col_name], 
+                            ls='--', lw=1, alpha=0.4, color=main_color, zorder=2)
+
+                ax.plot(self.df.index, self.df[col_name], label=col_name, lw=1.5, color=main_color, zorder=3)
+                _draw_spec_zones(ax, col_name)
+            
+            ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
+            ax.tick_params(colors=text_color, labelsize=8)
+            l = ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize='x-small', frameon=False)
+            if l:
+                for t in l.get_texts(): t.set_color(text_color)
+
+        self.fig.tight_layout()
+        if self.multi_mode: self.fig.subplots_adjust(right=0.80)
+        else: self.fig.subplots_adjust(right=0.82)
         self.canvas_widget.draw_idle()
 
 if __name__ == "__main__":

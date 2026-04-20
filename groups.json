@@ -9,20 +9,55 @@
             "GPU Hot Spot Temperature (Max) [\u00b0C]",
             "GPU Temperature [\u00b0C]"
         ],
-        "Stutter analysis": [
-            "Core 0 Clock (perf #4/5) [MHz]",
-            "GPU Clock (Effective) [MHz]",
+        "Stutter Analysis (Full)": [
             "Frame Time Presented (99%) [ms]",
-            "Total Board Power (TBP) [W]"
+            "GPU Utilization [%]",
+            "CPU Total Usage [%]",
+            "GPU Clock (Effective) [MHz]",
+            "Core 0 Clock (perf #4/5) [MHz]",
+            "Total Board Power (TBP) [W]",
+            "CPU Package Power [W]",
+            "GPU Performance Limit - Utilization"
+        ],
+        "System Latency": [
+            "Frame Time Presented [ms]",
+            "GPU Memory Usage [%]",
+            "Core 0 Usage [%]",
+            "Core 1 Usage [%]",
+            "Core 2 Usage [%]",
+            "Core 3 Usage [%]"
         ],
         "GPU DELTA": [
             "GPU Hot Spot Temperature [\u00b0C]",
             "GPU Temperature [\u00b0C]"
+        ],
+        "Thermal Limits": [
+            "GPU Performance Limit - Thermal",
+            "GPU Temperature [\u00b0C]",
+            "CPU Thermal Throttling",
+            "GPU Clock [MHz]"
+        ],
+        "Power Analysis": [
+            "Total Board Power (TBP) [W]",
+            "CPU Package Power [W]",
+            "GPU Voltage [V]",
+            "GPU Core Voltage [V]"
+        ],
+        "Memory Usage": [
+            "GPU Memory Allocated [MB]",
+            "GPU Memory Usage [%]",
+            "Virtual Memory Committed [MB]"
+        ],
+        "Cooling/Fans": [
+            "GPU Fan1 [RPM]",
+            "GPU Fan2 [RPM]",
+            "GPU Temperature [\u00b0C]",
+            "CPU Fan [RPM]"
         ]
     },
     "settings": {
         "dark_mode": true,
-        "multi_mode": true,
-        "delta_mode": false
+        "multi_mode": false,
+        "delta_mode": true
     }
 }
