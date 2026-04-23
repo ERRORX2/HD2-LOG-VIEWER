@@ -1,6 +1,6 @@
 # HD2 LOG VIEWER
 
-[![Build HD2 LOG VIEWER](https://github.com/ERRORX2/HD2-LOG-VIEWER/actions/workflows/build.yml/badge.svg?event=push&branch=master)](https://github.com/ERRORX2/HD2-LOG-VIEWER/actions/workflows/build.yml)
+[![Build HD2 LOG VIEWER](https://github.com/ERRORX2/HD2-LOG-VIEWER/actions/workflows/build.yml/badge.svg?branch=master&label=Build%20Status)](https://github.com/ERRORX2/HD2-LOG-VIEWER/actions/workflows/build.yml)
 ![Latest Release](https://img.shields.io/github/v/release/ERRORX2/HD2-LOG-VIEWER?color=blue&label=Latest%20Version)
 
 **HD2 LOG VIEWER** is a professional-grade telemetry utility designed for high-frequency hardware log analysis. Optimized for stability testing and thermal diagnostics, it provides an interactive interface for visualizing data from **HWinfo64**, **GPU-Z**, and **MSI Afterburner**.
@@ -29,7 +29,7 @@
 **Setup Steps:**
 1.  **Clone the Repository:**
     ```bash
-    git clone [https://github.com/ERRORX2/HD2-LOG-VIEWER.git](https://github.com/ERRORX2/HD2-LOG-VIEWER.git)
+    git clone https://github.com/ERRORX2/HD2-LOG-VIEWER.git
     cd HD2-LOG-VIEWER
     ```
 2.  **Install Required Libraries:**
