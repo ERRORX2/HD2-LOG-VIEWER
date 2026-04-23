@@ -1,4 +1,4 @@
-name: Build HD2 LOG VIEWERS
+name: Build HD2 LOG VIEWER
 
 on:
   push:
@@ -35,24 +35,32 @@ jobs:
       run: |
         python -m PyInstaller --noconsole --onefile --collect-all matplotlib --name "HD2_LOG_VIEWER" HD2_LOG_VIEWER.pyw
 
-    - name: Update README
+    - name: Prepare Release Package
+      shell: pwsh
+      run: |
+        if (!(Test-Path "release_pkg")) { mkdir release_pkg }
+        copy-item "dist/HD2_LOG_VIEWER.exe" -Destination "release_pkg/"
+        copy-item "groups.json" -Destination "release_pkg/" 
+        Compress-Archive -Path release_pkg/* -DestinationPath "HD2_LOG_VIEWER_latest.zip"
+
+    - name: Update README with Direct VT Link
       shell: pwsh
       run: |
         $tag = "${{ github.ref_name }}"
-        if ("${{ github.ref_type }}" -ne "tag") { $tag = "Manual Build" }
         $date = Get-Date -Format "yyyy-MM-dd"
+        
+        
+        $fileHash = (Get-FileHash "HD2_LOG_VIEWER_latest.zip" -Algorithm SHA256).Hash
+        $vt_link = "https://www.virustotal.com/gui/file/$fileHash"
         
         $content = Get-Content README.md -Raw
         
         $newInfo = "### 🚀 Latest Release: $tag ($date)`n"
         $newInfo += "- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)`n"
-        $newInfo += "- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)`n"
+        $newInfo += "- **Security Scan:** [View Results on VirusTotal]($vt_link)`n"
         
-        # DEFINING THE TARGET TAGS
         $startTag = "<!-- LATEST_RELEASE_START -->"
         $endTag = "<!-- LATEST_RELEASE_END -->"
-        
-        # Safe Regex: find everything between the tags and replace it
         $pattern = "(?s)$startTag.*?$endTag"
         $replacement = "$startTag`n$newInfo`n$endTag"
         
@@ -65,22 +73,12 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global core.autocrlf false
-        
         git add README.md
         $status = git status --porcelain
         if ($status) {
-            git commit -m "docs: update latest release info in README [skip ci]"
-            # Added --force to resolve the "non-fast-forward" rejection
+            git commit -m "docs: update release info with direct VT link [skip ci]"
             git push origin HEAD:master --force
         }
-
-    - name: Prepare Release Package
-      shell: pwsh
-      run: |
-        if (!(Test-Path "release_pkg")) { mkdir release_pkg }
-        copy-item "dist/HD2_LOG_VIEWER.exe" -Destination "release_pkg/"
-        copy-item "groups.json" -Destination "release_pkg/" 
-        Compress-Archive -Path release_pkg/* -DestinationPath "HD2_LOG_VIEWER_latest.zip"
 
     - name: Release
       id: create_release
