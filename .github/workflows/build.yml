@@ -2,8 +2,9 @@ name: Build HD2 LOG VIEWER
 
 on:
   push:
+    branches: [ "master" ]
     tags:
-      - '*' 
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -11,9 +12,6 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
-      
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
     - name: Checkout Code
@@ -24,81 +22,75 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-location: 'C:\hostedtoolcache\windows\Python\3.10.11\x64'
 
     - name: Install Dependencies
       run: |
-        python -m pip install --upgrade pip
         pip install pandas matplotlib numpy pyinstaller
 
-    - name: Build EXE
+    - name: Build Executable
       run: |
-        python -m PyInstaller --noconsole --onefile --collect-all matplotlib --name "HD2_LOG_VIEWER" HD2_LOG_VIEWER.pyw
+        pyinstaller --onefile --noconsole --name "HD2_LOG_VIEWER" HD2_LOG_VIEWER.pyw
 
-    - name: Prepare Release Package
+    - name: Package Release
       shell: pwsh
       run: |
-        if (!(Test-Path "release_pkg")) { mkdir release_pkg }
-        copy-item "dist/HD2_LOG_VIEWER.exe" -Destination "release_pkg/"
-        copy-item "groups.json" -Destination "release_pkg/" 
-        Compress-Archive -Path release_pkg/* -DestinationPath "HD2_LOG_VIEWER_latest.zip"
+        Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath "HD2_LOG_VIEWER_latest.zip" -Force
 
-    - name: Update README with Direct VT Link
+    - name: Upload Release Assets
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: HD2_LOG_VIEWER_latest.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update README with Safety Checks
+      if: startsWith(github.ref, 'refs/tags/')
       shell: pwsh
       run: |
         $tag = "${{ github.ref_name }}"
         $date = Get-Date -Format "yyyy-MM-dd"
-        
-        # Calculate SHA256 Hash for the direct VirusTotal link
         $fileHash = (Get-FileHash "HD2_LOG_VIEWER_latest.zip" -Algorithm SHA256).Hash
         $vt_link = "https://www.virustotal.com/gui/file/$fileHash"
         
         $content = Get-Content README.md -Raw
+        $startTag = "<!-- LATEST_RELEASE_START -->"
+        $endTag = "<!-- LATEST_RELEASE_END -->"
+
+       
+        if ($content -notmatch $startTag -or $content -notmatch $endTag) {
+            Write-Error "CRITICAL: Sync tags missing in README. Aborting to prevent corruption."
+            exit 1
+        }
         
-        $newInfo = "### 🚀 Latest Release: $tag ($date)`n"
-        $newInfo += "- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)`n"
-        $newInfo += "- **Security Scan:** [View Results on VirusTotal]($vt_link)`n"
+        $newBlock = "$startTag`n### 🚀 Latest Release: $tag ($date)`n"
+        $newBlock += "- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)`n"
+        $newBlock += "- **Security Scan:** [Verify on VirusTotal]($vt_link)`n`n$endTag"
         
-        $startTag = ""
-        $endTag = ""
-        $pattern = "(?s)$startTag.*?$endTag"
-        $replacement = "$startTag`n$newInfo`n$endTag"
         
-        $content = $content -replace $pattern, $replacement
+        $pattern = "(?s)<!-- LATEST_RELEASE_START -->.*?<!-- LATEST_RELEASE_END -->"
+        $content = $content -replace $pattern, $newBlock
+        
+        
+        if ($content.Length -gt 80000) { 
+            Write-Error "README size explosion detected! Blocking save."
+            exit 1 
+        }
+
         Set-Content README.md $content
 
-    - name: Commit Updated README
+    - name: Force Sync Master via Token
+      if: startsWith(github.ref, 'refs/tags/')
       shell: pwsh
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global core.autocrlf false
-        
         git add README.md
         $status = git status --porcelain
         if ($status) {
-            git commit -m "docs: update release info with direct VT link [skip ci]"
-            # Force push to the specific master head to resolve badge state
-            git push origin HEAD:refs/heads/master --force
+            git commit -m "docs: update release info [skip ci]"
+            
+            git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/master --force
         }
-
-    - name: Release
-      id: create_release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ github.ref_name }}
-        files: HD2_LOG_VIEWER_latest.zip
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: VirusTotal Scan
-      if: env.VT_API_KEY != ''
-      uses: cssnr/virustotal-action@v1
-      with:
-        vt_api_key: ${{ secrets.VT_API_KEY }}
-        file_globs: HD2_LOG_VIEWER_latest.zip
-        update_release: false 
-      env:
-        VT_API_KEY: ${{ secrets.VT_API_KEY }}
