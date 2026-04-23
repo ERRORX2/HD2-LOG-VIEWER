@@ -9,9 +9,9 @@
 
 ## 🚀 Installation & Deployment
 <!-- LATEST_RELEASE_START -->
-### 🚀 Latest Release: v1.2.2 (2026-04-23)
+### 🚀 Latest Release: v1.2.3 (2026-04-23)
 - **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
-- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+- **Security Scan:** [View Results on VirusTotal](https://www.virustotal.com/gui/file/D3FAB5563F92EECCD610F089C60705827E6E650A0D2AADD835948372F5B07D40)
 
 <!-- LATEST_RELEASE_END -->
 ### 📦 Option 1: Compiled Executable (Recommended for Users)
@@ -69,4 +69,5 @@ Because this utility is bundled using PyInstaller, some antivirus engines may fl
 
 ## ⚖️ License
 MIT License - Developed for the hardware enthusiast community.
+
 
