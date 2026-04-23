@@ -49,7 +49,7 @@ jobs:
         $tag = "${{ github.ref_name }}"
         $date = Get-Date -Format "yyyy-MM-dd"
         
-        
+        # Calculate SHA256 Hash for the direct VirusTotal link
         $fileHash = (Get-FileHash "HD2_LOG_VIEWER_latest.zip" -Algorithm SHA256).Hash
         $vt_link = "https://www.virustotal.com/gui/file/$fileHash"
         
@@ -59,8 +59,8 @@ jobs:
         $newInfo += "- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)`n"
         $newInfo += "- **Security Scan:** [View Results on VirusTotal]($vt_link)`n"
         
-        $startTag = "<!-- LATEST_RELEASE_START -->"
-        $endTag = "<!-- LATEST_RELEASE_END -->"
+        $startTag = ""
+        $endTag = ""
         $pattern = "(?s)$startTag.*?$endTag"
         $replacement = "$startTag`n$newInfo`n$endTag"
         
@@ -73,11 +73,13 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global core.autocrlf false
+        
         git add README.md
         $status = git status --porcelain
         if ($status) {
             git commit -m "docs: update release info with direct VT link [skip ci]"
-            git push origin HEAD:master --force
+            # Force push to the specific master head to resolve badge state
+            git push origin HEAD:refs/heads/master --force
         }
 
     - name: Release
