@@ -1,67 +1,13822 @@
-# HD2 LOG VIEWER
 
-![Build Status](https://github.com/ERRORX2/HD2-LOG-VIEWER/actions/workflows/build.yml/badge.svg)
-![Latest Release](https://img.shields.io/github/v/release/ERRORX2/HD2-LOG-VIEWER?color=blue&label=Latest%20Version)
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-**HD2 LOG VIEWER** is a professional-grade telemetry utility designed for high-frequency hardware log analysis. Optimized for stability testing and thermal diagnostics, it provides an interactive interface for visualizing data from **HWinfo64**, **GPU-Z**, and **MSI Afterburner**.
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
----
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-## 🚀 Installation & Deployment
-<!-- LATEST_RELEASE_START -->
-<!-- LATEST_RELEASE_END -->
-### 📦 Option 1: Compiled Executable (Recommended for Users)
-1.  Go to the **[Latest Release](../../releases/latest)** page.
-2.  Download the `HD2_LOG_VIEWER_latest.zip` archive.
-3.  **Extract the ZIP fully** to a folder of your choice.
-4.  Run `HD2_LOG_VIEWER.exe`.
-    * *Note: Ensure `groups.json` stays in the same folder as the EXE to load your presets.*
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-### 🛠️ Option 2: Running from Source (For Developers)
-**Prerequisites:**
-* Python 3.10 or higher.
-* `pip` (Python Package Index).
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-**Setup Steps:**
-1.  **Clone the Repository:**
-    ```bash
-    git clone [https://github.com/ERRORX2/HD2-LOG-VIEWER.git](https://github.com/ERRORX2/HD2-LOG-VIEWER.git)
-    cd HD2-LOG-VIEWER
-    ```
-2.  **Install Required Libraries:**
-    ```bash
-    pip install pandas matplotlib numpy
-    ```
-3.  **Launch the Application:**
-    ```bash
-    pythonw HD2_LOG_VIEWER.pyw
-    ```
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
----
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-## 🛡️ Security & Transparency
-Because this utility is bundled using PyInstaller, some antivirus engines may flag the executable as a "False Positive." 
-* **Automatic Scanning:** Every release is scanned via the VirusTotal API during the build process.
-* **Integrity:** You can view the scan report link in the Latest Release section above.
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
----
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-## 🛠️ Core Functionality
-* **📊 Multi-Plot Mode:** Categorized subplots for Temperatures, Clocks, and Voltages.
-* **Δ Delta Analysis:** Graph absolute differences (e.g., GPU Core vs. Hotspot).
-* **🔍 Comparison Engine:** Overlay live data against a reference baseline.
-* **🚨 Intelligent Diagnostics:** Automatic flagging of thermal throttling and voltage sag.
-* **🌗 Adaptive UI:** Full Dark and Light mode support.
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
----
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-## 📖 Usage Instructions
-1.  **Import Data:** Click "New CSV" and select your log.
-2.  **Toggle Sensors:** Select specific hardware metrics from the sidebar.
-3.  **Analyze:** Hover over any graph point for synchronized data readout across all plots.
-4.  **Save Presets:** Use the "Groups" menu to save current sensor selections for future logs.
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
----
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-## ⚖️ License
-MIT License - Developed for the hardware enthusiast community.
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+!
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+[
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+B
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+]
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+(
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+X
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+k
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+)
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+!
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+[
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+]
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+(
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+X
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+?
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+=
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+&
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+=
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+%
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+0
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+)
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+q
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+z
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+,
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+z
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+6
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+4
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+,
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+U
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+Z
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+,
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+M
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+&
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+<
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+!
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+>
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+<
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+!
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+N
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+>
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+1
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+C
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+x
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+(
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+U
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+)
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+1
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+[
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+]
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+(
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+)
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+z
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+3
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+x
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+Z
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+4
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+x
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+N
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+j
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+X
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+️
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+(
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+F
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+)
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+q
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+3
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+1
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+0
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+(
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+k
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+x
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+)
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+1
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+C
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+[
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+X
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+]
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+(
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+X
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+/
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+)
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+q
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+3
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+_
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+W
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+`
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+️
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+&
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+B
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+,
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+x
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+"
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+F
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+"
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+Y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+k
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+R
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+️
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+C
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+F
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+M
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+M
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+C
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+z
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+,
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+C
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+k
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+,
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+Δ
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+(
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+,
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+U
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+C
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+)
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+C
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+E
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+O
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+U
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+F
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+k
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+�
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+U
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+1
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+C
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+k
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+"
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+N
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+C
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+V
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+"
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+2
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+b
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+3
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+A
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+z
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+H
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+z
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+4
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+S
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+P
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+:
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+*
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+U
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+"
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+G
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+"
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+g
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+#
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+⚖
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+️
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
+
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+M
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+I
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+T
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+L
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+-
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+D
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+v
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+l
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+p
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+f
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+d
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+w
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+r
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+e
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+h
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+a
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+s
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+ 
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+c
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+o
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+m
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+u
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+n
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+i
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+t
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+y
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+.
+### 🚀 Latest Release: v1.2.2 (2026-04-23)
+- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
+
+
