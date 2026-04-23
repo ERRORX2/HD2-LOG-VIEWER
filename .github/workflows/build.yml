@@ -41,16 +41,20 @@ jobs:
         $tag = "${{ github.ref_name }}"
         if ("${{ github.ref_type }}" -ne "tag") { $tag = "Manual Build" }
         $date = Get-Date -Format "yyyy-MM-dd"
-        $vt_search = "https://www.virustotal.com/gui/home/upload" 
         
         $content = Get-Content README.md -Raw
         
         $newInfo = "### 🚀 Latest Release: $tag ($date)`n"
         $newInfo += "- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)`n"
-        $newInfo += "- **Security Scan:** [Verify on VirusTotal]($vt_search)`n"
+        $newInfo += "- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)`n"
         
-        $pattern = "(?s).*?"
-        $replacement = "`n$newInfo`n"
+        
+        $startTag = "<!-- LATEST_RELEASE_START -->"
+        $endTag = "<!-- LATEST_RELEASE_END -->"
+        
+        
+        $pattern = "(?s)$startTag.*?$endTag"
+        $replacement = "$startTag`n$newInfo`n$endTag"
         
         $content = $content -replace $pattern, $replacement
         Set-Content README.md $content
@@ -94,7 +98,6 @@ jobs:
       with:
         vt_api_key: ${{ secrets.VT_API_KEY }}
         file_globs: HD2_LOG_VIEWER_latest.zip
-        release_id: ${{ steps.create_release.outputs.id }}
-        update_release: true
+        update_release: false 
       env:
         VT_API_KEY: ${{ secrets.VT_API_KEY }}
