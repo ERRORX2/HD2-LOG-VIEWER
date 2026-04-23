@@ -39,13 +39,15 @@ jobs:
         mkdir release_pkg
         copy-item "dist/HD2_LOG_VIEWER.exe" -Destination "release_pkg/"
         copy-item "groups.json" -Destination "release_pkg/"
-        Compress-Archive -Path release_pkg/* -DestinationPath "HD2_LOG_VIEWER_${{ github.ref_name }}.zip"
+        Compress-Archive -Path release_pkg/* -DestinationPath "HD2_LOG_VIEWER_latest.zip"
 
     - name: Release
       id: create_release
       uses: softprops/action-gh-release@v2
       with:
-        files: HD2_LOG_VIEWER_${{ github.ref_name }}.zip
+        tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'test-manual' }}
+        files: HD2_LOG_VIEWER_latest.zip
+        draft: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -53,8 +55,8 @@ jobs:
       uses: crazy-max/ghaction-virustotal@v5
       with:
         vt_api_key: ${{ secrets.VT_API_KEY }}
-        files: HD2_LOG_VIEWER_${{ github.ref_name }}.zip
+        files: HD2_LOG_VIEWER_latest.zip
         update_release_body: true
-        request_rate: 4 
+        request_rate: 4
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
