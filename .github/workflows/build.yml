@@ -57,8 +57,17 @@ jobs:
 
     - name: Commit Updated README
       run: |
+        
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+        
+        git config --global core.autocrlf false
+        
+        
+        git checkout main
+        git pull origin main
+        
         git add README.md
         git commit -m "docs: update latest release info in README [skip ci]" || echo "No changes to commit"
         git push origin main
