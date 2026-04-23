@@ -57,7 +57,7 @@
     },
     "settings": {
         "dark_mode": true,
-        "multi_mode": false,
-        "delta_mode": true
+        "multi_mode": true,
+        "delta_mode": false
     }
 }

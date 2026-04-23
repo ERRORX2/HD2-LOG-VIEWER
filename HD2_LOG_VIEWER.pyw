@@ -14,7 +14,7 @@ import os
 
 GROUPS_FILE = "groups.json"
 
-# --- CONFIGURATION PERSISTENCE ---
+
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False):
     config = {
         "groups": groups_dict, 
@@ -43,7 +43,7 @@ def load_config() -> Tuple[Dict, bool, bool, bool]:
             return data if isinstance(data, dict) else {}, False, False, False
     except: return {}, False, False, False
 
-# --- DATA PROCESSING ---
+
 class TelemetryAnalyzer:
     def __init__(self, file_path: str):
         self.path = Path(file_path)
@@ -82,14 +82,14 @@ class TelemetryAnalyzer:
             else: break
         self.df.ffill(inplace=True)
 
-# --- MAIN APPLICATION ---
+
 class TelemetryApp:
     def __init__(self, root: tk.Tk, analyzer: TelemetryAnalyzer):
         self.root = root
         self.analyzer = analyzer
         self.df = analyzer.df
         
-        # Comparison logic state
+        
         self.ref_df = None
         self.compare_mode = False
         
@@ -217,7 +217,7 @@ class TelemetryApp:
         self.paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.paned.pack(fill=tk.BOTH, expand=True)
 
-        # --- LEFT SIDEBAR ---
+        
         self.left = ttk.Frame(self.paned, padding="10")
         self.paned.add(self.left, weight=1)
         
@@ -226,7 +226,7 @@ class TelemetryApp:
         ttk.Label(top, text="DASHBOARD", font=('Segoe UI', 12, 'bold')).pack(side=tk.LEFT)
         ttk.Button(top, text="◐", command=self._toggle_theme, width=3).pack(side=tk.RIGHT)
 
-        # View Modes
+        
         mode_f = ttk.LabelFrame(self.left, text=" View Settings ", padding=8)
         mode_f.pack(fill=tk.X, pady=5)
         
@@ -243,7 +243,7 @@ class TelemetryApp:
         self.compare_btn = ttk.Button(btn_row2, text="🔍 Compare: OFF", command=self._toggle_compare, state="disabled" if self.ref_df is None else "normal")
         self.compare_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
-        # --- PRESETS SECTION ---
+        
         preset_master_f = ttk.LabelFrame(self.left, text=" Presets ", padding=5)
         preset_master_f.pack(fill=tk.X, pady=5)
         
@@ -275,7 +275,7 @@ class TelemetryApp:
         ttk.Button(ent_f, text="Save", command=self._save_group, width=8).pack(side=tk.RIGHT)
         ttk.Button(self.left, text="📋 Import from Clipboard", command=self._import_from_clipboard).pack(fill=tk.X, pady=2)
 
-        # --- SENSOR SELECTION ---
+        
         search_f = ttk.LabelFrame(self.left, text=" Sensor Selection ", padding=8)
         search_f.pack(fill=tk.BOTH, expand=True, pady=5)
         
@@ -309,7 +309,7 @@ class TelemetryApp:
         ttk.Button(btn_frame, text="Clear", command=self._clear_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
         ttk.Button(btn_frame, text="Export PNG", command=self._export, style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
-        # --- RIGHT PLOT AREA ---
+        
         self.right = ttk.Frame(self.paned, padding="5")
         self.paned.add(self.right, weight=4)
         
@@ -369,16 +369,22 @@ class TelemetryApp:
         else:
             self.filter_btn.config(text="🚨 Detect Out-of-Spec Issues")
             self._filter_sensors()
-
+        self.canvas_checklist.yview_moveto(0)
     def _apply_issue_filter(self):
         for h in self.header_widgets.values(): h.pack_forget()
         for cb in self.cb_widgets.values(): cb.pack_forget()
+        self.scroll_frame.config(height=1) 
+        self.scroll_frame.pack_propagate(True)
         for cat in self.sorted_cats:
             if cat not in self.group_map: continue
             issues = [col for col in self.group_map[cat] if self._is_critical(col)]
             if issues:
                 self.header_widgets[cat].pack(fill=tk.X, pady=(8,0))
                 for col in sorted(issues): self.cb_widgets[col].pack(anchor=tk.W, padx=12)
+        self.root.update_idletasks()
+        new_bbox = self.canvas_checklist.bbox("all")
+        self.canvas_checklist.configure(scrollregion=new_bbox)
+        self.canvas_checklist.yview_moveto(0)
 
     def _refresh_group_buttons(self):
         for w in self.grp_f.winfo_children(): w.destroy()
@@ -443,7 +449,9 @@ class TelemetryApp:
             if m:
                 self.header_widgets[cat].pack(fill=tk.X, pady=(8,0))
                 for col in sorted(m): self.cb_widgets[col].pack(anchor=tk.W, padx=12)
-
+        self.scroll_frame.update_idletasks()
+        self.canvas_checklist.configure(scrollregion=self.canvas_checklist.bbox("all"))
+        self.canvas_checklist.yview_moveto(0)
     def _import_new_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
         if path:
@@ -558,7 +566,7 @@ class TelemetryApp:
                 for col_name in category_groups[cat_name]:
                     main_color = colors[color_idx % len(colors)]
                     
-                    # Reference plotting
+                    
                     if self.compare_mode and self.ref_df is not None and col_name in self.ref_df.columns:
                         ax.plot(self.ref_df.index, self.ref_df[col_name], 
                                 ls='--', lw=1, alpha=0.4, color=main_color, zorder=2)
@@ -583,7 +591,7 @@ class TelemetryApp:
             s1, s2 = self.df[sel[0]], self.df[sel[1]]
             delta = (s1 - s2).abs()
             
-            # Reference Delta
+            
             if self.compare_mode and self.ref_df is not None and sel[0] in self.ref_df.columns and sel[1] in self.ref_df.columns:
                 ref_delta = (self.ref_df[sel[0]] - self.ref_df[sel[1]]).abs()
                 ax.plot(self.ref_df.index, ref_delta, color="#ffcc00", ls='--', alpha=0.3, lw=1, zorder=1)
