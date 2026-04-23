@@ -58,6 +58,8 @@
     "settings": {
         "dark_mode": true,
         "multi_mode": true,
-        "delta_mode": false
+        "delta_mode": false,
+        "ignored_version": "",
+        "updates_disabled": false
     }
 }

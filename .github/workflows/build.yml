@@ -1,42 +1,37 @@
 name: Build HD2 LOG VIEWER
-
 on:
   push:
     branches: [ "master" ]
     tags:
       - 'v*'
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: windows-latest
     permissions:
       contents: write
-
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-location: 'C:\hostedtoolcache\windows\Python\3.10.11\x64'
-
+        python-version: '3.10'
     - name: Install Dependencies
       run: |
         pip install pandas matplotlib numpy pyinstaller
-
     - name: Build Executable
       run: |
         pyinstaller --onefile --noconsole --name "HD2_LOG_VIEWER" HD2_LOG_VIEWER.pyw
-
     - name: Package Release
       shell: pwsh
       run: |
+        if (-not (Test-Path "groups.json")) {
+          Set-Content "groups.json" "{}"
+        }
         Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath "HD2_LOG_VIEWER_latest.zip" -Force
-
     - name: Upload Release Assets
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
@@ -44,7 +39,6 @@ jobs:
         files: HD2_LOG_VIEWER_latest.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Update README with Safety Checks
       if: startsWith(github.ref, 'refs/tags/')
       shell: pwsh
@@ -57,7 +51,6 @@ jobs:
         $content = Get-Content README.md -Raw
         $startTag = "<!-- LATEST_RELEASE_START -->"
         $endTag = "<!-- LATEST_RELEASE_END -->"
-
        
         if ($content -notmatch $startTag -or $content -notmatch $endTag) {
             Write-Error "CRITICAL: Sync tags missing in README. Aborting to prevent corruption."
@@ -68,18 +61,14 @@ jobs:
         $newBlock += "- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)`n"
         $newBlock += "- **Security Scan:** [Verify on VirusTotal]($vt_link)`n`n$endTag"
         
-        
         $pattern = "(?s)<!-- LATEST_RELEASE_START -->.*?<!-- LATEST_RELEASE_END -->"
         $content = $content -replace $pattern, $newBlock
-        
         
         if ($content.Length -gt 80000) { 
             Write-Error "README size explosion detected! Blocking save."
             exit 1 
         }
-
         Set-Content README.md $content
-
     - name: Force Sync Master via Token
       if: startsWith(github.ref, 'refs/tags/')
       shell: pwsh
@@ -91,6 +80,5 @@ jobs:
         $status = git status --porcelain
         if ($status) {
             git commit -m "docs: update release info [skip ci]"
-            
             git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/master --force
         }

@@ -56,6 +56,7 @@ Because this utility is bundled using PyInstaller, some antivirus engines may fl
 * **🔍 Comparison Engine:** Overlay live data against a reference baseline.
 * **🚨 Intelligent Diagnostics:** Automatic flagging of thermal throttling and voltage sag.
 * **🌗 Adaptive UI:** Full Dark and Light mode support.
+* **🔔 Update Notifications:** Automatic update checks on startup with options to ignore a specific version or disable notifications entirely.
 
 ---
 
@@ -64,7 +65,7 @@ Because this utility is bundled using PyInstaller, some antivirus engines may fl
 2.  **Toggle Sensors:** Select specific hardware metrics from the sidebar.
 3.  **Analyze:** Hover over any graph point for synchronized data readout across all plots.
 4.  **Save Presets:** Use the "Groups" menu to save current sensor selections for future logs.
-
+5. **Updates:** On startup the app silently checks for new releases. If one is found you can open the release page, ignore that specific version, or disable future notifications entirely. You can also manually check anytime via the ⟳ button in the top bar.
 ---
 
 ## ⚖️ License

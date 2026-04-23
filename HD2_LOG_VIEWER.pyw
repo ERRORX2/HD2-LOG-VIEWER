@@ -11,37 +11,155 @@ import numpy as np
 import csv
 import json
 import os
+import threading
+import urllib.request
+import urllib.error
+import webbrowser
 
 GROUPS_FILE = "groups.json"
+CURRENT_VERSION = "1.3"  # DO NOT FORGET TO CHANGE
+GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
-def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False):
+def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
+                ignored_version: str = "", updates_disabled: bool = False):
     config = {
-        "groups": groups_dict, 
+        "groups": groups_dict,
         "settings": {
-            "dark_mode": is_dark, 
+            "dark_mode": is_dark,
             "multi_mode": multi_mode,
-            "delta_mode": delta_mode
+            "delta_mode": delta_mode,
+            "ignored_version": ignored_version,
+            "updates_disabled": updates_disabled
         }
     }
     try:
         with open(GROUPS_FILE, 'w') as f:
             json.dump(config, f, indent=4)
-    except: pass
+    except:
+        pass
 
-def load_config() -> Tuple[Dict, bool, bool, bool]:
-    if not Path(GROUPS_FILE).exists(): return {}, False, False, False
+def load_config() -> Tuple[Dict, bool, bool, bool, str, bool]:
+    if not Path(GROUPS_FILE).exists():
+        return {}, False, False, False, "", False
     try:
         with open(GROUPS_FILE, 'r') as f:
             data = json.load(f)
             if isinstance(data, dict) and "groups" in data and "settings" in data:
                 sets = data["settings"]
-                return (data["groups"], 
-                        sets.get("dark_mode", False), 
+                return (data["groups"],
+                        sets.get("dark_mode", False),
                         sets.get("multi_mode", False),
-                        sets.get("delta_mode", False))
-            return data if isinstance(data, dict) else {}, False, False, False
-    except: return {}, False, False, False
+                        sets.get("delta_mode", False),
+                        sets.get("ignored_version", ""),
+                        sets.get("updates_disabled", False))
+            return data if isinstance(data, dict) else {}, False, False, False, "", False
+    except:
+        return {}, False, False, False, "", False
+
+
+def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: bool = False,
+                      on_ignore=None, on_disable=None, silent: bool = True):
+    """
+    silent=True  -> startup check, skips notification if version is ignored or updates are disabled.
+    silent=False -> manual ⟳ check, always gives feedback.
+    """
+    def _check():
+        try:
+            url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+            req = urllib.request.Request(url, headers={"User-Agent": "HD2-LOG-VIEWER"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+            latest = data.get("tag_name", "").lstrip("v")
+            current = CURRENT_VERSION.lstrip("v")
+
+            if not latest:
+                if not silent:
+                    root.after(0, lambda: _toast("⚠️ Could not read release info"))
+                return
+
+            if latest == current:
+                if not silent:
+                    root.after(0, lambda: _toast("✅ You're on the latest version!"))
+                return
+
+            
+            if silent:
+                if updates_disabled:
+                    return
+                if latest == ignored_version.lstrip("v"):
+                    return
+
+            release_url = data.get("html_url", "")
+            root.after(0, lambda: _notify(latest, release_url))
+
+        except Exception:
+            if not silent:
+                root.after(0, lambda: _toast("⚠️ Could not reach GitHub"))
+
+    def _toast(msg: str):
+        try:
+            root._app_ref.show_toast(msg)
+        except Exception:
+            pass
+
+    def _notify(latest_version: str, release_url: str):
+        dialog = tk.Toplevel(root)
+        dialog.title("Update Available")
+        dialog.resizable(False, False)
+        dialog.grab_set()
+        dialog.attributes("-topmost", True)
+
+        
+        try:
+            is_dark = root._app_ref.is_dark
+        except Exception:
+            is_dark = False
+        bg     = "#121212" if is_dark else "#f8f9fa"
+        fg     = "#e0e0e0" if is_dark else "#212529"
+        accent = "#1f6aa5" if is_dark else "#3498db"
+
+        dialog.configure(bg=bg)
+
+        root.update_idletasks()
+        x = root.winfo_x() + (root.winfo_width() // 2) - 200
+        y = root.winfo_y() + (root.winfo_height() // 2) - 105
+        dialog.geometry(f"400x210+{x}+{y}")
+
+        tk.Label(dialog, text="🆕 Update Available",
+                 font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(pady=(18, 4))
+        tk.Label(dialog, text=f"Current: v{CURRENT_VERSION}   →   Latest: v{latest_version}",
+                 font=('Segoe UI', 10), bg=bg, fg=fg).pack(pady=(0, 14))
+
+        btn_f = tk.Frame(dialog, bg=bg)
+        btn_f.pack(pady=4)
+
+        def _open():
+            webbrowser.open(release_url)
+            dialog.destroy()
+
+        def _ignore():
+            if on_ignore:
+                on_ignore(latest_version)
+            dialog.destroy()
+
+        def _disable():
+            if on_disable:
+                on_disable()
+            dialog.destroy()
+
+        ttk.Button(btn_f, text="View Release Page", command=_open,
+                   style="Action.TButton").grid(row=0, column=0, padx=6, pady=4, sticky='ew')
+        ttk.Button(btn_f, text=f"Ignore v{latest_version}",
+                   command=_ignore).grid(row=0, column=1, padx=6, pady=4, sticky='ew')
+        ttk.Button(btn_f, text="Never Notify Me", command=_disable
+                   ).grid(row=1, column=0, columnspan=2, padx=6, pady=2, sticky='ew')
+
+        tk.Label(dialog,
+                 text='"Ignore" skips this version only. "Never Notify" disables all future checks.',
+                 font=('Segoe UI', 8), bg=bg, fg="gray").pack(pady=(8, 0))
+
+    threading.Thread(target=_check, daemon=True).start()
 
 
 class TelemetryAnalyzer:
@@ -56,30 +174,36 @@ class TelemetryAnalyzer:
                 sample = f.readline() + f.readline()
                 dialect = csv.Sniffer().sniff(sample)
                 sep = dialect.delimiter
-        except: sep = None 
+        except:
+            sep = None
 
         for enc in ['utf-8-sig', 'latin-1', 'cp1252']:
             try:
                 self.df = pd.read_csv(self.path, encoding=enc, sep=sep, on_bad_lines='skip', engine='python')
                 if not self.df.empty:
-                    success = True; break
-            except: continue
-        
-        if not success: raise ValueError("File Load Failed")
+                    success = True
+                    break
+            except:
+                continue
+
+        if not success:
+            raise ValueError("File Load Failed")
         self.df.columns = [str(c).strip().replace('\ufeff', '') for c in self.df.columns]
-        
+
         for col in self.df.columns:
             try:
                 s = self.df[col].astype(str).str.replace(',', '.', regex=False)
                 cleaned = s.str.replace(r'[^\d\.\-eE]', '', regex=True)
                 self.df[col] = pd.to_numeric(cleaned, errors='coerce')
-            except: continue
+            except:
+                continue
 
         while len(self.df) > 1:
             last_row = self.df.iloc[-1]
             if (last_row == 0).sum() + last_row.isna().sum() > (len(self.df.columns) / 2):
                 self.df = self.df.iloc[:-1]
-            else: break
+            else:
+                break
         self.df.ffill(inplace=True)
 
 
@@ -88,31 +212,61 @@ class TelemetryApp:
         self.root = root
         self.analyzer = analyzer
         self.df = analyzer.df
-        
-        
+
         self.ref_df = None
         self.compare_mode = False
-        
-        self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode = load_config()
-        
+
+        (self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
+         self.ignored_version, self.updates_disabled) = load_config()
+
         self.vars = {}
         self.cb_widgets = {}
         self.header_widgets = {}
         self.group_map = {}
         self.cursor_lines = []
         self.cursor_text = None
-        self.filter_active = False 
-        
+        self.filter_active = False
+
         self.temp_limits = {'HOTSPOT': 95.0, 'CORE': 100.0, 'GPU': 88.0, 'MEMORY': 105.0, 'VRM': 110.0, 'SSD': 80.0}
         self.volt_rails = {'+12V': (11.4, 12.6), '+5V': (4.75, 5.25), '+3.3V': (3.13, 3.46)}
+
+        
+        self.root._app_ref = self
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
 
+        
+        check_for_updates(
+            self.root,
+            ignored_version=self.ignored_version,
+            updates_disabled=self.updates_disabled,
+            on_ignore=self._on_ignore_version,
+            on_disable=self._on_disable_updates,
+            silent=True
+        )
+
     def _on_close(self):
-        plt.close('all'); self.root.quit(); self.root.destroy(); os._exit(0)
+        plt.close('all')
+        self.root.quit()
+        self.root.destroy()
+        os._exit(0)
+
+    def _on_ignore_version(self, version: str):
+        self.ignored_version = version
+        self._save_config()
+        self.show_toast(f"Ignored v{version} — you'll be notified about future versions")
+
+    def _on_disable_updates(self):
+        self.updates_disabled = True
+        self._save_config()
+        self.show_toast("Update notifications disabled")
+
+    def _save_config(self):
+        save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
+                    self.ignored_version, self.updates_disabled)
 
     def show_toast(self, message: str, duration: int = 2000):
         toast = tk.Toplevel(self.root)
@@ -120,7 +274,7 @@ class TelemetryApp:
         toast.attributes("-topmost", True)
         bg = "#333333" if self.is_dark else "#2c3e50"
         fg = "white"
-        label = tk.Label(toast, text=message, bg=bg, fg=fg, padx=20, pady=10, 
+        label = tk.Label(toast, text=message, bg=bg, fg=fg, padx=20, pady=10,
                          font=('Segoe UI', 10, 'bold'), relief='flat')
         label.pack()
         self.root.update_idletasks()
@@ -133,19 +287,19 @@ class TelemetryApp:
         self.is_dark = not self.is_dark
         self._apply_theme_colors()
         self.update_plot()
-        save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
+        self._save_config()
 
     def _toggle_multi(self):
         self.multi_mode = not self.multi_mode
         self.multi_btn.config(text="📊 Multi: ON" if self.multi_mode else "📊 Multi: OFF")
         self.update_plot()
-        save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
+        self._save_config()
 
     def _toggle_delta(self):
         self.delta_mode = not self.delta_mode
         self.delta_btn.config(text="Δ Delta: ON" if self.delta_mode else "Δ Delta: OFF")
         self.update_plot()
-        save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
+        self._save_config()
 
     def _toggle_compare(self):
         if self.ref_df is None:
@@ -163,7 +317,7 @@ class TelemetryApp:
     def _apply_theme_colors(self):
         bg, fg = ("#121212", "#e0e0e0") if self.is_dark else ("#f8f9fa", "#212529")
         accent = "#3498db" if not self.is_dark else "#1f6aa5"
-        
+
         self.style = ttk.Style()
         self.style.theme_use('clam')
         self.style.configure(".", background=bg, foreground=fg, fieldbackground=bg, font=('Segoe UI', 9))
@@ -178,58 +332,67 @@ class TelemetryApp:
         self.style.configure("TCheckbutton", background=bg, foreground=fg)
         self.style.configure("Alert.TCheckbutton", background=bg, foreground="#ff4d4d", font=('Segoe UI', 9, 'bold'))
         self.style.map("TCheckbutton", background=[('active', bg)])
-        
+
         self.root.configure(bg=bg)
         self.canvas_checklist.configure(bg=bg)
         self.scroll_frame.configure(bg=bg)
         self.preset_canvas.configure(bg=bg)
         self.grp_f.configure(bg=bg)
-        
+
         for hdr in self.header_widgets.values():
             hdr.configure(bg=bg, fg="#3498db" if self.is_dark else "#2c3e50")
 
     def _is_critical(self, col: str) -> bool:
         name = col.upper()
         series = self.df[col].dropna()
-        if series.empty: return False
-        if "FREQUENCY LIMIT" in name: return False
-        if "ACCUMULATED" in name: return False
-        if "[%]" in name and "LIMIT" in name: return series.max() >= 99.0
+        if series.empty:
+            return False
+        if "FREQUENCY LIMIT" in name:
+            return False
+        if "ACCUMULATED" in name:
+            return False
+        if "[%]" in name and "LIMIT" in name:
+            return series.max() >= 99.0
         for rail, (low, high) in self.volt_rails.items():
             if rail in name:
-                if series.min() < low or series.max() > high: return True
+                if series.min() < low or series.max() > high:
+                    return True
         limit_keywords = ['THROTTLING', 'RELIABILITY', 'PERFCAP']
         if any(x in name for x in limit_keywords):
-            if series.max() >= 0.9: return True
+            if series.max() >= 0.9:
+                return True
         if any(x in name for x in ['TEMP', '°C', 'HOTSPOT']):
             for key, limit in self.temp_limits.items():
                 if key in name:
-                    if series.max() >= limit: return True
-            if series.max() >= 95.0: return True
+                    if series.max() >= limit:
+                        return True
+            if series.max() >= 95.0:
+                return True
         return False
 
     def _setup_ui(self):
-        self.root.title(f"Log Viewer Pro - {self.analyzer.path.name}")
+        self.root.title(f"Log Viewer Pro v{CURRENT_VERSION} - {self.analyzer.path.name}")
         self.root.geometry("1600x950")
         self.root.minsize(1000, 700)
-        for widget in self.root.winfo_children(): widget.destroy()
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
         self.paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.paned.pack(fill=tk.BOTH, expand=True)
 
-        
         self.left = ttk.Frame(self.paned, padding="10")
         self.paned.add(self.left, weight=1)
-        
+
         top = ttk.Frame(self.left)
         top.pack(fill=tk.X, pady=(0, 10))
         ttk.Label(top, text="DASHBOARD", font=('Segoe UI', 12, 'bold')).pack(side=tk.LEFT)
         ttk.Button(top, text="◐", command=self._toggle_theme, width=3).pack(side=tk.RIGHT)
+        # Update check button in the top bar
+        ttk.Button(top, text="⟳", command=self._manual_update_check, width=3).pack(side=tk.RIGHT, padx=(0, 2))
 
-        
         mode_f = ttk.LabelFrame(self.left, text=" View Settings ", padding=8)
         mode_f.pack(fill=tk.X, pady=5)
-        
+
         btn_row1 = ttk.Frame(mode_f)
         btn_row1.pack(fill=tk.X, pady=2)
         self.multi_btn = ttk.Button(btn_row1, text="📊 Multi: ON" if self.multi_mode else "📊 Multi: OFF", command=self._toggle_multi)
@@ -240,20 +403,20 @@ class TelemetryApp:
         btn_row2 = ttk.Frame(mode_f)
         btn_row2.pack(fill=tk.X, pady=2)
         ttk.Button(btn_row2, text="📌 Set Ref", command=self._set_reference).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        self.compare_btn = ttk.Button(btn_row2, text="🔍 Compare: OFF", command=self._toggle_compare, state="disabled" if self.ref_df is None else "normal")
+        self.compare_btn = ttk.Button(btn_row2, text="🔍 Compare: OFF", command=self._toggle_compare,
+                                      state="disabled" if self.ref_df is None else "normal")
         self.compare_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
-        
         preset_master_f = ttk.LabelFrame(self.left, text=" Presets ", padding=5)
         preset_master_f.pack(fill=tk.X, pady=5)
-        
+
         self.preset_canvas = tk.Canvas(preset_master_f, height=140, highlightthickness=0)
         self.preset_scroll = ttk.Scrollbar(preset_master_f, orient="vertical", command=self.preset_canvas.yview)
         self.grp_f = tk.Frame(self.preset_canvas)
-        
+
         self.grp_f.columnconfigure(0, weight=1)
-        self.preset_window = self.preset_canvas.create_window((0,0), window=self.grp_f, anchor="nw")
-        
+        self.preset_window = self.preset_canvas.create_window((0, 0), window=self.grp_f, anchor="nw")
+
         def _on_canvas_resize(event):
             self.preset_canvas.itemconfig(self.preset_window, width=event.width)
         self.preset_canvas.bind("<Configure>", _on_canvas_resize)
@@ -261,31 +424,32 @@ class TelemetryApp:
         self.preset_canvas.configure(yscrollcommand=self.preset_scroll.set)
         self.preset_canvas.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.preset_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        def _on_preset_mw(event): self.preset_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+        def _on_preset_mw(event):
+            self.preset_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
         self.preset_canvas.bind("<Enter>", lambda _: self.preset_canvas.bind_all("<MouseWheel>", _on_preset_mw))
         self.preset_canvas.bind("<Leave>", lambda _: self.preset_canvas.unbind_all("<MouseWheel>"))
-        
+
         self._refresh_group_buttons()
 
         ent_f = ttk.Frame(self.left)
         ent_f.pack(fill=tk.X, pady=5)
         self.name_var = tk.StringVar()
-        ttk.Entry(ent_f, textvariable=self.name_var).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0,5))
+        ttk.Entry(ent_f, textvariable=self.name_var).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
         ttk.Button(ent_f, text="Save", command=self._save_group, width=8).pack(side=tk.RIGHT)
         ttk.Button(self.left, text="📋 Import from Clipboard", command=self._import_from_clipboard).pack(fill=tk.X, pady=2)
 
-        
         search_f = ttk.LabelFrame(self.left, text=" Sensor Selection ", padding=8)
         search_f.pack(fill=tk.BOTH, expand=True, pady=5)
-        
+
         self.filter_btn = ttk.Button(search_f, text="🚨 Detect Out-of-Spec Issues", style="Issue.TButton", command=self._toggle_filter)
         self.filter_btn.pack(fill=tk.X, pady=(0, 8))
 
         search_top = ttk.Frame(search_f)
         search_top.pack(fill=tk.X, pady=(0, 5))
-        ttk.Label(search_top, text="🔍 Search:").pack(side=tk.LEFT, padx=(0,5))
-        self.search_var = tk.StringVar(); self.search_var.trace_add("write", lambda *a: self._filter_sensors())
+        ttk.Label(search_top, text="🔍 Search:").pack(side=tk.LEFT, padx=(0, 5))
+        self.search_var = tk.StringVar()
+        self.search_var.trace_add("write", lambda *a: self._filter_sensors())
         ttk.Entry(search_top, textvariable=self.search_var).pack(side=tk.LEFT, expand=True, fill=tk.X)
 
         self.canv_f = ttk.Frame(search_f)
@@ -294,30 +458,32 @@ class TelemetryApp:
         sc = ttk.Scrollbar(self.canv_f, orient="vertical", command=self.canvas_checklist.yview)
         self.scroll_frame = tk.Frame(self.canvas_checklist)
         self.scroll_frame.bind("<Configure>", lambda e: self.canvas_checklist.configure(scrollregion=self.canvas_checklist.bbox("all")))
-        self.canvas_checklist.create_window((0,0), window=self.scroll_frame, anchor="nw")
+        self.canvas_checklist.create_window((0, 0), window=self.scroll_frame, anchor="nw")
         self.canvas_checklist.configure(yscrollcommand=sc.set)
-        
-        def _on_checklist_mw(event): self.canvas_checklist.yview_scroll(int(-1*(event.delta/120)), "units")
+
+        def _on_checklist_mw(event):
+            self.canvas_checklist.yview_scroll(int(-1 * (event.delta / 120)), "units")
         self.canvas_checklist.bind("<Enter>", lambda _: self.canvas_checklist.bind_all("<MouseWheel>", _on_checklist_mw))
         self.canvas_checklist.bind("<Leave>", lambda _: self.canvas_checklist.unbind_all("<MouseWheel>"))
-        
-        self.canvas_checklist.pack(side=tk.LEFT, fill=tk.BOTH, expand=True); sc.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.canvas_checklist.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        sc.pack(side=tk.RIGHT, fill=tk.Y)
         self._build_checklist()
 
-        btn_frame = ttk.Frame(self.left); btn_frame.pack(fill=tk.X, pady=(10, 0))
+        btn_frame = ttk.Frame(self.left)
+        btn_frame.pack(fill=tk.X, pady=(10, 0))
         ttk.Button(btn_frame, text="New CSV", command=self._import_new_csv).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
         ttk.Button(btn_frame, text="Clear", command=self._clear_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
         ttk.Button(btn_frame, text="Export PNG", command=self._export, style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
-        
         self.right = ttk.Frame(self.paned, padding="5")
         self.paned.add(self.right, weight=4)
-        
+
         self.fig = plt.figure(figsize=(10, 6))
         self.canvas_widget = FigureCanvasTkAgg(self.fig, master=self.right)
         self.canvas_widget.mpl_connect('motion_notify_event', self._on_mouse_move)
         self.canvas_widget.mpl_connect('axes_leave_event', self._on_mouse_leave)
-        
+
         toolbar_f = ttk.Frame(self.right)
         toolbar_f.pack(side=tk.TOP, fill=tk.X)
         toolbar = NavigationToolbar2Tk(self.canvas_widget, toolbar_f, pack_toolbar=False)
@@ -325,29 +491,45 @@ class TelemetryApp:
         toolbar.pack(side=tk.LEFT)
         self.canvas_widget.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
+    def _manual_update_check(self):
+        """Called when the user clicks ⟳ — always gives feedback, respects ignore/disable via on_ignore/on_disable."""
+        self.show_toast("Checking for updates...")
+        check_for_updates(
+            self.root,
+            ignored_version="",         
+            updates_disabled=False,   
+            on_ignore=self._on_ignore_version,
+            on_disable=self._on_disable_updates,
+            silent=False
+        )
+
     def _build_checklist(self):
-        for w in self.scroll_frame.winfo_children(): w.destroy()
+        for w in self.scroll_frame.winfo_children():
+            w.destroy()
         self.header_widgets = {}
         self.cb_widgets = {}
         self.group_map = {}
         for col in self.df.columns:
             cat = self._get_category(col)
-            if cat not in self.group_map: self.group_map[cat] = []
+            if cat not in self.group_map:
+                self.group_map[cat] = []
             self.group_map[cat].append(col)
-        
+
         ui_order = ["Temperatures (°C)", "Utilization / Load (%)", "Clock Speeds (MHz)", "Power / Wattage (W)", "Voltage (V)", "Fan Speeds (RPM)"]
         self.sorted_cats = [c for c in ui_order if c in self.group_map] + \
                            sorted([c for c in self.group_map.keys() if c not in ui_order])
-                           
+
         for cat in self.sorted_cats:
             h = tk.Label(self.scroll_frame, text=f" {cat.upper()} ", font=('Segoe UI', 8, 'bold'), anchor="w")
-            h.pack(fill=tk.X, pady=(8,2)); self.header_widgets[cat] = h
+            h.pack(fill=tk.X, pady=(8, 2))
+            self.header_widgets[cat] = h
             for col in sorted(self.group_map[cat]):
                 v = self.vars.get(col, tk.BooleanVar(value=False))
                 self.vars[col] = v
                 cb = ttk.Checkbutton(self.scroll_frame, text=col, variable=v, command=self.update_plot,
                                      style="Alert.TCheckbutton" if self._is_critical(col) else "TCheckbutton")
-                cb.pack(anchor=tk.W, padx=12); self.cb_widgets[col] = cb
+                cb.pack(anchor=tk.W, padx=12)
+                self.cb_widgets[col] = cb
 
     def _get_category(self, n: str) -> str:
         u = n.upper()
@@ -370,35 +552,41 @@ class TelemetryApp:
             self.filter_btn.config(text="🚨 Detect Out-of-Spec Issues")
             self._filter_sensors()
         self.canvas_checklist.yview_moveto(0)
+
     def _apply_issue_filter(self):
-        for h in self.header_widgets.values(): h.pack_forget()
-        for cb in self.cb_widgets.values(): cb.pack_forget()
-        self.scroll_frame.config(height=1) 
+        for h in self.header_widgets.values():
+            h.pack_forget()
+        for cb in self.cb_widgets.values():
+            cb.pack_forget()
+        self.scroll_frame.config(height=1)
         self.scroll_frame.pack_propagate(True)
         for cat in self.sorted_cats:
-            if cat not in self.group_map: continue
+            if cat not in self.group_map:
+                continue
             issues = [col for col in self.group_map[cat] if self._is_critical(col)]
             if issues:
-                self.header_widgets[cat].pack(fill=tk.X, pady=(8,0))
-                for col in sorted(issues): self.cb_widgets[col].pack(anchor=tk.W, padx=12)
+                self.header_widgets[cat].pack(fill=tk.X, pady=(8, 0))
+                for col in sorted(issues):
+                    self.cb_widgets[col].pack(anchor=tk.W, padx=12)
         self.root.update_idletasks()
         new_bbox = self.canvas_checklist.bbox("all")
         self.canvas_checklist.configure(scrollregion=new_bbox)
         self.canvas_checklist.yview_moveto(0)
 
     def _refresh_group_buttons(self):
-        for w in self.grp_f.winfo_children(): w.destroy()
+        for w in self.grp_f.winfo_children():
+            w.destroy()
         self.grp_f.columnconfigure(0, weight=1)
         self.grp_f.columnconfigure(1, weight=0)
         self.grp_f.columnconfigure(2, weight=0)
-        
+
         for i, g in enumerate(sorted(self.custom_groups.keys())):
             btn = ttk.Button(self.grp_f, text=g, command=lambda n=g: self._apply_group(n))
-            btn.grid(row=i, column=0, sticky='ew', pady=1, padx=(1,2))
+            btn.grid(row=i, column=0, sticky='ew', pady=1, padx=(1, 2))
             sh_btn = ttk.Button(self.grp_f, text="📋", width=3, command=lambda n=g: self._share_group(n))
             sh_btn.grid(row=i, column=1, pady=1, padx=1)
             del_btn = ttk.Button(self.grp_f, text="✕", width=3, command=lambda n=g: self._delete_group(n), style="Delete.TButton")
-            del_btn.grid(row=i, column=2, pady=1, padx=(1,4))
+            del_btn.grid(row=i, column=2, pady=1, padx=(1, 4))
 
     def _share_group(self, n):
         data = {"name": n, "sensors": self.custom_groups[n]}
@@ -411,22 +599,25 @@ class TelemetryApp:
             data = json.loads(self.root.clipboard_get())
             if "name" in data and "sensors" in data:
                 self.custom_groups[data["name"]] = data["sensors"]
-                save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
+                self._save_config()
                 self._refresh_group_buttons()
                 self.show_toast(f"Imported: {data['name']}")
-        except: messagebox.showerror("Error", "Invalid Clipboard Data")
+        except:
+            messagebox.showerror("Error", "Invalid Clipboard Data")
 
     def _delete_group(self, n):
         if messagebox.askyesno("Delete", f"Delete '{n}'?"):
             if n in self.custom_groups:
                 del self.custom_groups[n]
-                save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
+                self._save_config()
                 self._refresh_group_buttons()
 
     def _apply_group(self, n):
-        for v in self.vars.values(): v.set(False)
+        for v in self.vars.values():
+            v.set(False)
         for s in self.custom_groups.get(n, []):
-            if s in self.vars: self.vars[s].set(True)
+            if s in self.vars:
+                self.vars[s].set(True)
         self.update_plot()
 
     def _save_group(self):
@@ -434,53 +625,72 @@ class TelemetryApp:
         sel = [c for c, v in self.vars.items() if v.get()]
         if sel and name:
             self.custom_groups[name] = sel
-            save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode)
-            self._refresh_group_buttons(); self.name_var.set("") 
+            self._save_config()
+            self._refresh_group_buttons()
+            self.name_var.set("")
             self.show_toast(f"Saved: {name}")
 
     def _filter_sensors(self):
-        if self.filter_active: return 
+        if self.filter_active:
+            return
         q = self.search_var.get().upper()
-        for h in self.header_widgets.values(): h.pack_forget()
-        for cb in self.cb_widgets.values(): cb.pack_forget()
+        for h in self.header_widgets.values():
+            h.pack_forget()
+        for cb in self.cb_widgets.values():
+            cb.pack_forget()
         for cat in self.sorted_cats:
-            if cat not in self.group_map: continue
+            if cat not in self.group_map:
+                continue
             m = [col for col in self.group_map[cat] if q in col.upper()]
             if m:
-                self.header_widgets[cat].pack(fill=tk.X, pady=(8,0))
-                for col in sorted(m): self.cb_widgets[col].pack(anchor=tk.W, padx=12)
+                self.header_widgets[cat].pack(fill=tk.X, pady=(8, 0))
+                for col in sorted(m):
+                    self.cb_widgets[col].pack(anchor=tk.W, padx=12)
         self.scroll_frame.update_idletasks()
         self.canvas_checklist.configure(scrollregion=self.canvas_checklist.bbox("all"))
         self.canvas_checklist.yview_moveto(0)
+
     def _import_new_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
         if path:
             try:
-                new_analyzer = TelemetryAnalyzer(path); new_analyzer.load()
-                self.analyzer = new_analyzer; self.df = self.analyzer.df
+                new_analyzer = TelemetryAnalyzer(path)
+                new_analyzer.load()
+                self.analyzer = new_analyzer
+                self.df = self.analyzer.df
                 new_cols = set(self.df.columns)
                 for col, var in list(self.vars.items()):
-                    if col not in new_cols: var.set(False)
-                self.filter_active = False 
-                self._setup_ui(); self._apply_theme_colors(); self.update_plot()
-            except Exception as e: messagebox.showerror("Error", str(e))
+                    if col not in new_cols:
+                        var.set(False)
+                self.filter_active = False
+                self._setup_ui()
+                self._apply_theme_colors()
+                self.update_plot()
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
 
     def _clear_all(self):
-        for v in self.vars.values(): v.set(False)
+        for v in self.vars.values():
+            v.set(False)
         self.update_plot()
 
     def _export(self):
         f = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG", "*.png")])
-        if f: self.fig.savefig(f, dpi=300, bbox_inches='tight', facecolor=self.fig.get_facecolor())
+        if f:
+            self.fig.savefig(f, dpi=300, bbox_inches='tight', facecolor=self.fig.get_facecolor())
 
     def _clear_cursors(self):
-        for line in self.cursor_lines: 
-            try: line.remove()
-            except: pass
+        for line in self.cursor_lines:
+            try:
+                line.remove()
+            except:
+                pass
         self.cursor_lines = []
         if self.cursor_text:
-            try: self.cursor_text.remove()
-            except: pass
+            try:
+                self.cursor_text.remove()
+            except:
+                pass
             self.cursor_text = None
 
     def _on_mouse_leave(self, event):
@@ -510,7 +720,8 @@ class TelemetryApp:
                 bbox=dict(boxstyle='round', facecolor='#252525' if self.is_dark else 'white', alpha=0.8),
                 fontsize=8, color='white' if self.is_dark else 'black')
             self.canvas_widget.draw_idle()
-        except: pass
+        except:
+            pass
 
     def update_plot(self):
         self.fig.clear()
@@ -519,16 +730,18 @@ class TelemetryApp:
         bg_color, text_color, grid_color = ("#121212", "white", "#333333") if is_dark else ("white", "black", "#e0e0e0")
         self.fig.patch.set_facecolor(bg_color)
         sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
-        
+
         if self.delta_mode and self.multi_mode:
-            ax = self.fig.add_subplot(111); ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
-            ax.text(0.5, 0.5, "Turn off Multi Mode to use Delta", 
+            ax = self.fig.add_subplot(111)
+            ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
+            ax.text(0.5, 0.5, "Turn off Multi Mode to use Delta",
                     ha='center', va='center', color='#ffcc00', fontsize=12, fontweight='bold')
             self.canvas_widget.draw_idle()
             return
 
         if not sel:
-            ax = self.fig.add_subplot(111); ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
+            ax = self.fig.add_subplot(111)
+            ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
             ax.text(0.5, 0.5, "No Sensors Selected", ha='center', va='center', color='gray')
             self.canvas_widget.draw_idle()
             return
@@ -549,49 +762,49 @@ class TelemetryApp:
             category_groups = {}
             for col in sel:
                 cat = self._get_category(col)
-                if cat not in category_groups: category_groups[cat] = []
+                if cat not in category_groups:
+                    category_groups[cat] = []
                 category_groups[cat].append(col)
-            
+
             active_cats = [c for c in self.sorted_cats if c in category_groups]
             num_plots = len(active_cats)
             axes = []
             color_idx = 0
-            
+
             for i, cat_name in enumerate(active_cats):
-                ax = self.fig.add_subplot(num_plots, 1, i+1, sharex=axes[0] if axes else None)
+                ax = self.fig.add_subplot(num_plots, 1, i + 1, sharex=axes[0] if axes else None)
                 axes.append(ax)
                 ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
                 ax.set_ylabel(cat_name, color=text_color, fontsize=8, fontweight='bold')
-                
+
                 for col_name in category_groups[cat_name]:
                     main_color = colors[color_idx % len(colors)]
-                    
-                    
                     if self.compare_mode and self.ref_df is not None and col_name in self.ref_df.columns:
-                        ax.plot(self.ref_df.index, self.ref_df[col_name], 
+                        ax.plot(self.ref_df.index, self.ref_df[col_name],
                                 ls='--', lw=1, alpha=0.4, color=main_color, zorder=2)
-                    
                     series = self.df[col_name].dropna()
                     stats = f"Avg: {series.mean():.2f}"
-                    ax.plot(self.df.index, self.df[col_name], label=f"{col_name} ({stats})", 
+                    ax.plot(self.df.index, self.df[col_name], label=f"{col_name} ({stats})",
                             lw=1.5, color=main_color, zorder=3)
                     _draw_spec_zones(ax, col_name)
                     color_idx += 1
-                
+
                 ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
                 ax.tick_params(colors=text_color, labelsize=8)
                 l = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1), fontsize='x-small', frameon=False)
                 if l:
-                    for t in l.get_texts(): t.set_color(text_color)
-            for ax in axes[:-1]: plt.setp(ax.get_xticklabels(), visible=False)
+                    for t in l.get_texts():
+                        t.set_color(text_color)
+            for ax in axes[:-1]:
+                plt.setp(ax.get_xticklabels(), visible=False)
             self.fig.subplots_adjust(right=0.80, hspace=0.3)
 
         elif self.delta_mode and len(sel) >= 2:
-            ax = self.fig.add_subplot(111); ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
+            ax = self.fig.add_subplot(111)
+            ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
             s1, s2 = self.df[sel[0]], self.df[sel[1]]
             delta = (s1 - s2).abs()
-            
-            
+
             if self.compare_mode and self.ref_df is not None and sel[0] in self.ref_df.columns and sel[1] in self.ref_df.columns:
                 ref_delta = (self.ref_df[sel[0]] - self.ref_df[sel[1]]).abs()
                 ax.plot(self.ref_df.index, ref_delta, color="#ffcc00", ls='--', alpha=0.3, lw=1, zorder=1)
@@ -603,36 +816,47 @@ class TelemetryApp:
             ax.tick_params(colors=text_color, labelsize=8)
             l = ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize='x-small', frameon=False)
             if l:
-                for t in l.get_texts(): t.set_color(text_color)
+                for t in l.get_texts():
+                    t.set_color(text_color)
         else:
-            ax = self.fig.add_subplot(111); ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
+            ax = self.fig.add_subplot(111)
+            ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
             for i, col_name in enumerate(sel):
                 main_color = colors[i % len(colors)]
-                
                 if self.compare_mode and self.ref_df is not None and col_name in self.ref_df.columns:
-                    ax.plot(self.ref_df.index, self.ref_df[col_name], 
+                    ax.plot(self.ref_df.index, self.ref_df[col_name],
                             ls='--', lw=1, alpha=0.4, color=main_color, zorder=2)
-
                 ax.plot(self.df.index, self.df[col_name], label=col_name, lw=1.5, color=main_color, zorder=3)
                 _draw_spec_zones(ax, col_name)
-            
+
             ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
             ax.tick_params(colors=text_color, labelsize=8)
             l = ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize='x-small', frameon=False)
             if l:
-                for t in l.get_texts(): t.set_color(text_color)
+                for t in l.get_texts():
+                    t.set_color(text_color)
 
         self.fig.tight_layout()
-        if self.multi_mode: self.fig.subplots_adjust(right=0.80)
-        else: self.fig.subplots_adjust(right=0.82)
+        if self.multi_mode:
+            self.fig.subplots_adjust(right=0.80)
+        else:
+            self.fig.subplots_adjust(right=0.82)
         self.canvas_widget.draw_idle()
 
+
 if __name__ == "__main__":
-    root = tk.Tk(); root.withdraw()
+    root = tk.Tk()
+    root.withdraw()
     path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
     if path:
         try:
-            a = TelemetryAnalyzer(path); a.load()
-            root.deiconify(); TelemetryApp(root, a); root.mainloop()
-        except Exception as e: messagebox.showerror("Error", str(e)); root.destroy()
-    else: root.destroy()
+            a = TelemetryAnalyzer(path)
+            a.load()
+            root.deiconify()
+            TelemetryApp(root, a)
+            root.mainloop()
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+            root.destroy()
+    else:
+        root.destroy()
