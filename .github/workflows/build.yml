@@ -42,9 +42,19 @@ jobs:
         Compress-Archive -Path release_pkg/* -DestinationPath "HD2_LOG_VIEWER_${{ github.ref_name }}.zip"
 
     - name: Release
+      id: create_release
       uses: softprops/action-gh-release@v2
       with:
         files: HD2_LOG_VIEWER_${{ github.ref_name }}.zip
-        draft: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: VirusTotal Scan
+      uses: crazy-max/ghaction-virustotal@v5
+      with:
+        vt_api_key: ${{ secrets.VT_API_KEY }}
+        files: HD2_LOG_VIEWER_${{ github.ref_name }}.zip
+        update_release_body: true
+        request_rate: 4 
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
