@@ -8,7 +8,8 @@
 ---
 
 ## 🚀 Installation & Deployment
-
+<!-- LATEST_RELEASE_START -->
+<!-- LATEST_RELEASE_END -->
 ### 📦 Option 1: Compiled Executable (Recommended for Users)
 1.  Go to the **[Latest Release](../../releases/latest)** page.
 2.  Download the `HD2_LOG_VIEWER_latest.zip` archive.
@@ -33,7 +34,6 @@
     ```
 3.  **Launch the Application:**
     ```bash
-    # Runs the app without a background console window
     pythonw HD2_LOG_VIEWER.pyw
     ```
 

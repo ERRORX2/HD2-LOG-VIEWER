@@ -17,12 +17,13 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        ref: main
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
@@ -49,6 +50,7 @@ jobs:
         $newInfo += "- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)`n"
         $newInfo += "- **Security Scan:** [Verify on VirusTotal]($vt_search)`n"
         
+        # This matches the hidden anchors in your README.md
         $pattern = "(?s).*?"
         $replacement = "`n$newInfo`n"
         
@@ -56,21 +58,20 @@ jobs:
         Set-Content README.md $content
 
     - name: Commit Updated README
+      shell: pwsh
       run: |
-        
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        
-        
         git config --global core.autocrlf false
         
-        
-        git checkout main
-        git pull origin main
-        
         git add README.md
-        git commit -m "docs: update latest release info in README [skip ci]" || echo "No changes to commit"
-        git push origin main
+        $status = git status --porcelain
+        if ($status) {
+            git commit -m "docs: update latest release info in README [skip ci]"
+            git push origin HEAD:main
+        } else {
+            Write-Host "No changes to README.md"
+        }
 
     - name: Prepare Release Package
       shell: pwsh
@@ -84,7 +85,7 @@ jobs:
       id: create_release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'manual-build' }}
+        tag_name: ${{ github.ref_name }}
         files: HD2_LOG_VIEWER_latest.zip
         draft: false
         prerelease: false
