@@ -9,7 +9,7 @@
 
 ## 🚀 Installation & Deployment
 <!-- LATEST_RELEASE_START -->
-### 🚀 Latest Release: v1.2.2 (2026-04-23)
+### 🚀 Latest Release: v1.2.3 (2026-04-23)
 - **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
 - **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/home/upload)
 
