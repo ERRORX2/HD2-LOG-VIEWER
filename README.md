@@ -11,7 +11,7 @@
 <!-- LATEST_RELEASE_START -->
 ### 🚀 Latest Release: v1.3.2 (2026-04-25)
 - **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
-- **Security Scan:** VirusTotal scan pending...
+- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/file/57dab3884998d5b65b962fbddd0095c69b9d558a34ce0dfca006f5a7d13e8e8d?nocache=1)
 
 <!-- LATEST_RELEASE_END -->
 ### 📦 Option 1: Compiled Executable (Recommended for Users)
