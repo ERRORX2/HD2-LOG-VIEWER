@@ -61,6 +61,62 @@
         "delta_mode": false,
         "ignored_version": "",
         "updates_disabled": false,
-        "time_mode": true
+        "time_mode": true,
+        "thresholds": {
+            "temp_limits": {
+                "HOTSPOT": 95.0,
+                "HOT SPOT": 95.0,
+                "GPU": 88.0,
+                "VRAM": 95.0,
+                "MEMORY": 95.0,
+                "VRM": 110.0,
+                "CORE": 95.0,
+                "TDIE": 95.0,
+                "TCTL": 95.0,
+                "CCD": 90.0,
+                "CCX": 90.0,
+                "IOD": 95.0,
+                "SOCKET": 95.0,
+                "COOLANT": 45.0,
+                "LIQUID": 45.0,
+                "WATER": 45.0,
+                "SSD": 65.0,
+                "NVME": 65.0,
+                "HDD": 55.0,
+                "CHIPSET": 90.0,
+                "PCH": 90.0,
+                "MOSFET": 110.0,
+                "CHOKE": 110.0
+            },
+            "volt_rails": {
+                "+12V": [
+                    11.4,
+                    12.6
+                ],
+                "+5V": [
+                    4.75,
+                    5.25
+                ],
+                "+3.3V": [
+                    3.13,
+                    3.46
+                ]
+            },
+            "misc": {
+                "cpu_volt_lo": 0.8,
+                "cpu_volt_hi": 1.55,
+                "gpu_volt_max": 1.1,
+                "dram_volt_lo": 1.1,
+                "dram_volt_hi": 1.55,
+                "fan_min_rpm": 400.0,
+                "cpu_power_max": 300.0,
+                "gpu_power_max": 500.0,
+                "total_power_max": 600.0,
+                "latency_max_ms": 50.0,
+                "frametime_max_ms": 100.0,
+                "fps_min": 10.0,
+                "coolant_max": 45.0
+            }
+        }
     }
 }

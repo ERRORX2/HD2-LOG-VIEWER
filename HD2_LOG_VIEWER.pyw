@@ -16,13 +16,16 @@ import urllib.request
 import urllib.error
 import webbrowser
 
+import re
+
 GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.3.1"  # DO NOT FORGET TO CHANGE
+CURRENT_VERSION = "1.3.2" # Bump this to match your GitHub release tag when you ship
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
-                ignored_version: str = "", updates_disabled: bool = False, time_mode: bool = False):
+                ignored_version: str = "", updates_disabled: bool = False, time_mode: bool = False,
+                thresholds: Dict = None):
     config = {
         "groups": groups_dict,
         "settings": {
@@ -31,7 +34,8 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
             "delta_mode": delta_mode,
             "ignored_version": ignored_version,
             "updates_disabled": updates_disabled,
-            "time_mode": time_mode
+            "time_mode": time_mode,
+            "thresholds": thresholds or {}
         }
     }
     try:
@@ -40,9 +44,9 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
     except:
         pass
 
-def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool]:
+def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict]:
     if not Path(GROUPS_FILE).exists():
-        return {}, False, False, False, "", False, False
+        return {}, False, False, False, "", False, False, {}
     try:
         with open(GROUPS_FILE, 'r') as f:
             data = json.load(f)
@@ -54,10 +58,11 @@ def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool]:
                         sets.get("delta_mode", False),
                         sets.get("ignored_version", ""),
                         sets.get("updates_disabled", False),
-                        sets.get("time_mode", False))
-            return data if isinstance(data, dict) else {}, False, False, False, "", False, False
+                        sets.get("time_mode", False),
+                        sets.get("thresholds", {}))
+            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}
     except:
-        return {}, False, False, False, "", False, False
+        return {}, False, False, False, "", False, False, {}
 
 
 def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: bool = False,
@@ -85,7 +90,7 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
                     root.after(0, lambda: _toast("✅ You're on the latest version!"))
                 return
 
-            # A newer version exists — check if we should suppress
+            
             if silent:
                 if updates_disabled:
                     return
@@ -112,7 +117,7 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
         dialog.grab_set()
         dialog.attributes("-topmost", True)
 
-        # Pull theme from app reference
+        
         try:
             is_dark = root._app_ref.is_dark
         except Exception:
@@ -165,17 +170,17 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
 
 
 class TelemetryAnalyzer:
-    # Candidate column names to check for time data, in priority order
+    
     TIME_COLUMN_CANDIDATES = ['time', 'date', 'timestamp', 'elapsed', 'clock', '#']
-    # Common time formats to attempt parsing
+
     TIME_FORMATS = ['%H:%M:%S', '%H:%M:%S.%f', '%Y-%m-%d %H:%M:%S',
                     '%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S', '%H:%M']
 
     def __init__(self, file_path: str):
         self.path = Path(file_path)
         self.df: pd.DataFrame = pd.DataFrame()
-        self.time_col: str = ""           # Name of detected time column, "" if none
-        self.time_series = None           # Parsed datetime/timedelta Series, None if unavailable
+        self.time_col: str = ""           
+        self.time_series = None           
 
     def load(self) -> None:
         success = False
@@ -201,12 +206,12 @@ class TelemetryAnalyzer:
             raise ValueError("File Load Failed")
         self.df.columns = [str(c).strip().replace('\ufeff', '') for c in self.df.columns]
 
-        # Detect time column BEFORE numeric conversion so raw strings are still intact
+       
         self._detect_time_column()
 
         for col in self.df.columns:
             if col == self.time_col:
-                continue  # Keep time column as-is
+                continue  
             try:
                 s = self.df[col].astype(str).str.replace(',', '.', regex=False)
                 cleaned = s.str.replace(r'[^\d\.\-eE]', '', regex=True)
@@ -224,7 +229,7 @@ class TelemetryAnalyzer:
                 break
         self.df.ffill(inplace=True)
 
-        # Keep time_series in sync with df after row trimming
+        
         if self.time_series is not None:
             self.time_series = self.time_series.iloc[:len(self.df)].reset_index(drop=True)
         self.df = self.df.reset_index(drop=True)
@@ -233,7 +238,7 @@ class TelemetryAnalyzer:
         """Find the best time column and parse it into self.time_series."""
         cols_lower = {c.lower().strip(): c for c in self.df.columns}
 
-        # Find the first candidate column that exists
+        
         found_col = None
         for candidate in self.TIME_COLUMN_CANDIDATES:
             if candidate in cols_lower:
@@ -279,7 +284,8 @@ class TelemetryApp:
         self.compare_mode = False
 
         (self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
-         self.ignored_version, self.updates_disabled, self.time_mode) = load_config()
+         self.ignored_version, self.updates_disabled, self.time_mode,
+         saved_thresholds) = load_config()
 
         self.vars = {}
         self.cb_widgets = {}
@@ -289,8 +295,59 @@ class TelemetryApp:
         self.cursor_text = None
         self.filter_active = False
 
-        self.temp_limits = {'HOTSPOT': 95.0, 'CORE': 100.0, 'GPU': 88.0, 'MEMORY': 105.0, 'VRM': 110.0, 'SSD': 80.0}
-        self.volt_rails = {'+12V': (11.4, 12.6), '+5V': (4.75, 5.25), '+3.3V': (3.13, 3.46)}
+        # Default thresholds — these are the fallback values
+        self._default_temp_limits = {
+            'HOTSPOT': 95.0, 'HOT SPOT': 95.0,
+            'GPU': 88.0,
+            'VRAM': 95.0, 'MEMORY': 95.0,
+            'VRM': 110.0,
+            'CORE': 95.0,
+            'TDIE': 95.0, 'TCTL': 95.0,
+            'CCD': 90.0, 'CCX': 90.0,
+            'IOD': 95.0,
+            'SOCKET': 95.0,
+            'COOLANT': 45.0, 'LIQUID': 45.0, 'WATER': 45.0,
+            'SSD': 65.0, 'NVME': 65.0, 'HDD': 55.0,
+            'CHIPSET': 90.0, 'PCH': 90.0,
+            'MOSFET': 110.0, 'CHOKE': 110.0,
+        }
+        self._default_volt_rails = {
+            '+12V': (11.4, 12.6),
+            '+5V':  (4.75, 5.25),
+            '+3.3V': (3.13, 3.46),
+        }
+        self._default_misc = {
+            'cpu_volt_lo': 0.8,  'cpu_volt_hi': 1.55,
+            'gpu_volt_max': 1.1,
+            'dram_volt_lo': 1.1, 'dram_volt_hi': 1.55,
+            'fan_min_rpm': 400.0,
+            'cpu_power_max': 300.0,
+            'gpu_power_max': 500.0,
+            'total_power_max': 600.0,
+            'latency_max_ms': 50.0,
+            'frametime_max_ms': 100.0,
+            'fps_min': 10.0,
+            'coolant_max': 45.0,
+        }
+
+        # Apply saved overrides on top of defaults
+        self.temp_limits  = {**self._default_temp_limits,
+                             **saved_thresholds.get('temp_limits', {})}
+        self.volt_rails   = {k: tuple(v) for k, v in
+                             {**self._default_volt_rails,
+                              **saved_thresholds.get('volt_rails', {})}.items()}
+        misc              = {**self._default_misc,
+                             **saved_thresholds.get('misc', {})}
+        self.cpu_volt_range  = (misc['cpu_volt_lo'],  misc['cpu_volt_hi'])
+        self.gpu_volt_max    = misc['gpu_volt_max']
+        self.dram_volt_range = (misc['dram_volt_lo'], misc['dram_volt_hi'])
+        self.fan_min_rpm     = misc['fan_min_rpm']
+        self.cpu_power_max   = misc['cpu_power_max']
+        self.gpu_power_max   = misc['gpu_power_max']
+        self.total_power_max = misc['total_power_max']
+        self.latency_max_ms  = misc['latency_max_ms']
+        self.frametime_max_ms = misc['frametime_max_ms']
+        self.fps_min         = misc['fps_min']
 
         # Expose app reference so check_for_updates can call show_toast
         self.root._app_ref = self
@@ -314,7 +371,226 @@ class TelemetryApp:
         plt.close('all')
         self.root.quit()
         self.root.destroy()
-        os._exit(0)
+        
+
+    def _open_limits_editor(self):
+        """Open a scrollable dialog to view and edit all detection thresholds."""
+        is_dark = self.is_dark
+        bg  = "#121212" if is_dark else "#f8f9fa"
+        fg  = "#e0e0e0" if is_dark else "#212529"
+        bg2 = "#1e1e1e" if is_dark else "#ffffff"
+        accent = "#1f6aa5" if is_dark else "#3498db"
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Detection Limits Editor")
+        dialog.geometry("560x680")
+        dialog.minsize(480, 500)
+        dialog.grab_set()
+        dialog.configure(bg=bg)
+        self.root.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 280
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 340
+        dialog.geometry(f"560x680+{x}+{y}")
+
+        # Scrollable body
+        outer = tk.Frame(dialog, bg=bg)
+        outer.pack(fill=tk.BOTH, expand=True, padx=10, pady=(10, 0))
+        canvas = tk.Canvas(outer, bg=bg, highlightthickness=0)
+        sb = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        body = tk.Frame(canvas, bg=bg)
+        win_id = canvas.create_window((0, 0), window=body, anchor="nw")
+        body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(win_id, width=e.width))
+        canvas.configure(yscrollcommand=sb.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        sb.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>",
+            lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
+        canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
+
+        entries = {}  
+
+        def section(text):
+            tk.Label(body, text=text, bg=bg, fg=accent,
+                     font=('Segoe UI', 9, 'bold')).pack(fill=tk.X, pady=(14, 2), padx=4)
+            tk.Frame(body, bg=accent, height=1).pack(fill=tk.X, padx=4)
+
+        def row(label, key, value, unit=""):
+            f = tk.Frame(body, bg=bg)
+            f.pack(fill=tk.X, pady=2, padx=8)
+            tk.Label(f, text=label, bg=bg, fg=fg, font=('Segoe UI', 9),
+                     width=30, anchor='w').pack(side=tk.LEFT)
+            var = tk.StringVar(value=str(value))
+            entries[key] = var
+            tk.Entry(f, textvariable=var, width=8, bg=bg2, fg=fg,
+                     insertbackground=fg, relief='flat',
+                     highlightthickness=1, highlightbackground="#444").pack(side=tk.LEFT, padx=4)
+            if unit:
+                tk.Label(f, text=unit, bg=bg, fg="#888",
+                         font=('Segoe UI', 8)).pack(side=tk.LEFT)
+
+        def range_row(label, key_lo, key_hi, val_lo, val_hi, unit=""):
+            f = tk.Frame(body, bg=bg)
+            f.pack(fill=tk.X, pady=2, padx=8)
+            tk.Label(f, text=label, bg=bg, fg=fg, font=('Segoe UI', 9),
+                     width=30, anchor='w').pack(side=tk.LEFT)
+            var_lo = tk.StringVar(value=str(val_lo))
+            var_hi = tk.StringVar(value=str(val_hi))
+            entries[key_lo] = var_lo
+            entries[key_hi] = var_hi
+            tk.Entry(f, textvariable=var_lo, width=6, bg=bg2, fg=fg,
+                     insertbackground=fg, relief='flat',
+                     highlightthickness=1, highlightbackground="#444").pack(side=tk.LEFT, padx=(4,1))
+            tk.Label(f, text="–", bg=bg, fg=fg).pack(side=tk.LEFT, padx=1)
+            tk.Entry(f, textvariable=var_hi, width=6, bg=bg2, fg=fg,
+                     insertbackground=fg, relief='flat',
+                     highlightthickness=1, highlightbackground="#444").pack(side=tk.LEFT, padx=(1,4))
+            if unit:
+                tk.Label(f, text=unit, bg=bg, fg="#888",
+                         font=('Segoe UI', 8)).pack(side=tk.LEFT)
+
+        # ── Temperature limits ────────────────────────────────────────────────
+        section("Temperature Limits (°C)")
+        temp_display = [
+            ("GPU Core",         "GPU"),
+            ("GPU Hotspot",      "HOTSPOT"),
+            ("GPU VRAM",         "VRAM"),
+            ("GPU VRM",          "VRM"),
+            ("CPU Core",         "CORE"),
+            ("CPU Tdie/Tctl",    "TDIE"),
+            ("CPU CCD/CCX",      "CCD"),
+            ("CPU Socket",       "SOCKET"),
+            ("Coolant/Liquid",   "COOLANT"),
+            ("SSD/NVMe",         "SSD"),
+            ("HDD",              "HDD"),
+            ("Chipset/PCH",      "CHIPSET"),
+            ("MOSFET/Choke",     "MOSFET"),
+        ]
+        for label, key in temp_display:
+            if key in self.temp_limits:
+                row(label, f"temp_{key}", self.temp_limits[key], "°C")
+
+        #  Voltage rails ─────────────────────────────────────────────────────
+        section("Voltage Rails — Safe Range (V)")
+        range_row("+12V Rail",   "rail_12v_lo",   "rail_12v_hi",   *self.volt_rails['+12V'],  "V")
+        range_row("+5V Rail",    "rail_5v_lo",    "rail_5v_hi",    *self.volt_rails['+5V'],   "V")
+        range_row("+3.3V Rail",  "rail_33v_lo",   "rail_33v_hi",   *self.volt_rails['+3.3V'], "V")
+
+        #  Component voltages ────────────────────────────────────────────────
+        section("Component Voltages")
+        range_row("CPU Vcore",   "cpu_volt_lo", "cpu_volt_hi", *self.cpu_volt_range,  "V")
+        range_row("DRAM Voltage","dram_volt_lo","dram_volt_hi",*self.dram_volt_range, "V")
+        row("GPU Core Voltage max", "gpu_volt_max", self.gpu_volt_max, "V")
+
+        #  Power limits ──────────────────────────────────────────────────────
+        section("Power Draw Limits (W)")
+        row("CPU max power",    "cpu_power_max",   self.cpu_power_max,   "W")
+        row("GPU max power",    "gpu_power_max",   self.gpu_power_max,   "W")
+        row("Total system max", "total_power_max", self.total_power_max, "W")
+
+        #  Frame / latency ───────────────────────────────────────────────────
+        section("Frame Timing & Latency")
+        row("Frame time spike (1% high)", "frametime_max_ms", self.frametime_max_ms, "ms")
+        row("Min FPS (0.1% low)",         "fps_min",          self.fps_min,          "FPS")
+        row("Latency max",                "latency_max_ms",   self.latency_max_ms,   "ms")
+
+        #  Misc ──────────────────────────────────────────────────────────────
+        section("Miscellaneous")
+        row("Fan stall threshold", "fan_min_rpm", self.fan_min_rpm, "RPM")
+
+        #  Buttons ───────────────────────────────────────────────────────────
+        btn_f = tk.Frame(dialog, bg=bg)
+        btn_f.pack(fill=tk.X, padx=10, pady=10)
+
+        def _apply():
+            try:
+                # Temperatures
+                for label, key in temp_display:
+                    if f"temp_{key}" in entries:
+                        val = float(entries[f"temp_{key}"].get())
+                        self.temp_limits[key] = val
+                        # Mirror aliases
+                        if key == 'HOTSPOT':  self.temp_limits['HOT SPOT'] = val
+                        if key == 'TDIE':     self.temp_limits['TCTL'] = val
+                        if key == 'CCD':      self.temp_limits['CCX'] = val
+                        if key == 'COOLANT':
+                            self.temp_limits['LIQUID'] = val
+                            self.temp_limits['WATER']  = val
+                        if key == 'SSD':      self.temp_limits['NVME'] = val
+                        if key == 'CHIPSET':  self.temp_limits['PCH']  = val
+                        if key == 'MOSFET':   self.temp_limits['CHOKE'] = val
+
+                # Volt rails
+                self.volt_rails['+12V']  = (float(entries['rail_12v_lo'].get()),
+                                             float(entries['rail_12v_hi'].get()))
+                self.volt_rails['+5V']   = (float(entries['rail_5v_lo'].get()),
+                                             float(entries['rail_5v_hi'].get()))
+                self.volt_rails['+3.3V'] = (float(entries['rail_33v_lo'].get()),
+                                             float(entries['rail_33v_hi'].get()))
+
+                # Component voltages
+                self.cpu_volt_range  = (float(entries['cpu_volt_lo'].get()),
+                                        float(entries['cpu_volt_hi'].get()))
+                self.dram_volt_range = (float(entries['dram_volt_lo'].get()),
+                                        float(entries['dram_volt_hi'].get()))
+                self.gpu_volt_max    = float(entries['gpu_volt_max'].get())
+
+                # Power
+                self.cpu_power_max   = float(entries['cpu_power_max'].get())
+                self.gpu_power_max   = float(entries['gpu_power_max'].get())
+                self.total_power_max = float(entries['total_power_max'].get())
+
+                # Frame / latency
+                self.frametime_max_ms = float(entries['frametime_max_ms'].get())
+                self.fps_min          = float(entries['fps_min'].get())
+                self.latency_max_ms   = float(entries['latency_max_ms'].get())
+
+                # Misc
+                self.fan_min_rpm = float(entries['fan_min_rpm'].get())
+
+                self._save_config()
+                # Rebuild checklist so alert styling updates immediately
+                self._build_checklist()
+                self._apply_theme_colors()
+                if self.filter_active:
+                    self._apply_issue_filter()
+                else:
+                    self._filter_sensors()
+                self.show_toast("Limits saved")
+                dialog.destroy()
+
+            except ValueError as e:
+                messagebox.showerror("Invalid Value",
+                    f"All values must be numbers.\n\nDetail: {e}", parent=dialog)
+
+        def _reset():
+            if messagebox.askyesno("Reset to Defaults",
+                    "Reset all limits to their default values?", parent=dialog):
+                self.temp_limits  = dict(self._default_temp_limits)
+                self.volt_rails   = dict(self._default_volt_rails)
+                misc = self._default_misc
+                self.cpu_volt_range   = (misc['cpu_volt_lo'],  misc['cpu_volt_hi'])
+                self.gpu_volt_max     = misc['gpu_volt_max']
+                self.dram_volt_range  = (misc['dram_volt_lo'], misc['dram_volt_hi'])
+                self.fan_min_rpm      = misc['fan_min_rpm']
+                self.cpu_power_max    = misc['cpu_power_max']
+                self.gpu_power_max    = misc['gpu_power_max']
+                self.total_power_max  = misc['total_power_max']
+                self.latency_max_ms   = misc['latency_max_ms']
+                self.frametime_max_ms = misc['frametime_max_ms']
+                self.fps_min          = misc['fps_min']
+                self._save_config()
+                self._build_checklist()
+                self._apply_theme_colors()
+                self.show_toast("Limits reset to defaults")
+                dialog.destroy()
+
+        ttk.Button(btn_f, text="Save & Apply", command=_apply,
+                   style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0,4))
+        ttk.Button(btn_f, text="Reset to Defaults",
+                   command=_reset).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(4,4))
+        ttk.Button(btn_f, text="Cancel",
+                   command=dialog.destroy).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(4,0))
 
     def _on_ignore_version(self, version: str):
         self.ignored_version = version
@@ -327,8 +603,28 @@ class TelemetryApp:
         self.show_toast("Update notifications disabled")
 
     def _save_config(self):
+        misc = {
+            'cpu_volt_lo':     self.cpu_volt_range[0],
+            'cpu_volt_hi':     self.cpu_volt_range[1],
+            'gpu_volt_max':    self.gpu_volt_max,
+            'dram_volt_lo':    self.dram_volt_range[0],
+            'dram_volt_hi':    self.dram_volt_range[1],
+            'fan_min_rpm':     self.fan_min_rpm,
+            'cpu_power_max':   self.cpu_power_max,
+            'gpu_power_max':   self.gpu_power_max,
+            'total_power_max': self.total_power_max,
+            'latency_max_ms':  self.latency_max_ms,
+            'frametime_max_ms': self.frametime_max_ms,
+            'fps_min':         self.fps_min,
+            'coolant_max':     self.temp_limits.get('COOLANT', 45.0),
+        }
+        thresholds = {
+            'temp_limits': self.temp_limits,
+            'volt_rails':  {k: list(v) for k, v in self.volt_rails.items()},
+            'misc':        misc,
+        }
         save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
-                    self.ignored_version, self.updates_disabled, self.time_mode)
+                    self.ignored_version, self.updates_disabled, self.time_mode, thresholds)
 
     def show_toast(self, message: str, duration: int = 2000):
         toast = tk.Toplevel(self.root)
@@ -441,31 +737,168 @@ class TelemetryApp:
             hdr.configure(bg=bg, fg="#3498db" if self.is_dark else "#2c3e50")
 
     def _is_critical(self, col: str) -> bool:
-        name = col.upper()
+        name = col.upper().replace(" ", "")
+        raw  = col.upper()
         series = self.df[col].dropna()
         if series.empty:
             return False
-        if "FREQUENCY LIMIT" in name:
+
+
+        EXCLUDE_RAW = [
+            '[MB]', '[GB]', '[A]', 'PWM', '(STATIC)',
+            'THERMAL LIMIT', 'POWER LIMIT', 'TDC LIMIT', 'PPT LIMIT', 'EDC LIMIT',
+            'FREQUENCY LIMIT', 'CLOCK LIMIT',
+        ]
+        EXCLUDE_NAME = [
+            'FREQUENCYLIMIT', 'ACCUMULATED', 'EFFECTIVECLOCK', 'REQUESTEDCLOCK',
+            'TARGETTEMP', 'LIMITTEMP', 'THERMALLIMIT', 'POWERLIMIT',
+            'CURRENTLIMIT', 'TDCLIMIT', 'PPTLIMIT', 'EDCLIMIT',
+        ]
+        if any(x in raw for x in EXCLUDE_RAW) or any(x in name for x in EXCLUDE_NAME):
             return False
-        if "ACCUMULATED" in name:
+
+        #  Frame timing / FPS ────────────────────────────────────────────────
+        if any(x in raw for x in ['FRAME TIME', 'FRAMETIME']):
+            if '1% HIGH' in raw and '0.1%' not in raw:
+                return series.max() > self.frametime_max_ms
             return False
-        if "[%]" in name and "LIMIT" in name:
-            return series.max() >= 99.0
-        for rail, (low, high) in self.volt_rails.items():
-            if rail in name:
-                if series.min() < low or series.max() > high:
+
+        if any(x in raw for x in ['FRAMERATE', ' FPS', 'FRAMES PER SECOND']):
+            if '0.1%' in raw and 'LOW' in raw and 'PRESENTED' not in raw:
+                return series.min() <= self.fps_min and series.max() > 0
+            return False
+
+        # Render pipeline latency
+        if any(x in raw for x in ['LATENCY', 'RENDER TIME', 'PRESENT TIME',
+                                   'GPU BUSY', 'CPU BUSY', 'DISPLAY LATENCY']):
+            return series.max() > self.latency_max_ms
+
+        # All other [ms] columns (animation error etc.) — skip
+        if '[MS]' in raw:
+            return False
+
+        # Active throttling flags ───────────────────────────────────────────
+        # HWinfo logs these as boolean-like 0/1 or 0/100 when throttling is active
+        THROTTLE_KW = ['THROTTLING', 'RELIABILITY', 'PERFCAP']
+        if any(x in raw for x in THROTTLE_KW):
+            return series.max() >= 0.9
+
+        # Performance Limit [Yes/No] — only flag thermal and power limiters
+        # Skip utilization, SLI sync, voltage limiters (too noisy / system-specific)
+        if 'YES/NO' in raw:
+            if any(x in raw for x in ['THERMAL', 'POWER']) and 'PERFORMANCE LIMIT' in raw:
+                return series.max() >= 1.0
+            return False
+
+        #  [%] columns ───────────────────────────────────────────────────────
+        if '[%]' in raw:
+            if 'LIMIT' in raw:
+                return False   # headroom values, not breach indicators
+            # Memory load (system RAM or GPU VRAM)
+            if any(x in raw for x in ['MEMORY', 'RAM']) and any(x in raw for x in ['USAGE', 'LOAD']):
+                return series.max() >= 95.0
+            # Skip video engine / decode / encode usage — not diagnostic
+            if any(x in raw for x in ['DECODE', 'ENCODE', 'VIDEO', 'MEDIA']):
+                return False
+
+        #  WHEA / hardware errors ────────────────────────────────────────────
+        # Any nonzero WHEA count = system instability regardless of hardware type
+        WHEA_KW = ['WHEA', 'MACHINE CHECK', 'MCE', 'MCA']
+        if any(x in raw for x in WHEA_KW):
+            return series.max() > 0
+
+        #  Drive / memory errors ─────────────────────────────────────────────
+        ERROR_KW = ['ECC', 'BAD SECTOR', 'REALLOCATED', 'PENDING SECTOR',
+                    'UNCORRECTABLE', 'CRC ERROR']
+        if any(x in raw for x in ERROR_KW):
+            return series.max() > 0
+
+        #  Power draw ────────────────────────────────────────────────────────
+        # Only flag actual draw sensors, not configured limits or static values
+        if '[W]' in raw and 'STATIC' not in raw and 'LIMIT' not in raw and 'PPT' not in raw:
+            if 'CPU' in raw and series.max() > self.cpu_power_max:
+                return True
+            if 'GPU' in raw and series.max() > self.gpu_power_max:
+                return True
+            if 'TOTAL' in raw and series.max() > self.total_power_max:
+                return True
+
+        #  CPU power limit saturation ────────────────────────────────────────
+        # Flag if actual CPU power draw is consistently at or above its own PPT limit
+        # This means the CPU is power-throttling regardless of temp
+        if 'CPU PPT' in raw and '[W]' in raw and 'LIMIT' not in raw:
+            ppt_limit_col = next(
+                (c for c in self.df.columns if 'PPT' in c.upper() and 'LIMIT' in c.upper()
+                 and '[W]' in c.upper() and 'CPU' in c.upper()), None)
+            if ppt_limit_col is not None:
+                limit_val = self.df[ppt_limit_col].dropna().mean()
+                if limit_val > 0 and series.mean() >= limit_val * 0.98:
                     return True
-        limit_keywords = ['THROTTLING', 'RELIABILITY', 'PERFCAP']
-        if any(x in name for x in limit_keywords):
-            if series.max() >= 0.9:
+
+        #  Voltage rails (+12V, +5V, +3.3V) ────────────────────────────────
+        RAIL_SKIP = ['GPU PCIE', 'PCIE', '12VHPWR', 'INPUT']
+        for rail, (low, high) in self.volt_rails.items():
+            if rail in raw:
+                if any(x.upper() in raw for x in RAIL_SKIP):
+                    continue
+                after = raw.split(rail)[-1].upper()
+                if any(x in after for x in ['INPUT', 'PCIE', 'HPWR']):
+                    continue
+                return series.min() < low or series.max() > high
+
+        if any(x in raw for x in ['VCORE', 'CPU CORE VOLTAGE', 'VID']):
+            lo, hi = self.cpu_volt_range
+            return series.min() < lo or series.max() > hi
+
+        if any(x in raw for x in ['VCORE', 'CPU CORE VOLTAGE']):
+            if series.max() - series.min() > 0.3:
                 return True
-        if any(x in name for x in ['TEMP', '°C', 'HOTSPOT']):
+
+        if any(x in raw for x in ['DRAM VOLTAGE', 'DIMM VOLTAGE', 'MEMORY VOLTAGE',
+                                   'VDIMM', 'VDDQ']):
+            lo, hi = self.dram_volt_range
+            return series.min() < lo or series.max() > hi
+
+        if 'GPU CORE VOLTAGE' in raw and 'GFX' not in raw and 'VDDCR' not in raw:
+            return series.max() > self.gpu_volt_max
+
+        #  Clock speed instability ───────────────────────────────────────────
+        # If a CPU/GPU clock has very high variance relative to its mean it may
+        # indicate throttling even when temperatures look acceptable.
+        # Only check primary clocks, not per-core or effective/requested variants
+        if any(x in raw for x in ['CPU CLOCK', 'GPU CLOCK', 'CORE CLOCK']):
+            if not any(x in raw for x in ['EFFECTIVE', 'REQUESTED', 'CORE #', 'LIMIT']):
+                if series.mean() > 100 and (series.std() / series.mean()) > 0.35:
+                    return True
+
+        #  Fan speeds ───────────────────────────────────────────────────────
+        # Only flag if the fan was actually spinning (not zero-RPM curve or disconnected)
+        if any(x in raw for x in ['RPM', 'FAN SPEED']):
+            if series.max() > self.fan_min_rpm and series.min() < self.fan_min_rpm:
+                return True
+
+        #  Temperatures ─────────────────────────────────────────────────────
+        if any(x in name for x in ['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL']):
+            matched_limit = None
+            matched_len   = 0
             for key, limit in self.temp_limits.items():
-                if key in name:
-                    if series.max() >= limit:
-                        return True
-            if series.max() >= 95.0:
-                return True
+                key_norm = key.upper().replace(" ", "")
+                if key_norm in name and len(key_norm) > matched_len:
+                    matched_limit = limit
+                    matched_len   = len(key_norm)
+            if matched_limit is not None:
+                return series.max() >= matched_limit
+            return series.max() >= 90.0   # conservative fallback for unknown sensors
+
+        #  Drive health (SMART) ──────────────────────────────────────────────
+        SMART_KW = ['HEALTH', 'WEAR LEVEL', 'REMAINING LIFE', 'ENDURANCE REMAINING']
+        if any(x in raw for x in SMART_KW):
+            return series.min() < 10      # <10% remaining life
+
+        #  Physical memory load ──────────────────────────────────────────────
+        if 'PHYSICAL MEMORY' in raw and 'LOAD' in raw:
+            return series.max() >= 95.0
+
         return False
 
     def _setup_ui(self):
@@ -552,7 +985,8 @@ class TelemetryApp:
         search_f.pack(fill=tk.BOTH, expand=True, pady=5)
 
         self.filter_btn = ttk.Button(search_f, text="🚨 Detect Out-of-Spec Issues", style="Issue.TButton", command=self._toggle_filter)
-        self.filter_btn.pack(fill=tk.X, pady=(0, 8))
+        self.filter_btn.pack(fill=tk.X, pady=(0, 4))
+        ttk.Button(search_f, text="⚙ Edit Detection Limits", command=self._open_limits_editor).pack(fill=tk.X, pady=(0, 8))
 
         search_top = ttk.Frame(search_f)
         search_top.pack(fill=tk.X, pady=(0, 5))
@@ -902,7 +1336,7 @@ class TelemetryApp:
     def _filter_sensors(self):
         if self.filter_active:
             return
-        q = self.search_var.get().upper()
+        q = self.search_var.get().upper().replace(" ", "")
         for h in self.header_widgets.values():
             h.pack_forget()
         for cb in self.cb_widgets.values():
@@ -910,7 +1344,7 @@ class TelemetryApp:
         for cat in self.sorted_cats:
             if cat not in self.group_map:
                 continue
-            m = [col for col in self.group_map[cat] if q in col.upper()]
+            m = [col for col in self.group_map[cat] if q in col.upper().replace(" ", "")]
             if m:
                 self.header_widgets[cat].pack(fill=tk.X, pady=(8, 0))
                 for col in sorted(m):
