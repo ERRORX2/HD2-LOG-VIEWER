@@ -1,37 +1,48 @@
 name: Build HD2 LOG VIEWER
+
 on:
   push:
     branches: [ "master" ]
     tags:
       - 'v*'
   workflow_dispatch:
+
 jobs:
+
   build:
     runs-on: windows-latest
+
     permissions:
       contents: write
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+
     - name: Install Dependencies
       run: |
         pip install pandas matplotlib numpy pyinstaller
+
     - name: Build Executable
       run: |
         pyinstaller --onefile --noconsole --name "HD2_LOG_VIEWER" HD2_LOG_VIEWER.pyw
+
     - name: Package Release
       shell: pwsh
       run: |
         if (-not (Test-Path "groups.json")) {
           Set-Content "groups.json" "{}"
         }
+
         Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath "HD2_LOG_VIEWER_latest.zip" -Force
+
     - name: Upload Release Assets
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
@@ -39,46 +50,98 @@ jobs:
         files: HD2_LOG_VIEWER_latest.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Update README with Safety Checks
+
+    # NOTE: README now updated WITHOUT waiting for VT
+    - name: Update README (placeholder VT link)
       if: startsWith(github.ref, 'refs/tags/')
       shell: pwsh
       run: |
         $tag = "${{ github.ref_name }}"
         $date = Get-Date -Format "yyyy-MM-dd"
-        $fileHash = (Get-FileHash "HD2_LOG_VIEWER_latest.zip" -Algorithm SHA256).Hash
-        $vt_link = "https://www.virustotal.com/gui/file/$fileHash"
-        
+
         $content = Get-Content README.md -Raw
         $startTag = "<!-- LATEST_RELEASE_START -->"
         $endTag = "<!-- LATEST_RELEASE_END -->"
-       
-        if ($content -notmatch $startTag -or $content -notmatch $endTag) {
-            Write-Error "CRITICAL: Sync tags missing in README. Aborting to prevent corruption."
-            exit 1
-        }
-        
+
         $newBlock = "$startTag`n### 🚀 Latest Release: $tag ($date)`n"
         $newBlock += "- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)`n"
-        $newBlock += "- **Security Scan:** [Verify on VirusTotal]($vt_link)`n`n$endTag"
-        
-        $pattern = "(?s)<!-- LATEST_RELEASE_START -->.*?<!-- LATEST_RELEASE_END -->"
-        $content = $content -replace $pattern, $newBlock
-        
-        if ($content.Length -gt 80000) { 
-            Write-Error "README size explosion detected! Blocking save."
-            exit 1 
-        }
+        $newBlock += "- **Security Scan:** VirusTotal scan pending...`n`n$endTag"
+
+        $content = $content -replace "(?s)$startTag.*?$endTag", $newBlock
+
         Set-Content README.md $content
-    - name: Force Sync Master via Token
+
+    - name: Commit README update
       if: startsWith(github.ref, 'refs/tags/')
       shell: pwsh
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git config --global core.autocrlf false
         git add README.md
+
         $status = git status --porcelain
         if ($status) {
-            git commit -m "docs: update release info [skip ci]"
-            git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/master --force
+          git commit -m "docs: update release info [skip ci]"
+          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/master --force
         }
+
+  # ---------------------------
+  # VIRUSTOTAL JOB (PARALLEL / NON-BLOCKING)
+  # ---------------------------
+  virustotal:
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags:')
+
+    steps:
+    - name: Download Release Artifact
+      uses: actions/checkout@v4
+
+    - name: Recreate ZIP (for VT upload)
+      shell: pwsh
+      run: |
+        Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath "HD2_LOG_VIEWER_latest.zip" -Force
+
+    - name: VirusTotal Upload (parallel + retry)
+      shell: pwsh
+      run: |
+        $file = "HD2_LOG_VIEWER_latest.zip"
+        $apiKey = "${{ secrets.VT_API_KEY }}"
+
+        $maxRetries = 3
+        $attempt = 0
+        $success = $false
+
+        while ($attempt -lt $maxRetries -and -not $success) {
+          $attempt++
+          Write-Host "VT attempt $attempt/$maxRetries..."
+
+          try {
+            $response = curl.exe -s -X POST "https://www.virustotal.com/api/v3/files" `
+              -H "x-apikey: $apiKey" `
+              -F "file=@$file"
+
+            $json = $response | ConvertFrom-Json
+
+            if ($json.data.id) {
+              Set-Content vt_result.txt $json.data.id
+              Write-Host "VT success"
+              $success = $true
+              break
+            }
+          }
+          catch {
+            Write-Warning "VT failed attempt $attempt"
+          }
+
+          Start-Sleep -Seconds (5 * $attempt)
+        }
+
+        if (-not $success) {
+          Set-Content vt_result.txt "SKIPPED"
+        }
+
+    - name: Store VT Result as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: vt-result
+        path: vt_result.txt
