@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write # Required for uploading release assets and committing updates
+  contents: write
 
 jobs:
   build:
@@ -20,8 +20,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -36,68 +34,71 @@ jobs:
         run: |
           pyinstaller --onefile --noconsole --name "HD2_LOG_VIEWER" HD2_LOG_VIEWER.pyw
       
-      - name: Package Release Assets (ZIP)
+      - name: Create Release ZIP & Update README
+        id: release
         shell: pwsh
+        env:
+          GITHUB_TAG: ${{ github.ref_name }} # e.g., v1.3.3
         run: |
-          $tag = "${{ github.ref_name }}"
-          if ($tag -like 'refs/tags/*') { $tag = $tag[11..] } # Extract version from tag like v1.2 -> 1.2
-          else { $tag = (Get-Date -Format "yyyy-MM-dd").Replace('-', '') } # Fallback for push/dispatch
-      
-          Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath "release_${tag}.zip" -Force
+          # Extract version without 'v' prefix
+          $tag = $env:GITHUB_TAG.TrimStart('v')
           
-          # Upload to Release
-          $content = Get-Content README.md -Raw
-          if ($tag -like 'refs/tags/*') {
+          # Use actual tag for release links if available, else use date
+          $releaseName = "release_${tag}.zip"
+          Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath $releaseName -Force
+          
+          # Update README only on push/tag events (not workflow_dispatch)
+          if ($env:GITHUB_TAG -ne '') {
+            Write-Host "Updating README for tag: $env:GITHUB_TAG"
             $startTag = "<!-- LATEST_RELEASE_START -->"
-            $endTag = "<<!-- LATEST_RELEASE_END -->" 
-            $newBlock = "$startTag`n### 🚀 Latest Release: $tag ($(Get-Date -Format 'yyyy-MM-dd'))`n"
-            $newBlock += "- **Download:** [release_${tag}.zip](../../releases/tag/${{ github.ref_name }})`n"
+            $endTag = "<!-- LATEST_RELEASE_END -->" 
+            
+            $date = Get-Date -Format 'yyyy-MM-dd'
+            $releaseUrl = "../../releases/tag/${{ github.ref_name }}"
+            
+            $newBlock = "$startTag`n### 🚀 Latest Release: v${{ github.ref_name }} ($date)`n"
+            $newBlock += "- **Download:** [$releaseName]($releaseUrl)`n"
             $newBlock += "- **Security:** Scan complete in parallel job...`n`n$endTag"
             
+            $content = Get-Content README.md -Raw
             $content = $content -replace "(?s)$startTag.*?$endTag", $newBlock
             Set-Content README.md $content
+            
+            # Commit changes
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add README.md
+            if (git status --porcelain) {
+              git commit -m "docs: update release info for ${{ github.ref_name }} [skip ci]"
+            }
+          } else {
+            Write-Host "No tag found on branch, skipping README update."
           }
 
       - name: Upload Release Assets
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && steps.release.outputs.TAG != ''
         uses: softprops/action-gh-release@v2
         with:
           files: release_${{ github.ref_name }}.zip
           body: "HD2 LOG VIEWER release artifact."
           draft: false
-          prerelease: false
       
       - name: Upload Artifact for VT Scan
-        if: always() # Runs even if tag is missing, but needed only if VT needs to run
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-output-for-vt
           path: |
             dist/HD2_LOG_VIEWER.exe
             groups.json
-      
-      - name: Commit README update (if applicable)
-        if: always() && startsWith(github.ref, 'refs/tags/')
-        shell: pwsh
-        run: |
-          # Note: This step ensures documentation is updated.
-          # Using GitHub token for push in workflow bot config is safer.
-          $status = git status --porcelain
-          if ($status) {
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add README.md
-            git commit -m "docs: update release info for ${{ github.ref_name }} [skip ci]"
-          }
 
   virustotal:
     runs-on: windows-latest
+    needs: [build]
+    
+    if: startsWith(github.ref, 'refs/tags/') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     permissions:
-      contents: read # Does not need write access
-    
-    needs: [build] # Runs SEQUENTIALLY after build completes successfully or fails
-    
-    if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push' || (startsWith(github.ref, 'refs/tags/') && github.event_name == 'workflow_dispatch')
+      contents: read
     
     steps:
       - name: Download Build Output from Artifact
@@ -120,19 +121,15 @@ jobs:
             Write-Host "VT attempt $attempt/$maxRetries..."
             
             try {
-              # Use Invoke-RestMethod or curl equivalent logic if necessary, but PowerShell API is robust.
-              # Using Invoke-WebRequest for simplicity in VT API calls.
               $response = Invoke-RestMethod -Uri "https://www.virustotal.com/api/v3/files" `
                 -Headers @{ "x-apikey" = $apiKey } `
                 -Method Post `
                 -InFile $file
                 
-              # Extract ID for result storage
               if ($response.data.id) {
                 Set-Content vt_result.txt $response.data.id
                 Write-Host "VT Scan Success: $($response.data.id)"
                 $success = $true
-                break
               }
             }
             catch {
@@ -148,7 +145,7 @@ jobs:
             Set-Content vt_result.txt "SKIPPED_SCAN_FAILED"
           }
 
-      - name: Upload VT Result as Artifact (for visibility)
+      - name: Upload VT Result as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: virus-total-result
