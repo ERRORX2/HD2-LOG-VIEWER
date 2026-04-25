@@ -191,16 +191,5 @@ jobs:
           git add README.md
           git commit -m "docs: update release ${{ github.ref_name }} [skip ci]" || exit 0
 
-          $tries = 0
-          while ($tries -lt 3) {
-            $tries++
-
-            git pull --rebase origin master
-            git push origin master
-
-            if ($LASTEXITCODE -eq 0) {
-              break
-            }
-
-            Start-Sleep -Seconds 3
-          }
+          git pull --rebase origin master
+          git push origin HEAD:master
