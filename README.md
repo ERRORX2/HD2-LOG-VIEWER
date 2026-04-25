@@ -57,6 +57,8 @@ Because this utility is bundled using PyInstaller, some antivirus engines may fl
 * **🚨 Intelligent Diagnostics:** Automatic flagging of thermal throttling and voltage sag.
 * **🌗 Adaptive UI:** Full Dark and Light mode support.
 * **🔔 Update Notifications:** Automatic update checks on startup with options to ignore a specific version or disable notifications entirely.
+* **🕒 Time Mode: Switch the graph between raw data ticks and actual time (H:MM:SS).
+* **📋 Preset Management: Save sensor groups, rename them with the pencil icon, and share them via clipboard.
 
 ---
 
