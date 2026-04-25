@@ -9,10 +9,11 @@
 
 ## 🚀 Installation & Deployment
 <!-- LATEST_RELEASE_START -->
-### 🚀 Latest Release: v1.3.2 (2026-04-25)
-- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)
-- **Security Scan:** [Verify on VirusTotal](https://www.virustotal.com/gui/file/57dab3884998d5b65b962fbddd0095c69b9d558a34ce0dfca006f5a7d13e8e8d?nocache=1)
+### 🚀 Latest Release: v1.3.3 (2026-04-25)
 
+- Download: [release_release_v1.3.3.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.3.3/release_v1.3.3.zip)
+- SHA256: AAFF9F1AC57A33B580DE11EF6546A9405F23452BD138531F2F32AE6B21C0E535
+- VirusTotal: VT FAILED | https://www.virustotal.com/gui/file/AAFF9F1AC57A33B580DE11EF6546A9405F23452BD138531F2F32AE6B21C0E535
 <!-- LATEST_RELEASE_END -->
 ### 📦 Option 1: Compiled Executable (Recommended for Users)
 1.  Go to the **[Latest Release](../../releases/latest)** page.
@@ -72,6 +73,7 @@ Because this utility is bundled using PyInstaller, some antivirus engines may fl
 
 ## ⚖️ License
 MIT License - Developed for the hardware enthusiast community.
+
 
 
 
