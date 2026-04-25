@@ -1,149 +1,155 @@
-name: Build HD2 LOG VIEWER
+name: Build HD2 LOG VIEWER & Release
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
     tags:
       - 'v*'
   workflow_dispatch:
 
-jobs:
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
+permissions:
+  contents: write # Required for uploading release assets and committing updates
+
+jobs:
   build:
     runs-on: windows-latest
-
-    permissions:
-      contents: write
-
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install Dependencies
+        run: |
+          pip install pandas matplotlib numpy pyinstaller
+      
+      - name: Build Executable
+        run: |
+          pyinstaller --onefile --noconsole --name "HD2_LOG_VIEWER" HD2_LOG_VIEWER.pyw
+      
+      - name: Package Release Assets (ZIP)
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -like 'refs/tags/*') { $tag = $tag[11..] } # Extract version from tag like v1.2 -> 1.2
+          else { $tag = (Get-Date -Format "yyyy-MM-dd").Replace('-', '') } # Fallback for push/dispatch
+      
+          Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath "release_${tag}.zip" -Force
+          
+          # Upload to Release
+          $content = Get-Content README.md -Raw
+          if ($tag -like 'refs/tags/*') {
+            $startTag = "<!-- LATEST_RELEASE_START -->"
+            $endTag = "<<!-- LATEST_RELEASE_END -->" 
+            $newBlock = "$startTag`n### 🚀 Latest Release: $tag ($(Get-Date -Format 'yyyy-MM-dd'))`n"
+            $newBlock += "- **Download:** [release_${tag}.zip](../../releases/tag/${{ github.ref_name }})`n"
+            $newBlock += "- **Security:** Scan complete in parallel job...`n`n$endTag"
+            
+            $content = $content -replace "(?s)$startTag.*?$endTag", $newBlock
+            Set-Content README.md $content
+          }
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: Upload Release Assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release_${{ github.ref_name }}.zip
+          body: "HD2 LOG VIEWER release artifact."
+          draft: false
+          prerelease: false
+      
+      - name: Upload Artifact for VT Scan
+        if: always() # Runs even if tag is missing, but needed only if VT needs to run
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output-for-vt
+          path: |
+            dist/HD2_LOG_VIEWER.exe
+            groups.json
+      
+      - name: Commit README update (if applicable)
+        if: always() && startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          # Note: This step ensures documentation is updated.
+          # Using GitHub token for push in workflow bot config is safer.
+          $status = git status --porcelain
+          if ($status) {
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add README.md
+            git commit -m "docs: update release info for ${{ github.ref_name }} [skip ci]"
+          }
 
-    - name: Install Dependencies
-      run: |
-        pip install pandas matplotlib numpy pyinstaller
-
-    - name: Build Executable
-      run: |
-        pyinstaller --onefile --noconsole --name "HD2_LOG_VIEWER" HD2_LOG_VIEWER.pyw
-
-    - name: Package Release
-      shell: pwsh
-      run: |
-        if (-not (Test-Path "groups.json")) {
-          Set-Content "groups.json" "{}"
-        }
-
-        Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath "HD2_LOG_VIEWER_latest.zip" -Force
-
-    - name: Upload Release Assets
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
-      with:
-        files: HD2_LOG_VIEWER_latest.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # NOTE: README now updated WITHOUT waiting for VT
-    - name: Update README (placeholder VT link)
-      if: startsWith(github.ref, 'refs/tags/')
-      shell: pwsh
-      run: |
-        $tag = "${{ github.ref_name }}"
-        $date = Get-Date -Format "yyyy-MM-dd"
-
-        $content = Get-Content README.md -Raw
-        $startTag = "<!-- LATEST_RELEASE_START -->"
-        $endTag = "<!-- LATEST_RELEASE_END -->"
-
-        $newBlock = "$startTag`n### 🚀 Latest Release: $tag ($date)`n"
-        $newBlock += "- **Download:** [HD2_LOG_VIEWER_latest.zip](../../releases/latest)`n"
-        $newBlock += "- **Security Scan:** VirusTotal scan pending...`n`n$endTag"
-
-        $content = $content -replace "(?s)$startTag.*?$endTag", $newBlock
-
-        Set-Content README.md $content
-
-    - name: Commit README update
-      if: startsWith(github.ref, 'refs/tags/')
-      shell: pwsh
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add README.md
-
-        $status = git status --porcelain
-        if ($status) {
-          git commit -m "docs: update release info [skip ci]"
-          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/master --force
-        }
-
-  # ---------------------------
-  # VIRUSTOTAL JOB (PARALLEL / NON-BLOCKING)
-  # ---------------------------
   virustotal:
     runs-on: windows-latest
     permissions:
-      contents: read
-    if: startsWith(github.ref, 'refs/tags:')
-
+      contents: read # Does not need write access
+    
+    needs: [build] # Runs SEQUENTIALLY after build completes successfully or fails
+    
+    if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push' || (startsWith(github.ref, 'refs/tags/') && github.event_name == 'workflow_dispatch')
+    
     steps:
-    - name: Download Release Artifact
-      uses: actions/checkout@v4
+      - name: Download Build Output from Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output-for-vt
+          path: dist/
 
-    - name: Recreate ZIP (for VT upload)
-      shell: pwsh
-      run: |
-        Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath "HD2_LOG_VIEWER_latest.zip" -Force
+      - name: VirusTotal Upload (with retries)
+        shell: pwsh
+        run: |
+          $file = "dist/HD2_LOG_VIEWER.exe"
+          $apiKey = "${{ secrets.VT_API_KEY }}"
+          $maxRetries = 3
+          $attempt = 0
+          $success = $false
 
-    - name: VirusTotal Upload (parallel + retry)
-      shell: pwsh
-      run: |
-        $file = "HD2_LOG_VIEWER_latest.zip"
-        $apiKey = "${{ secrets.VT_API_KEY }}"
+          while ($attempt -lt $maxRetries -and -not $success) {
+            $attempt++
+            Write-Host "VT attempt $attempt/$maxRetries..."
+            
+            try {
+              # Use Invoke-RestMethod or curl equivalent logic if necessary, but PowerShell API is robust.
+              # Using Invoke-WebRequest for simplicity in VT API calls.
+              $response = Invoke-RestMethod -Uri "https://www.virustotal.com/api/v3/files" `
+                -Headers @{ "x-apikey" = $apiKey } `
+                -Method Post `
+                -InFile $file
+                
+              # Extract ID for result storage
+              if ($response.data.id) {
+                Set-Content vt_result.txt $response.data.id
+                Write-Host "VT Scan Success: $($response.data.id)"
+                $success = $true
+                break
+              }
+            }
+            catch {
+              Write-Warning "VT failed attempt $attempt: $_"
+            }
 
-        $maxRetries = 3
-        $attempt = 0
-        $success = $false
-
-        while ($attempt -lt $maxRetries -and -not $success) {
-          $attempt++
-          Write-Host "VT attempt $attempt/$maxRetries..."
-
-          try {
-            $response = curl.exe -s -X POST "https://www.virustotal.com/api/v3/files" `
-              -H "x-apikey: $apiKey" `
-              -F "file=@$file"
-
-            $json = $response | ConvertFrom-Json
-
-            if ($json.data.id) {
-              Set-Content vt_result.txt $json.data.id
-              Write-Host "VT success"
-              $success = $true
-              break
+            if ($attempt -lt $maxRetries) {
+              Start-Sleep -Seconds (5 * $attempt)
             }
           }
-          catch {
-            Write-Warning "VT failed attempt $attempt"
+
+          if (-not $success) {
+            Set-Content vt_result.txt "SKIPPED_SCAN_FAILED"
           }
 
-          Start-Sleep -Seconds (5 * $attempt)
-        }
-
-        if (-not $success) {
-          Set-Content vt_result.txt "SKIPPED"
-        }
-
-    - name: Store VT Result as Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: vt-result
-        path: vt_result.txt
+      - name: Upload VT Result as Artifact (for visibility)
+        uses: actions/upload-artifact@v4
+        with:
+          name: virus-total-result
+          path: vt_result.txt

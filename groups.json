@@ -57,11 +57,12 @@
     },
     "settings": {
         "dark_mode": true,
-        "multi_mode": true,
+        "multi_mode": false,
         "delta_mode": false,
         "ignored_version": "",
         "updates_disabled": false,
         "time_mode": true,
+        "heatmap_mode": false,
         "thresholds": {
             "temp_limits": {
                 "HOTSPOT": 95.0,

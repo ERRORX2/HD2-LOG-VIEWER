@@ -19,13 +19,13 @@ import webbrowser
 import re
 
 GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.3.2" # Bump this to match your GitHub release tag when you ship
+CURRENT_VERSION = "1.3.3"  # BUMP
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
                 ignored_version: str = "", updates_disabled: bool = False, time_mode: bool = False,
-                thresholds: Dict = None):
+                thresholds: Dict = None, heatmap_mode: bool = False):
     config = {
         "groups": groups_dict,
         "settings": {
@@ -35,6 +35,7 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
             "ignored_version": ignored_version,
             "updates_disabled": updates_disabled,
             "time_mode": time_mode,
+            "heatmap_mode": heatmap_mode,
             "thresholds": thresholds or {}
         }
     }
@@ -44,9 +45,9 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
     except:
         pass
 
-def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict]:
+def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool]:
     if not Path(GROUPS_FILE).exists():
-        return {}, False, False, False, "", False, False, {}
+        return {}, False, False, False, "", False, False, {}, False
     try:
         with open(GROUPS_FILE, 'r') as f:
             data = json.load(f)
@@ -59,10 +60,11 @@ def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict]:
                         sets.get("ignored_version", ""),
                         sets.get("updates_disabled", False),
                         sets.get("time_mode", False),
-                        sets.get("thresholds", {}))
-            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}
+                        sets.get("thresholds", {}),
+                        sets.get("heatmap_mode", False))
+            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False
     except:
-        return {}, False, False, False, "", False, False, {}
+        return {}, False, False, False, "", False, False, {}, False
 
 
 def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: bool = False,
@@ -90,7 +92,7 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
                     root.after(0, lambda: _toast("✅ You're on the latest version!"))
                 return
 
-            
+            # A newer version exists — check if we should suppress
             if silent:
                 if updates_disabled:
                     return
@@ -117,7 +119,7 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
         dialog.grab_set()
         dialog.attributes("-topmost", True)
 
-        
+        # Pull theme from app reference
         try:
             is_dark = root._app_ref.is_dark
         except Exception:
@@ -170,17 +172,17 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
 
 
 class TelemetryAnalyzer:
-    
+    # Candidate column names to check for time data, in priority order
     TIME_COLUMN_CANDIDATES = ['time', 'date', 'timestamp', 'elapsed', 'clock', '#']
-
+    # Common time formats to attempt parsing
     TIME_FORMATS = ['%H:%M:%S', '%H:%M:%S.%f', '%Y-%m-%d %H:%M:%S',
                     '%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S', '%H:%M']
 
     def __init__(self, file_path: str):
         self.path = Path(file_path)
         self.df: pd.DataFrame = pd.DataFrame()
-        self.time_col: str = ""           
-        self.time_series = None           
+        self.time_col: str = ""           # Name of detected time column, "" if none
+        self.time_series = None           # Parsed datetime/timedelta Series, None if unavailable
 
     def load(self) -> None:
         success = False
@@ -206,12 +208,12 @@ class TelemetryAnalyzer:
             raise ValueError("File Load Failed")
         self.df.columns = [str(c).strip().replace('\ufeff', '') for c in self.df.columns]
 
-       
+        # Detect time column BEFORE numeric conversion so raw strings are still intact
         self._detect_time_column()
 
         for col in self.df.columns:
             if col == self.time_col:
-                continue  
+                continue  # Keep time column as-is
             try:
                 s = self.df[col].astype(str).str.replace(',', '.', regex=False)
                 cleaned = s.str.replace(r'[^\d\.\-eE]', '', regex=True)
@@ -229,7 +231,7 @@ class TelemetryAnalyzer:
                 break
         self.df.ffill(inplace=True)
 
-        
+        # Keep time_series in sync with df after row trimming
         if self.time_series is not None:
             self.time_series = self.time_series.iloc[:len(self.df)].reset_index(drop=True)
         self.df = self.df.reset_index(drop=True)
@@ -238,7 +240,7 @@ class TelemetryAnalyzer:
         """Find the best time column and parse it into self.time_series."""
         cols_lower = {c.lower().strip(): c for c in self.df.columns}
 
-        
+        # Find the first candidate column that exists
         found_col = None
         for candidate in self.TIME_COLUMN_CANDIDATES:
             if candidate in cols_lower:
@@ -265,7 +267,7 @@ class TelemetryAnalyzer:
 
         # Last resort: try pandas auto-inference
         try:
-            parsed = pd.to_datetime(raw, infer_datetime_format=True, errors='coerce')
+            parsed = pd.to_datetime(raw, errors='coerce')
             if parsed.notna().sum() > len(parsed) * 0.8:
                 self.time_col = found_col
                 first = parsed.dropna().iloc[0]
@@ -285,7 +287,7 @@ class TelemetryApp:
 
         (self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
          self.ignored_version, self.updates_disabled, self.time_mode,
-         saved_thresholds) = load_config()
+         saved_thresholds, self.heatmap_mode) = load_config()
 
         self.vars = {}
         self.cb_widgets = {}
@@ -371,7 +373,7 @@ class TelemetryApp:
         plt.close('all')
         self.root.quit()
         self.root.destroy()
-        
+        os._exit(0)
 
     def _open_limits_editor(self):
         """Open a scrollable dialog to view and edit all detection thresholds."""
@@ -408,7 +410,7 @@ class TelemetryApp:
             lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
         canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
 
-        entries = {}  
+        entries = {}  # key -> StringVar
 
         def section(text):
             tk.Label(body, text=text, bg=bg, fg=accent,
@@ -449,7 +451,7 @@ class TelemetryApp:
                 tk.Label(f, text=unit, bg=bg, fg="#888",
                          font=('Segoe UI', 8)).pack(side=tk.LEFT)
 
-        # ── Temperature limits ────────────────────────────────────────────────
+        # Temperature limits ────────────────────────────────────────────────
         section("Temperature Limits (°C)")
         temp_display = [
             ("GPU Core",         "GPU"),
@@ -470,46 +472,51 @@ class TelemetryApp:
             if key in self.temp_limits:
                 row(label, f"temp_{key}", self.temp_limits[key], "°C")
 
-        #  Voltage rails ─────────────────────────────────────────────────────
+        # Voltage rails ─────────────────────────────────────────────────────
         section("Voltage Rails — Safe Range (V)")
         range_row("+12V Rail",   "rail_12v_lo",   "rail_12v_hi",   *self.volt_rails['+12V'],  "V")
         range_row("+5V Rail",    "rail_5v_lo",    "rail_5v_hi",    *self.volt_rails['+5V'],   "V")
         range_row("+3.3V Rail",  "rail_33v_lo",   "rail_33v_hi",   *self.volt_rails['+3.3V'], "V")
 
-        #  Component voltages ────────────────────────────────────────────────
+        # Component voltages ────────────────────────────────────────────────
         section("Component Voltages")
         range_row("CPU Vcore",   "cpu_volt_lo", "cpu_volt_hi", *self.cpu_volt_range,  "V")
         range_row("DRAM Voltage","dram_volt_lo","dram_volt_hi",*self.dram_volt_range, "V")
         row("GPU Core Voltage max", "gpu_volt_max", self.gpu_volt_max, "V")
 
-        #  Power limits ──────────────────────────────────────────────────────
+        # Power limits ──────────────────────────────────────────────────────
         section("Power Draw Limits (W)")
         row("CPU max power",    "cpu_power_max",   self.cpu_power_max,   "W")
         row("GPU max power",    "gpu_power_max",   self.gpu_power_max,   "W")
         row("Total system max", "total_power_max", self.total_power_max, "W")
 
-        #  Frame / latency ───────────────────────────────────────────────────
+        # Frame / latency ───────────────────────────────────────────────────
         section("Frame Timing & Latency")
         row("Frame time spike (1% high)", "frametime_max_ms", self.frametime_max_ms, "ms")
         row("Min FPS (0.1% low)",         "fps_min",          self.fps_min,          "FPS")
         row("Latency max",                "latency_max_ms",   self.latency_max_ms,   "ms")
 
-        #  Misc ──────────────────────────────────────────────────────────────
+        # Misc ──────────────────────────────────────────────────────────────
         section("Miscellaneous")
         row("Fan stall threshold", "fan_min_rpm", self.fan_min_rpm, "RPM")
 
-        #  Buttons ───────────────────────────────────────────────────────────
+        # Buttons + live save ───────────────────────────────────────────────
         btn_f = tk.Frame(dialog, bg=bg)
         btn_f.pack(fill=tk.X, padx=10, pady=10)
 
-        def _apply():
+        status_var = tk.StringVar(value="")
+        status_lbl = tk.Label(dialog, textvariable=status_var, bg=bg,
+                              font=('Segoe UI', 8), fg="#888")
+        status_lbl.pack(pady=(0, 4))
+
+        def _try_apply(show_toast=False, close=False):
+            """Parse all fields and apply if all valid. Called on every keystroke."""
             try:
                 # Temperatures
                 for label, key in temp_display:
                     if f"temp_{key}" in entries:
                         val = float(entries[f"temp_{key}"].get())
                         self.temp_limits[key] = val
-                        # Mirror aliases
                         if key == 'HOTSPOT':  self.temp_limits['HOT SPOT'] = val
                         if key == 'TDIE':     self.temp_limits['TCTL'] = val
                         if key == 'CCD':      self.temp_limits['CCX'] = val
@@ -548,20 +555,37 @@ class TelemetryApp:
                 # Misc
                 self.fan_min_rpm = float(entries['fan_min_rpm'].get())
 
+                # All parsed OK — save and update
                 self._save_config()
-                # Rebuild checklist so alert styling updates immediately
                 self._build_checklist()
                 self._apply_theme_colors()
                 if self.filter_active:
                     self._apply_issue_filter()
                 else:
                     self._filter_sensors()
-                self.show_toast("Limits saved")
-                dialog.destroy()
+                self.update_plot()
+                status_var.set("✔ Saved")
+                status_lbl.config(fg="#2ecc71")
 
-            except ValueError as e:
-                messagebox.showerror("Invalid Value",
-                    f"All values must be numbers.\n\nDetail: {e}", parent=dialog)
+                if show_toast:
+                    self.show_toast("Limits saved")
+                if close:
+                    dialog.destroy()
+
+            except ValueError:
+                # Field mid-edit — silently ignore, just flag status
+                status_var.set("⚠ Invalid value — fix before closing")
+                status_lbl.config(fg="#e74c3c")
+
+        # Bind live save to every entry var — fires on each keystroke
+        def _on_trace(*_):
+            _try_apply()
+
+        for var in entries.values():
+            var.trace_add("write", _on_trace)
+
+        def _apply():
+            _try_apply(show_toast=True, close=True)
 
         def _reset():
             if messagebox.askyesno("Reset to Defaults",
@@ -582,6 +606,7 @@ class TelemetryApp:
                 self._save_config()
                 self._build_checklist()
                 self._apply_theme_colors()
+                self.update_plot()
                 self.show_toast("Limits reset to defaults")
                 dialog.destroy()
 
@@ -624,7 +649,8 @@ class TelemetryApp:
             'misc':        misc,
         }
         save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
-                    self.ignored_version, self.updates_disabled, self.time_mode, thresholds)
+                    self.ignored_version, self.updates_disabled, self.time_mode, thresholds,
+                    self.heatmap_mode)
 
     def show_toast(self, message: str, duration: int = 2000):
         toast = tk.Toplevel(self.root)
@@ -661,12 +687,214 @@ class TelemetryApp:
 
     def _toggle_time(self):
         if not self.analyzer.time_col:
-            self.show_toast("⚠️ No time column detected in this CSV")
+            self.show_toast("No time column detected in this CSV")
             return
         self.time_mode = not self.time_mode
         self.time_btn.config(text="🕒 Time: ON" if self.time_mode else "🕒 Time: OFF")
         self.update_plot()
         self._save_config()
+
+    def _toggle_heatmap(self):
+        self.heatmap_mode = not self.heatmap_mode
+        self.heatmap_btn.config(text="🌡 Heatmap: ON" if self.heatmap_mode else "🌡 Heatmap: OFF")
+        self.update_plot()
+        self._save_config()
+
+    def _draw_heatmap(self, sel: list):
+        """Draw a heatmap with absolute thresholds for known sensor types,
+        per-sensor normalization as fallback, and discrete color bands."""
+        is_dark = self.is_dark
+        bg_color   = "#121212" if is_dark else "white"
+        text_color = "white"   if is_dark else "black"
+        grid_color = "#2a2a2a" if is_dark else "#cccccc"
+
+        self.fig.clear()
+        self._clear_cursors()
+        self.fig.patch.set_facecolor(bg_color)
+
+        if not sel:
+            ax = self.fig.add_subplot(111)
+            ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
+            ax.text(0.5, 0.5, "No Sensors Selected", ha='center', va='center', color='gray')
+            self.canvas_widget.draw_idle()
+            return
+
+        import matplotlib.colors as mcolors
+        import matplotlib.cm as mcm
+
+        # Green covers 0.0–0.60 (safe zone), yellow 0.60–0.85 (warning), dark red 0.85–1.0 (critical)
+        band_colors = [
+            (0.00, '#1a7a3a'),   # deep green — safe
+            (0.55, '#2ecc71'),   # bright green — still safe
+            (0.60, '#f1c40f'),   # yellow — warning starts here
+            (0.80, '#e67e22'),   # orange — approaching limit
+            (0.85, '#922b21'),   # dark red — at limit
+            (1.00, '#641e16'),   # very dark red — over limit
+        ]
+        cmap_discrete = mcolors.LinearSegmentedColormap.from_list(
+            'threshold_map',
+            [(pos, col) for pos, col in band_colors],
+            N=512)
+
+        def _get_limit(col: str):
+            """Return the configured danger threshold for this sensor, or None."""
+            raw  = col.upper()
+            name = raw.replace(" ", "")
+
+            # Temperature
+            if any(x in name for x in ['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL']):
+                matched_limit = None
+                matched_len   = 0
+                for key, limit in self.temp_limits.items():
+                    key_norm = key.upper().replace(" ", "")
+                    if key_norm in name and len(key_norm) > matched_len:
+                        matched_limit = limit
+                        matched_len   = len(key_norm)
+                return matched_limit if matched_limit is not None else 90.0
+
+            # Percentage load
+            if '[%]' in raw and any(x in raw for x in ['USAGE', 'LOAD']):
+                return 95.0
+
+            # Power
+            if '[W]' in raw and 'LIMIT' not in raw and 'STATIC' not in raw:
+                if 'CPU' in raw: return self.cpu_power_max
+                if 'GPU' in raw: return self.gpu_power_max
+                if 'TOTAL' in raw: return self.total_power_max
+
+            # Frame time
+            if any(x in raw for x in ['FRAME TIME', 'FRAMETIME']):
+                return self.frametime_max_ms
+
+            # Latency
+            if any(x in raw for x in ['LATENCY', 'GPU BUSY', 'CPU BUSY']):
+                return self.latency_max_ms
+
+            return None  # No known limit — fall back to relative
+
+        def _normalize_row(col: str, data: np.ndarray) -> np.ndarray:
+            """
+            Map values to 0–1 where:
+              0.00–0.60  = green  (well below limit)
+              0.60–0.85  = yellow (approaching limit, ~75–100% of limit)
+              0.85–1.00  = dark red (at or above limit)
+            """
+            limit = _get_limit(col)
+            raw   = col.upper()
+
+            if limit is not None and limit > 0:
+                # Scale: 0 at 0, 0.85 at limit, 1.0 at limit * 1.15 (15% over)
+                # This puts the yellow band from 75%–100% of limit,
+                # and dark red kicks in at the limit itself
+                warn_start = limit * 0.75   # yellow starts here
+                # Piecewise: below warn_start → 0..0.60, warn_start..limit → 0.60..0.85, above limit → 0.85..1.0
+                result = np.where(
+                    data <= warn_start,
+                    0.60 * (data / warn_start),                         # green zone
+                    np.where(
+                        data <= limit,
+                        0.60 + 0.25 * ((data - warn_start) / (limit - warn_start)),  # yellow zone
+                        np.clip(0.85 + 0.15 * ((data - limit) / (limit * 0.15)), 0.85, 1.0)  # red zone
+                    )
+                )
+                return np.clip(result, 0.0, 1.0)
+
+            # Voltage rails — green within tolerance, yellow approaching limits, red outside
+            for rail, (lo, hi) in self.volt_rails.items():
+                if rail in raw and not any(x in raw for x in ['GPU PCIE', 'PCIE', '12VHPWR', 'INPUT']):
+                    centre   = (lo + hi) / 2
+                    half_tol = (hi - lo) / 2
+                    # Distance from centre, normalized: 0=perfect, 1=at limit edge
+                    dist = np.abs(data - centre) / half_tol
+                    return np.clip(dist * 0.85, 0.0, 1.0)  # red only if out of spec
+
+            # Fan RPM — inverted: low is bad (stall = red)
+            if 'RPM' in raw or 'FAN SPEED' in raw:
+                mx = data.max()
+                if mx > 0:
+                    inv = 1.0 - np.clip(data / mx, 0.0, 1.0)
+                    return inv * 0.85   # cap at yellow unless stalled
+                return np.zeros_like(data)
+
+            # FPS — inverted: low FPS = red, use fps_min as the danger floor
+            if 'FPS' in raw or 'FRAMERATE' in raw:
+                safe_fps = self.fps_min * 6   # e.g. 60 if fps_min=10
+                return np.clip(1.0 - (data / max(safe_fps, 1.0)), 0.0, 0.95)
+
+            # Fallback: relative per-sensor, capped at 0.85 (never full red)
+            mn, mx = data.min(), data.max()
+            if mx > mn:
+                return np.clip((data - mn) / (mx - mn) * 0.85, 0.0, 0.85)
+            return np.zeros_like(data)
+
+        matrix = []
+        labels = []
+        raw_data_map = {}
+
+        for col in sel:
+            data = self.df[col].ffill().fillna(0).values.astype(float)
+            raw_data_map[col] = data
+            matrix.append(_normalize_row(col, data))
+            # Strip unit brackets for cleaner labels
+            short = col
+            for bracket in ['[°C]', '[%]', '[MHz]', '[W]', '[V]', '[RPM]',
+                            '[ms]', '[FPS]', '[A]', '[MB]', '[GB]']:
+                short = short.replace(bracket, '').strip()
+            labels.append(short[:45])
+
+        matrix = np.array(matrix)  # (n_sensors, n_samples)
+
+        x_vals, ts, use_time = self._get_x_axis()
+
+        ax = self.fig.add_subplot(111)
+        ax.set_facecolor(bg_color)
+
+        extent = [x_vals[0], x_vals[-1], len(sel) - 0.5, -0.5]
+        ax.imshow(matrix, aspect='auto', cmap=cmap_discrete,
+                  vmin=0, vmax=1, extent=extent,
+                  interpolation='nearest', origin='upper')
+
+        # Separator lines between rows — makes individual sensors easy to track
+        for i in range(1, len(sel)):
+            ax.axhline(i - 0.5, color=grid_color, lw=1.0)
+
+        # Y axis labels
+        ax.set_yticks(range(len(labels)))
+        ax.set_yticklabels(labels, color=text_color, fontsize=7)
+        ax.tick_params(axis='y', length=0)
+
+        # X axis
+        ax.tick_params(axis='x', colors=text_color, labelsize=8)
+        if use_time:
+            import matplotlib.ticker as ticker
+            ax.xaxis.set_major_formatter(ticker.FuncFormatter(
+                lambda v, _: self._format_elapsed(v)))
+            ax.tick_params(axis='x', labelrotation=30)
+
+        # Colorbar with meaningful labels
+        sm = plt.cm.ScalarMappable(cmap=cmap_discrete,
+                                   norm=mcolors.Normalize(vmin=0, vmax=1))
+        sm.set_array([])
+        cbar = self.fig.colorbar(sm, ax=ax, fraction=0.015, pad=0.01)
+        cbar.set_ticks([0.0, 0.30, 0.60, 0.85, 1.0])
+        cbar.set_ticklabels(['Safe', 'Normal', 'Warning', 'At Limit', 'Critical'])
+        cbar.ax.yaxis.set_tick_params(color=text_color, labelsize=7)
+        cbar.outline.set_edgecolor(text_color)
+        for lbl in cbar.ax.get_yticklabels():
+            lbl.set_color(text_color)
+
+        ax.set_xlabel("Elapsed Time" if use_time else "Record Index",
+                      color=text_color, fontsize=8)
+        ax.set_title("Sensor Heatmap  —  Green: safe  |  Yellow: approaching limit  |  Red: at/above limit",
+                     color=text_color, fontsize=8, pad=6)
+
+        self.fig.tight_layout()
+        self.canvas_widget.draw_idle()
+
+        # Store for mouse hover
+        self._heatmap_matrix_raw = raw_data_map
+        self._heatmap_sel        = sel
+        self._heatmap_x_vals     = x_vals
 
     def _get_ref_x_axis(self):
         """Returns x values for the reference df, independent of current df length."""
@@ -743,7 +971,9 @@ class TelemetryApp:
         if series.empty:
             return False
 
-
+        # Exclusions ────────────────────────────────────────────────────────
+        # Never flag configured limits, headroom values, control signals, or
+        # unit-only columns that carry no diagnostic meaning on their own
         EXCLUDE_RAW = [
             '[MB]', '[GB]', '[A]', 'PWM', '(STATIC)',
             'THERMAL LIMIT', 'POWER LIMIT', 'TDC LIMIT', 'PPT LIMIT', 'EDC LIMIT',
@@ -757,7 +987,7 @@ class TelemetryApp:
         if any(x in raw for x in EXCLUDE_RAW) or any(x in name for x in EXCLUDE_NAME):
             return False
 
-        #  Frame timing / FPS ────────────────────────────────────────────────
+        # Frame timing / FPS ────────────────────────────────────────────────
         if any(x in raw for x in ['FRAME TIME', 'FRAMETIME']):
             if '1% HIGH' in raw and '0.1%' not in raw:
                 return series.max() > self.frametime_max_ms
@@ -790,7 +1020,7 @@ class TelemetryApp:
                 return series.max() >= 1.0
             return False
 
-        #  [%] columns ───────────────────────────────────────────────────────
+        # [%] columns ───────────────────────────────────────────────────────
         if '[%]' in raw:
             if 'LIMIT' in raw:
                 return False   # headroom values, not breach indicators
@@ -801,19 +1031,19 @@ class TelemetryApp:
             if any(x in raw for x in ['DECODE', 'ENCODE', 'VIDEO', 'MEDIA']):
                 return False
 
-        #  WHEA / hardware errors ────────────────────────────────────────────
+        # WHEA / hardware errors ────────────────────────────────────────────
         # Any nonzero WHEA count = system instability regardless of hardware type
         WHEA_KW = ['WHEA', 'MACHINE CHECK', 'MCE', 'MCA']
         if any(x in raw for x in WHEA_KW):
             return series.max() > 0
 
-        #  Drive / memory errors ─────────────────────────────────────────────
+        # Drive / memory errors ─────────────────────────────────────────────
         ERROR_KW = ['ECC', 'BAD SECTOR', 'REALLOCATED', 'PENDING SECTOR',
                     'UNCORRECTABLE', 'CRC ERROR']
         if any(x in raw for x in ERROR_KW):
             return series.max() > 0
 
-        #  Power draw ────────────────────────────────────────────────────────
+        # Power draw ────────────────────────────────────────────────────────
         # Only flag actual draw sensors, not configured limits or static values
         if '[W]' in raw and 'STATIC' not in raw and 'LIMIT' not in raw and 'PPT' not in raw:
             if 'CPU' in raw and series.max() > self.cpu_power_max:
@@ -823,7 +1053,7 @@ class TelemetryApp:
             if 'TOTAL' in raw and series.max() > self.total_power_max:
                 return True
 
-        #  CPU power limit saturation ────────────────────────────────────────
+        # CPU power limit saturation ────────────────────────────────────────
         # Flag if actual CPU power draw is consistently at or above its own PPT limit
         # This means the CPU is power-throttling regardless of temp
         if 'CPU PPT' in raw and '[W]' in raw and 'LIMIT' not in raw:
@@ -835,7 +1065,7 @@ class TelemetryApp:
                 if limit_val > 0 and series.mean() >= limit_val * 0.98:
                     return True
 
-        #  Voltage rails (+12V, +5V, +3.3V) ────────────────────────────────
+        # Voltage rails (+12V, +5V, +3.3V) ────────────────────────────────
         RAIL_SKIP = ['GPU PCIE', 'PCIE', '12VHPWR', 'INPUT']
         for rail, (low, high) in self.volt_rails.items():
             if rail in raw:
@@ -862,7 +1092,7 @@ class TelemetryApp:
         if 'GPU CORE VOLTAGE' in raw and 'GFX' not in raw and 'VDDCR' not in raw:
             return series.max() > self.gpu_volt_max
 
-        #  Clock speed instability ───────────────────────────────────────────
+        # Clock speed instability ───────────────────────────────────────────
         # If a CPU/GPU clock has very high variance relative to its mean it may
         # indicate throttling even when temperatures look acceptable.
         # Only check primary clocks, not per-core or effective/requested variants
@@ -871,13 +1101,13 @@ class TelemetryApp:
                 if series.mean() > 100 and (series.std() / series.mean()) > 0.35:
                     return True
 
-        #  Fan speeds ───────────────────────────────────────────────────────
+        # Fan speeds ───────────────────────────────────────────────────────
         # Only flag if the fan was actually spinning (not zero-RPM curve or disconnected)
         if any(x in raw for x in ['RPM', 'FAN SPEED']):
             if series.max() > self.fan_min_rpm and series.min() < self.fan_min_rpm:
                 return True
 
-        #  Temperatures ─────────────────────────────────────────────────────
+        # Temperatures ─────────────────────────────────────────────────────
         if any(x in name for x in ['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL']):
             matched_limit = None
             matched_len   = 0
@@ -890,12 +1120,12 @@ class TelemetryApp:
                 return series.max() >= matched_limit
             return series.max() >= 90.0   # conservative fallback for unknown sensors
 
-        #  Drive health (SMART) ──────────────────────────────────────────────
+        # Drive health (SMART) ──────────────────────────────────────────────
         SMART_KW = ['HEALTH', 'WEAR LEVEL', 'REMAINING LIFE', 'ENDURANCE REMAINING']
         if any(x in raw for x in SMART_KW):
             return series.min() < 10      # <10% remaining life
 
-        #  Physical memory load ──────────────────────────────────────────────
+        # Physical memory load ──────────────────────────────────────────────
         if 'PHYSICAL MEMORY' in raw and 'LOAD' in raw:
             return series.max() >= 95.0
 
@@ -944,10 +1174,13 @@ class TelemetryApp:
         time_label = "🕒 Time: ON" if self.time_mode else "🕒 Time: OFF"
         self.time_btn = ttk.Button(btn_row3, text=time_label, command=self._toggle_time,
                                    state="normal" if has_time else "disabled")
-        self.time_btn.pack(fill=tk.X, padx=1)
+        self.time_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        self.heatmap_btn = ttk.Button(btn_row3, text="🌡 Heatmap: ON" if self.heatmap_mode else "🌡 Heatmap: OFF",
+                                      command=self._toggle_heatmap)
+        self.heatmap_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
         if not has_time:
-            ttk.Label(btn_row3, text="No time column detected", foreground="gray",
-                      font=('Segoe UI', 7)).pack(pady=(1, 0))
+            ttk.Label(mode_f, text="No time column detected", foreground="gray",
+                      font=('Segoe UI', 7)).pack(pady=(0, 2))
 
         preset_master_f = ttk.LabelFrame(self.left, text=" Presets ", padding=5)
         preset_master_f.pack(fill=tk.X, pady=5)
@@ -1405,11 +1638,33 @@ class TelemetryApp:
             self._on_mouse_leave(event)
             return
         try:
+            # Heatmap tooltip
+            if self.heatmap_mode and hasattr(self, '_heatmap_sel') and self._heatmap_sel:
+                x_vals = self._heatmap_x_vals
+                raw_x  = event.xdata
+                raw_y  = event.ydata
+                idx = int(np.argmin(np.abs(x_vals - raw_x)))
+                sensor_idx = int(round(raw_y))
+                if 0 <= idx < len(x_vals) and 0 <= sensor_idx < len(self._heatmap_sel):
+                    col = self._heatmap_sel[sensor_idx]
+                    val = self._heatmap_matrix_raw[col][idx]
+                    self._clear_cursors()
+                    for ax in self.fig.axes:
+                        self.cursor_lines.append(ax.axvline(x=x_vals[idx],
+                            color='white' if self.is_dark else 'gray', ls='--', alpha=0.5))
+                    x_label = self._format_elapsed(x_vals[idx]) if self.time_mode else f"Rec: {idx}"
+                    txt = f"{x_label}\n{col[:35]}: {val:.2f}"
+                    self.cursor_text = self.fig.text(0.01, 0.99, txt, va='top', ha='left',
+                        bbox=dict(boxstyle='round',
+                                  facecolor='#252525' if self.is_dark else 'white', alpha=0.85),
+                        fontsize=8, color='white' if self.is_dark else 'black')
+                    self.canvas_widget.draw_idle()
+                return
+
             x_vals, ts, use_time = self._get_x_axis()
             raw_x = event.xdata
 
             if use_time:
-                # Find nearest index by elapsed seconds
                 idx = int(np.argmin(np.abs(x_vals - raw_x)))
             else:
                 idx = int(round(raw_x))
@@ -1451,6 +1706,11 @@ class TelemetryApp:
         bg_color, text_color, grid_color = ("#121212", "white", "#333333") if is_dark else ("white", "black", "#e0e0e0")
         self.fig.patch.set_facecolor(bg_color)
         sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
+
+        # Heatmap mode — takes priority over all other modes
+        if self.heatmap_mode:
+            self._draw_heatmap(sel)
+            return
 
         x_vals, ts, use_time = self._get_x_axis()
         ref_x = self._get_ref_x_axis()
