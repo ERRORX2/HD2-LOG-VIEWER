@@ -35,7 +35,7 @@ jobs:
             pip install pandas matplotlib numpy pyinstaller
           }
 
-      - name: Prepare Staging
+      - name: Prepare Artifact Folder
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifact | Out-Null
@@ -60,14 +60,12 @@ jobs:
         shell: pwsh
         run: |
           $hash = Get-FileHash "artifact\HD2_LOG_VIEWER.exe" -Algorithm SHA256
-          $hash.Hash.ToUpper() |
-            Set-Content "artifact\sha256.txt" -Encoding utf8
+          $hash.Hash.ToUpper() | Set-Content "artifact\sha256.txt" -Encoding utf8
 
       - name: Create Release ZIP
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}" -replace "refs/tags/", ""
-
           $zip = "release_$tag.zip"
 
           Compress-Archive `
@@ -75,7 +73,7 @@ jobs:
             -DestinationPath "artifact\$zip" `
             -Force
 
-          $zip | Set-Content "artifact\zipname.txt" -Encoding utf8
+          Set-Content "artifact\zipname.txt" $zip -Encoding utf8
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -88,6 +86,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: artifact/release_*.zip
+
 
   virustotal:
     runs-on: windows-latest
@@ -104,13 +103,7 @@ jobs:
           name: build-artifact
           path: artifact/
 
-      - name: Read SHA256
-        shell: pwsh
-        run: |
-          $hash = Get-Content "artifact\sha256.txt"
-          Write-Host "SHA256: $hash"
-
-      - name: VirusTotal Upload (Hardened)
+      - name: VirusTotal Upload
         shell: pwsh
         env:
           VT_API_KEY: ${{ secrets.VT_API_KEY }}
@@ -124,6 +117,7 @@ jobs:
           $attempt = 0
           $max = 3
           $success = $false
+          $vtResult = ""
 
           while ($attempt -lt $max -and -not $success) {
             $attempt++
@@ -136,54 +130,53 @@ jobs:
                 -InFile $exe `
                 -ErrorAction Stop
 
-              if ($res -and $res.data.id) {
+              if ($res.data.id) {
                 $success = $true
-                $msg = "SCAN OK: $($res.data.id)"
+                $vtResult = "SCAN OK: $($res.data.id)"
               }
             }
             catch {
-              Write-Host "VT attempt $attempt failed"
               Start-Sleep -Seconds 10
             }
           }
 
           if (-not $success) {
-            $msg = "VT FAILED"
+            $vtResult = "VT FAILED"
           }
 
-          "$msg`n$url" | Set-Content "artifact\vt_result.txt" -Encoding utf8
+          "$vtResult | $url" | Set-Content "artifact\vt_result.txt" -Encoding utf8
 
       - name: Update README
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}" -replace "refs/tags/", ""
-
           $hash = Get-Content "artifact\sha256.txt"
-          $vt = Get-Content "artifact\vt_result.txt" -Raw
-
+          $vt = Get-Content "artifact\vt_result.txt"
           $date = Get-Date -Format "yyyy-MM-dd"
           $zip = "release_$tag.zip"
-
-          $readme = Get-Content README.md -Raw -Encoding utf8
 
           $start = "<!-- LATEST_RELEASE_START -->"
           $end = "<!-- LATEST_RELEASE_END -->"
 
-          $block = @"
-$start
-### 🚀 Latest Release: $tag ($date)
+          $lines = @(
+            $start
+            "### 🚀 Latest Release: $tag ($date)"
+            ""
+            "- Download: [release_$zip](https://github.com/${{ github.repository }}/releases/download/$tag/$zip)"
+            "- SHA256: $hash"
+            "- VirusTotal: $vt"
+            $end
+          )
 
-- Download: [release_$tag.zip](https://github.com/${{ github.repository }}/releases/download/$tag/$zip)
-- SHA256: $hash
-- VirusTotal: $vt
-$end
-"@
+          $block = $lines -join "`n"
+
+          $readme = Get-Content README.md -Raw -Encoding utf8
 
           if ($readme -match "(?s)$start.*?$end") {
             $readme = $readme -replace "(?s)$start.*?$end", $block
           } else {
-            $readme = "$readme`n$block"
+            $readme = $readme + "`n" + $block
           }
 
           Set-Content README.md $readme -Encoding utf8
@@ -192,8 +185,6 @@ $end
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: |
-          $ErrorActionPreference = "Continue"
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
