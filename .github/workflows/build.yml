@@ -38,18 +38,24 @@ jobs:
         id: release
         shell: pwsh
         env:
-          GITHUB_TAG: ${{ github.ref_name }} # e.g., v1.3.3
+          GITHUB_TAG: ${{ github.ref_name }}
         run: |
           # Extract version without 'v' prefix
           $tag = $env:GITHUB_TAG.TrimStart('v')
           
           # Use actual tag for release links if available, else use date
-          $releaseName = "release_${tag}.zip"
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            $releaseName = "release_latest.zip"
+          } else {
+            $releaseName = "release_${tag}.zip"
+          }
+          
           Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath $releaseName -Force
           
           # Update README only on push/tag events (not workflow_dispatch)
-          if ($env:GITHUB_TAG -ne '') {
+          if ($env:GITHUB_TAG -ne '' -and startsWith($env:GITHUB_TAG, 'refs/tags/')) {
             Write-Host "Updating README for tag: $env:GITHUB_TAG"
+            
             $startTag = "<!-- LATEST_RELEASE_START -->"
             $endTag = "<!-- LATEST_RELEASE_END -->" 
             
@@ -61,22 +67,26 @@ jobs:
             $newBlock += "- **Security:** Scan complete in parallel job...`n`n$endTag"
             
             $content = Get-Content README.md -Raw
-            $content = $content -replace "(?s)$startTag.*?$endTag", $newBlock
-            Set-Content README.md $content
-            
-            # Commit changes
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add README.md
-            if (git status --porcelain) {
-              git commit -m "docs: update release info for ${{ github.ref_name }} [skip ci]"
+            if ($content -match "(?s)$startTag.*?$endTag") {
+              $content = $content -replace "(?s)$startTag.*?$endTag", $newBlock
+              Set-Content README.md $content
+              
+              # Commit changes
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git add README.md
+              if (git status --porcelain) {
+                git commit -m "docs: update release info for ${{ github.ref_name }} [skip ci]"
+              }
+            } else {
+              Write-Host "README does not have release placeholder block, skipping update."
             }
           } else {
-            Write-Host "No tag found on branch, skipping README update."
+            Write-Host "No tag found on branch or workflow_dispatch, skipping README update."
           }
 
       - name: Upload Release Assets
-        if: startsWith(github.ref, 'refs/tags/') && steps.release.outputs.TAG != ''
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: release_${{ github.ref_name }}.zip
@@ -130,10 +140,17 @@ jobs:
                 Set-Content vt_result.txt $response.data.id
                 Write-Host "VT Scan Success: $($response.data.id)"
                 $success = $true
+              } else {
+                Write-Warning "VT response missing data.id, attempting retry"
               }
             }
             catch {
-              Write-Warning "VT failed attempt $attempt: $_"
+              # Use .ToString() for error handling with proper quoting
+              $errorMsg = $_.ToString() -replace '\s+', '_ '
+              Write-Warning "VT failed attempt $attempt: $errorMsg"
+              
+              # Log to file for debugging
+              Add-Content -Path "vt_errors.log" -Value "Attempt $attempt failed: $errorMsg"
             }
 
             if ($attempt -lt $maxRetries) {
