@@ -60,6 +60,9 @@ Because this utility is bundled using PyInstaller, some antivirus engines may fl
 * **🔔 Update Notifications:** Automatic update checks on startup with options to ignore a specific version or disable notifications entirely.
 * **🕒 Time Mode:** Switch the graph between raw data ticks and actual time (H:MM:SS).
 * **📋 Preset Management:** Save sensor groups, rename them with the pencil icon, and share them via clipboard.
+* **🌡️ Heatmap Mode:** Dynamic color-coded stress mapping (Green/Yellow/Red) based on safety thresholds.
+* **⚙️ Limits Editor:** Fully customizable threshold engine—fine-tune thermal and voltage "Danger Zones" for your specific hardware.
+* **🧹 Crash Recovery:** Smart data cleaning that automatically trims corrupted/zeroed rows typically found at the end of logs after a system crash.
 
 ---
 
