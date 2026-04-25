@@ -13,7 +13,7 @@
 
 - Download: [release_release_v1.3.3.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.3.3/release_v1.3.3.zip)
 - SHA256: AAFF9F1AC57A33B580DE11EF6546A9405F23452BD138531F2F32AE6B21C0E535
-- VirusTotal: VT FAILED | https://www.virustotal.com/gui/file/AAFF9F1AC57A33B580DE11EF6546A9405F23452BD138531F2F32AE6B21C0E535
+- VirusTotal: MANUAL SCAN: https://www.virustotal.com/gui/file/AAFF9F1AC57A33B580DE11EF6546A9405F23452BD138531F2F32AE6B21C0E535
 <!-- LATEST_RELEASE_END -->
 ### 📦 Option 1: Compiled Executable (Recommended for Users)
 1.  Go to the **[Latest Release](../../releases/latest)** page.
