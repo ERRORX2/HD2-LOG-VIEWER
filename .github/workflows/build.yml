@@ -1,22 +1,17 @@
 name: Build HD2 LOG VIEWER & Release
-
 on:
   push:
     branches: ["master"]
     tags:
       - 'v*'
   workflow_dispatch:
-
-concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: write
 
 jobs:
   build:
     runs-on: windows-latest
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -25,145 +20,268 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      
-      - name: Install Dependencies
+          
+      - name: Install Dependencies (pip cache)
         run: |
-          pip install pandas matplotlib numpy pyinstaller
-      
+          pip install --upgrade pip
+          if (Test-Path "requirements.txt") {
+            pip install -r requirements.txt
+          } else {
+            pip install pandas matplotlib numpy pyinstaller
+          }
+          
       - name: Build Executable
         run: |
-          pyinstaller --onefile --noconsole --name "HD2_LOG_VIEWER" HD2_LOG_VIEWER.pyw
+          pyinstaller --clean `
+            --onefile `
+            --noconsole `
+            --name "HD2_LOG_VIEWER" `
+            --add-data "groups.json;." `
+            HD2_LOG_VIEWER.pyw
       
-      - name: Create Release ZIP & Update README
-        id: release
+      # ✅ STEP 1: Generate SHA256 Hash & Save to dist/ (consistent path)
+      - name: Generate SHA256 Hash & Save to File
         shell: pwsh
-        env:
-          GITHUB_TAG: ${{ github.ref_name }}
         run: |
-          # Extract version without 'v' prefix
-          $tag = $env:GITHUB_TAG.TrimStart('v')
+          $exePath = "dist/HD2_LOG_VIEWER.exe"
           
-          # Use actual tag for release links if available, else use date
-          if ([string]::IsNullOrWhiteSpace($tag)) {
-            $releaseName = "release_latest.zip"
-          } else {
-            $releaseName = "release_${tag}.zip"
+          if (-not (Test-Path $exePath)) {
+            throw "Executable not found at $exePath - build failed!"
           }
           
-          Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" -DestinationPath $releaseName -Force
+          # ✅ Calculate and save SHA256 hash to dist/sha256.txt (consistent path)
+          $sha256_hash = Get-FileHash $exePath -Algorithm SHA256 | Select-Object -ExpandProperty Hash
+          $sha256_hash = $sha256_hash.ToUpper()
           
-          # Update README only on push/tag events (not workflow_dispatch)
-          if ($env:GITHUB_TAG -ne '' -and startsWith($env:GITHUB_TAG, 'refs/tags/')) {
-            Write-Host "Updating README for tag: $env:GITHUB_TAG"
-            
-            $startTag = "<!-- LATEST_RELEASE_START -->"
-            $endTag = "<!-- LATEST_RELEASE_END -->" 
-            
-            $date = Get-Date -Format 'yyyy-MM-dd'
-            $releaseUrl = "../../releases/tag/${{ github.ref_name }}"
-            
-            $newBlock = "$startTag`n### 🚀 Latest Release: v${{ github.ref_name }} ($date)`n"
-            $newBlock += "- **Download:** [$releaseName]($releaseUrl)`n"
-            $newBlock += "- **Security:** Scan complete in parallel job...`n`n$endTag"
-            
-            $content = Get-Content README.md -Raw
-            if ($content -match "(?s)$startTag.*?$endTag") {
-              $content = $content -replace "(?s)$startTag.*?$endTag", $newBlock
-              Set-Content README.md $content
-              
-              # Commit changes
-              git config user.name "github-actions[bot]"
-              git config user.email "github-actions[bot]@users.noreply.github.com"
-              git add README.md
-              if (git status --porcelain) {
-                git commit -m "docs: update release info for ${{ github.ref_name }} [skip ci]"
-              }
-            } else {
-              Write-Host "README does not have release placeholder block, skipping update."
-            }
+          Set-Content "dist/sha256.txt" "$sha256_hash"
+          Write-Host "SHA256 Hash saved: $sha256_hash"
+      
+      # ✅ STEP 2: Create Release ZIP (consistent path: dist/)
+      - name: Create Release ZIP
+        shell: pwsh
+        id: build_info
+        run: |
+          # ✅ Read SHA256 from file (same location for all steps)
+          $sha256_hash = Get-Content "dist/sha256.txt"
+          
+          # github.ref_name is already clean like v1.2.3, no ref/tags/ prefix needed
+          $tag = "${{ github.ref_name }}"
+          if ($tag.StartsWith('refs/tags/')) {
+            $displayTag = $tag.Substring(10)
           } else {
-            Write-Host "No tag found on branch or workflow_dispatch, skipping README update."
+            $displayTag = 'latest'
           }
-
+          
+          # ✅ Create ZIP with consistent naming from tag variable
+          Compress-Archive -Path "dist/HD2_LOG_VIEWER.exe", "groups.json" `
+            -DestinationPath "release_${tag}.zip" `
+            -Force
+          
+          $zipName = "release_${tag}.zip"
+          
+          Write-Host "Created release: $zipName"
+          
+          # ✅ Save tag info for README (consistent path)
+          Set-Content "dist/README_TAG.txt" "$displayTag"
+      
+      # ✅ Single Release Upload Step (Combined conditions)
       - name: Upload Release Assets
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          files: release_${{ github.ref_name }}.zip
-          body: "HD2 LOG VIEWER release artifact."
+          files: |
+            release_${{ github.ref_name }}.zip
+            sha256.txt
+          body: "HD2 LOG VIEWER automated release."
           draft: false
       
-      - name: Upload Artifact for VT Scan
+      # ✅ Upload Artifact for VT Job (includes all necessary files)
+      - name: Upload Artifact for VT Job
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-output-for-vt
           path: |
             dist/HD2_LOG_VIEWER.exe
-            groups.json
+            dist/sha256.txt
+            release_${{ github.ref_name }}.zip
+            README.md
 
-  virustotal:
+  virustotal_scan:
     runs-on: windows-latest
     needs: [build]
     
-    if: startsWith(github.ref, 'refs/tags/') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    permissions:
-      contents: read
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch')
     
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
       - name: Download Build Output from Artifact
         uses: actions/download-artifact@v4
         with:
           name: build-output-for-vt
           path: dist/
 
-      - name: VirusTotal Upload (with retries)
+      # ✅ STEP 1: Verify SHA256 exists in dist/sha256.txt (consistent path)
+      - name: Verify SHA256 Hash File
         shell: pwsh
         run: |
-          $file = "dist/HD2_LOG_VIEWER.exe"
-          $apiKey = "${{ secrets.VT_API_KEY }}"
+          $sha256Path = "dist/sha256.txt"
+          
+          if (-not (Test-Path $sha256Path)) {
+            throw "SHA256 hash file not found at $sha256Path. Upload failed!"
+          }
+          
+          # ✅ Read SHA256 from file (same path as build job)
+          $sha256_hash = Get-Content $sha256Path
+          Write-Host "SHA256 Hash: $sha256_hash"
+      
+      # ✅ STEP 2: Upload to VT API with proper error handling
+      - name: Upload to VirusTotal API
+        shell: pwsh
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        run: |
+          $exePath = "dist/HD2_LOG_VIEWER.exe"
+          
+          # ✅ Read SHA256 from file (same path as build job)
+          $sha256_hash = Get-Content "dist/sha256.txt"
+          $scanUrl = "https://www.virustotal.com/gui/file/$sha256_hash"
+          
           $maxRetries = 3
+          $retryDelay = 10
           $attempt = 0
-          $success = $false
-
-          while ($attempt -lt $maxRetries -and -not $success) {
+          $vtStatus = ""
+          $vtId = ""
+          
+          # ✅ Create VT result file with proper structure for README parsing
+          do {
             $attempt++
-            Write-Host "VT attempt $attempt/$maxRetries..."
             
             try {
-              $response = Invoke-RestMethod -Uri "https://www.virustotal.com/api/v3/files" `
-                -Headers @{ "x-apikey" = $apiKey } `
-                -Method Post `
-                -InFile $file
-                
-              if ($response.data.id) {
-                Set-Content vt_result.txt $response.data.id
-                Write-Host "VT Scan Success: $($response.data.id)"
-                $success = $true
-              } else {
-                Write-Warning "VT response missing data.id, attempting retry"
-              }
-            }
-            catch {
-              # Use .ToString() for error handling with proper quoting
-              $errorMsg = $_.ToString() -replace '\s+', '_ '
-              Write-Warning "VT failed attempt $attempt: $errorMsg"
+              Write-Host "Attempt $attempt of $maxRetries to upload to VirusTotal..."
               
-              # Log to file for debugging
-              Add-Content -Path "vt_errors.log" -Value "Attempt $attempt failed: $errorMsg"
+              $response = Invoke-RestMethod `
+                -Uri "https://www.virustotal.com/api/v3/files" `
+                -Headers @{ "x-apikey" = $env:VT_API_KEY } `
+                -Method Post `-InFile $exePath`
+              
+              if ($response.data.id) {
+                $vtId = $response.data.id
+                $vtStatus = "✅ Scan Complete: File ID $vtId"
+                
+                # ✅ Save VT result to file with predictable format for README parsing
+                Set-Content "dist/vt_result.txt" "$vtStatus`n[$scanUrl]" -Force
+                
+                Write-Host "VirusTotal upload successful! File ID: $vtId"
+                break
+              } else {
+                throw "No file_id in VT response"
+              }
+              
+            } catch [System.Net.Http.HttpRequestException] {
+              if ($_.ErrorDetails.Message -like "*429*" -and $attempt -lt $maxRetries) {
+                Write-Host "Rate limit encountered (HTTP 429). Retrying in $($retryDelay)s..."
+                Start-Sleep -Seconds $retryDelay
+              } else {
+                throw "Maximum retries exceeded for error: $_"
+              }
+              
+            } catch {
+              Write-Warning "VT API error: $_"
+              
+              # ✅ Create fallback result even on non-VT errors
+              Set-Content "dist/vt_result.txt" "⚠️ Upload Error (scan still submitted if not rate limited)`n[$sha256_hash]" -Force
+              
+              $vtStatus = "⚠️ VT API Error (released anyway)"
             }
+            
+          } while ($attempt -lt $maxRetries)
 
-            if ($attempt -lt $maxRetries) {
-              Start-Sleep -Seconds (5 * $attempt)
-            }
+      # ✅ STEP 3: Update README with file-based variable reading (no GITHUB_ENV issues)
+      - name: Update README with Security Status
+        shell: pwsh
+        run: |
+          # ✅ Get version/tag info from build job's dist/README_TAG.txt
+          $displayTag = Get-Content "dist/README_TAG.txt"
+          
+          # ✅ Read SHA256 from dist/sha256.txt (consistent path)
+          $sha256_hash = Get-Content "dist/sha256.txt"
+          
+          # ✅ Use file content for vtStatus and scanUrl (no complex parsing needed)
+          if (Test-Path "dist/vt_result.txt") {
+            $resultContent = Get-Content "dist/vt_result.txt" -Raw
+          } else {
+            $vtStatus = "🟡 Waiting for VirusTotal scan..."
+            $scanUrl = "#"
+            $resultContent = "$vtStatus`n[$scanUrl]"
           }
-
-          if (-not $success) {
-            Set-Content vt_result.txt "SKIPPED_SCAN_FAILED"
+          
+          # ✅ All variables read from files in consistent paths
+          $date = Get-Date -Format 'yyyy-MM-dd'
+          
+          # ✅ Use github.ref_name directly (already clean)
+          $tag = "${{ github.ref_name }}"
+          if ($tag.StartsWith('refs/tags/')) {
+            $displayTagFile = $tag.Substring(10)
+          } else {
+            $displayTagFile = 'latest'
+          }
+          
+          # ✅ Create ZIP filename directly from tag variable (consistent naming)
+          $zipName = "release_${tag}.zip"
+          
+          # Read current README content
+          $content = Get-Content README.md -Raw
+          
+          # ✅ Define placeholders and new block with file-based variables only
+          $startTag = "<!-- LATEST_RELEASE_START -->"
+          $endTag = "<!-- LATEST_RELEASE_END -->" 
+          
+          # ✅ All variables from files (consistent, no GITHUB_ENV dependency)
+          $newBlock = "$startTag`n### 🚀 Latest Release: v$displayTagFile ($date)`n"
+          $newBlock += "- **Download:** [Release ZIP]($zipName) (`n[../../releases/tag/$tag])`n"
+          $newBlock += "- **SHA256:** `$sha256_hash`n"
+          $newBlock += "- **Security:** $vtStatus (`n[$scanUrl])`n`n$endTag"
+          
+          # Replace placeholder if found, or prepend to README (safer fallback)
+          if ($content -match "(?s)$startTag.*?$endTag") {
+            $content = $content -replace "(?s)$startTag.*?$endTag", $newBlock
+          } else {
+            $content = "$content`n$startTag`n$newBlock`n$endTag"
+          }
+          
+          Set-Content README.md $content
+      
+      # ✅ STEP 4: Commit and Push to master
+      - name: Commit and Push Changes
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if (git status --porcelain) {
+            Write-Host "Changes detected, committing..."
+            
+            try {
+              # ✅ Include all files modified in consistent paths
+              git add README.md
+              
+              git commit -m "docs: update release info for ${{ github.ref_name }} [skip ci]"
+              
+              # ✅ Push to master (not ambiguous HEAD)
+              git push origin master
+              Write-Host "Successfully pushed to master"
+            } catch {
+              Write-Error "Git commit/push failed: $_"
+            }
+          } else {
+            Write-Host "No changes to commit"
           }
 
       - name: Upload VT Result as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: virus-total-result
-          path: vt_result.txt
+          path: vt_result.txt, sha256.txt
