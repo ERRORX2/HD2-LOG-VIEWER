@@ -17,7 +17,7 @@ import urllib.error
 import webbrowser
 
 GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.4"  # DO NOT FORGET TO CHANGE
+CURRENT_VERSION = "1.3.1"  # DO NOT FORGET TO CHANGE
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
