@@ -60,6 +60,7 @@
         "multi_mode": true,
         "delta_mode": false,
         "ignored_version": "",
-        "updates_disabled": false
+        "updates_disabled": false,
+        "time_mode": false
     }
 }
