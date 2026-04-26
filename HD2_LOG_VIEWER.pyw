@@ -2,6 +2,9 @@
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import matplotlib.colors as mcolors
+import matplotlib.cm as mcm
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from pathlib import Path
 from typing import List, Optional, Dict, Set, Tuple
@@ -15,11 +18,30 @@ import threading
 import urllib.request
 import urllib.error
 import webbrowser
-
 import re
 
+# ── Module-level constants for _is_critical ──────────────────────────────────
+# Defined once here so they are not rebuilt on every call
+_EXCLUDE_RAW = frozenset([
+    '[MB]', '[GB]', '[A]', 'PWM', '(STATIC)',
+    'THERMAL LIMIT', 'POWER LIMIT', 'TDC LIMIT', 'PPT LIMIT', 'EDC LIMIT',
+    'FREQUENCY LIMIT', 'CLOCK LIMIT',
+])
+_EXCLUDE_NAME = frozenset([
+    'FREQUENCYLIMIT', 'ACCUMULATED', 'EFFECTIVECLOCK', 'REQUESTEDCLOCK',
+    'TARGETTEMP', 'LIMITTEMP', 'THERMALLIMIT', 'POWERLIMIT',
+    'CURRENTLIMIT', 'TDCLIMIT', 'PPTLIMIT', 'EDCLIMIT',
+])
+_THROTTLE_KW   = ('THROTTLING', 'RELIABILITY', 'PERFCAP')
+_SMART_KW      = ('REMAINING LIFE', 'WEAR LEVEL', 'ENDURANCE REMAINING')
+_WHEA_KW       = ('WHEA', 'MACHINE CHECK', 'MCE', 'MCA')
+_ERROR_KW      = ('ECC', 'BAD SECTOR', 'REALLOCATED', 'PENDING SECTOR',
+                  'UNCORRECTABLE', 'CRC ERROR')
+_RAIL_SKIP     = ('GPU PCIE', 'PCIE', '12VHPWR', 'INPUT')
+_TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
+
 GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.3.3"  # BUMP
+CURRENT_VERSION = "1.0.0"  # Bump this to match your GitHub release tag when you ship
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
@@ -310,6 +332,8 @@ class TelemetryApp:
             'SOCKET': 95.0,
             'COOLANT': 45.0, 'LIQUID': 45.0, 'WATER': 45.0,
             'SSD': 65.0, 'NVME': 65.0, 'HDD': 55.0,
+            'DRIVE': 70.0,          # generic HWinfo "Drive Temperature" columns
+            'TEMPERATURE': 70.0,    # bare "Temperature [°C]" fallback
             'CHIPSET': 90.0, 'PCH': 90.0,
             'MOSFET': 110.0, 'CHOKE': 110.0,
         }
@@ -330,6 +354,13 @@ class TelemetryApp:
             'frametime_max_ms': 100.0,
             'fps_min': 10.0,
             'coolant_max': 45.0,
+            # Newly editable
+            'memory_load_max': 95.0,       # Physical/GPU memory load %
+            'drive_spare_min': 10.0,       # Available spare % floor
+            'drive_life_min': 10.0,        # Remaining life % floor
+            'vcore_droop_max': 0.3,        # Max Vcore swing (V)
+            'clock_instability': 0.35,     # std/mean ratio threshold
+            'throttle_threshold': 0.9,     # throttling flag sensitivity (0–1)
         }
 
         # Apply saved overrides on top of defaults
@@ -340,16 +371,22 @@ class TelemetryApp:
                               **saved_thresholds.get('volt_rails', {})}.items()}
         misc              = {**self._default_misc,
                              **saved_thresholds.get('misc', {})}
-        self.cpu_volt_range  = (misc['cpu_volt_lo'],  misc['cpu_volt_hi'])
-        self.gpu_volt_max    = misc['gpu_volt_max']
-        self.dram_volt_range = (misc['dram_volt_lo'], misc['dram_volt_hi'])
-        self.fan_min_rpm     = misc['fan_min_rpm']
-        self.cpu_power_max   = misc['cpu_power_max']
-        self.gpu_power_max   = misc['gpu_power_max']
-        self.total_power_max = misc['total_power_max']
-        self.latency_max_ms  = misc['latency_max_ms']
+        self.cpu_volt_range   = (misc['cpu_volt_lo'],  misc['cpu_volt_hi'])
+        self.gpu_volt_max     = misc['gpu_volt_max']
+        self.dram_volt_range  = (misc['dram_volt_lo'], misc['dram_volt_hi'])
+        self.fan_min_rpm      = misc['fan_min_rpm']
+        self.cpu_power_max    = misc['cpu_power_max']
+        self.gpu_power_max    = misc['gpu_power_max']
+        self.total_power_max  = misc['total_power_max']
+        self.latency_max_ms   = misc['latency_max_ms']
         self.frametime_max_ms = misc['frametime_max_ms']
-        self.fps_min         = misc['fps_min']
+        self.fps_min          = misc['fps_min']
+        self.memory_load_max  = misc['memory_load_max']
+        self.drive_spare_min  = misc['drive_spare_min']
+        self.drive_life_min   = misc['drive_life_min']
+        self.vcore_droop_max  = misc['vcore_droop_max']
+        self.clock_instability = misc['clock_instability']
+        self.throttle_threshold = misc['throttle_threshold']
 
         # Expose app reference so check_for_updates can call show_toast
         self.root._app_ref = self
@@ -451,56 +488,72 @@ class TelemetryApp:
                 tk.Label(f, text=unit, bg=bg, fg="#888",
                          font=('Segoe UI', 8)).pack(side=tk.LEFT)
 
-        # Temperature limits ────────────────────────────────────────────────
+        # ── Temperature limits ────────────────────────────────────────────────
         section("Temperature Limits (°C)")
         temp_display = [
-            ("GPU Core",         "GPU"),
-            ("GPU Hotspot",      "HOTSPOT"),
-            ("GPU VRAM",         "VRAM"),
-            ("GPU VRM",          "VRM"),
-            ("CPU Core",         "CORE"),
-            ("CPU Tdie/Tctl",    "TDIE"),
-            ("CPU CCD/CCX",      "CCD"),
-            ("CPU Socket",       "SOCKET"),
-            ("Coolant/Liquid",   "COOLANT"),
-            ("SSD/NVMe",         "SSD"),
-            ("HDD",              "HDD"),
-            ("Chipset/PCH",      "CHIPSET"),
-            ("MOSFET/Choke",     "MOSFET"),
+            ("GPU Core",              "GPU"),
+            ("GPU Hotspot",           "HOTSPOT"),
+            ("GPU VRAM",              "VRAM"),
+            ("GPU VRM",               "VRM"),
+            ("CPU Core",              "CORE"),
+            ("CPU Tdie/Tctl",         "TDIE"),
+            ("CPU CCD/CCX",           "CCD"),
+            ("CPU Socket",            "SOCKET"),
+            ("Coolant/Liquid",        "COOLANT"),
+            ("SSD/NVMe",              "SSD"),
+            ("HDD",                   "HDD"),
+            ("Drive (generic)",       "DRIVE"),
+            ("Chipset/PCH",           "CHIPSET"),
+            ("MOSFET/Choke",          "MOSFET"),
         ]
         for label, key in temp_display:
             if key in self.temp_limits:
                 row(label, f"temp_{key}", self.temp_limits[key], "°C")
 
-        # Voltage rails ─────────────────────────────────────────────────────
+        # ── Voltage rails ─────────────────────────────────────────────────────
         section("Voltage Rails — Safe Range (V)")
         range_row("+12V Rail",   "rail_12v_lo",   "rail_12v_hi",   *self.volt_rails['+12V'],  "V")
         range_row("+5V Rail",    "rail_5v_lo",    "rail_5v_hi",    *self.volt_rails['+5V'],   "V")
         range_row("+3.3V Rail",  "rail_33v_lo",   "rail_33v_hi",   *self.volt_rails['+3.3V'], "V")
 
-        # Component voltages ────────────────────────────────────────────────
+        # ── Component voltages ────────────────────────────────────────────────
         section("Component Voltages")
         range_row("CPU Vcore",   "cpu_volt_lo", "cpu_volt_hi", *self.cpu_volt_range,  "V")
         range_row("DRAM Voltage","dram_volt_lo","dram_volt_hi",*self.dram_volt_range, "V")
         row("GPU Core Voltage max", "gpu_volt_max", self.gpu_volt_max, "V")
 
-        # Power limits ──────────────────────────────────────────────────────
+        # ── Power limits ──────────────────────────────────────────────────────
         section("Power Draw Limits (W)")
         row("CPU max power",    "cpu_power_max",   self.cpu_power_max,   "W")
         row("GPU max power",    "gpu_power_max",   self.gpu_power_max,   "W")
         row("Total system max", "total_power_max", self.total_power_max, "W")
 
-        # Frame / latency ───────────────────────────────────────────────────
+        # ── Frame / latency ───────────────────────────────────────────────────
         section("Frame Timing & Latency")
         row("Frame time spike (1% high)", "frametime_max_ms", self.frametime_max_ms, "ms")
         row("Min FPS (0.1% low)",         "fps_min",          self.fps_min,          "FPS")
         row("Latency max",                "latency_max_ms",   self.latency_max_ms,   "ms")
 
-        # Misc ──────────────────────────────────────────────────────────────
+        # ── Misc ──────────────────────────────────────────────────────────────
         section("Miscellaneous")
-        row("Fan stall threshold", "fan_min_rpm", self.fan_min_rpm, "RPM")
+        row("Fan stall threshold",          "fan_min_rpm",        self.fan_min_rpm,        "RPM")
 
-        # Buttons + live save ───────────────────────────────────────────────
+        # ── Drive health ──────────────────────────────────────────────────────
+        section("Drive Health")
+        row("Available spare min",          "drive_spare_min",    self.drive_spare_min,    "%")
+        row("Remaining life min",           "drive_life_min",     self.drive_life_min,     "%")
+
+        # ── Memory ────────────────────────────────────────────────────────────
+        section("Memory Load")
+        row("RAM / VRAM load max",          "memory_load_max",    self.memory_load_max,    "%")
+
+        # ── Stability ─────────────────────────────────────────────────────────
+        section("Stability Detection")
+        row("Throttle sensitivity (0–1)",   "throttle_threshold", self.throttle_threshold, "")
+        row("Vcore max droop",              "vcore_droop_max",    self.vcore_droop_max,    "V")
+        row("Clock instability ratio",      "clock_instability",  self.clock_instability,  "std/mean")
+
+        # ── Buttons + live save ───────────────────────────────────────────────
         btn_f = tk.Frame(dialog, bg=bg)
         btn_f.pack(fill=tk.X, padx=10, pady=10)
 
@@ -553,7 +606,13 @@ class TelemetryApp:
                 self.latency_max_ms   = float(entries['latency_max_ms'].get())
 
                 # Misc
-                self.fan_min_rpm = float(entries['fan_min_rpm'].get())
+                self.fan_min_rpm      = float(entries['fan_min_rpm'].get())
+                self.drive_spare_min  = float(entries['drive_spare_min'].get())
+                self.drive_life_min   = float(entries['drive_life_min'].get())
+                self.memory_load_max  = float(entries['memory_load_max'].get())
+                self.throttle_threshold = float(entries['throttle_threshold'].get())
+                self.vcore_droop_max  = float(entries['vcore_droop_max'].get())
+                self.clock_instability = float(entries['clock_instability'].get())
 
                 # All parsed OK — save and update
                 self._save_config()
@@ -603,6 +662,12 @@ class TelemetryApp:
                 self.latency_max_ms   = misc['latency_max_ms']
                 self.frametime_max_ms = misc['frametime_max_ms']
                 self.fps_min          = misc['fps_min']
+                self.memory_load_max  = misc['memory_load_max']
+                self.drive_spare_min  = misc['drive_spare_min']
+                self.drive_life_min   = misc['drive_life_min']
+                self.vcore_droop_max  = misc['vcore_droop_max']
+                self.clock_instability = misc['clock_instability']
+                self.throttle_threshold = misc['throttle_threshold']
                 self._save_config()
                 self._build_checklist()
                 self._apply_theme_colors()
@@ -629,19 +694,25 @@ class TelemetryApp:
 
     def _save_config(self):
         misc = {
-            'cpu_volt_lo':     self.cpu_volt_range[0],
-            'cpu_volt_hi':     self.cpu_volt_range[1],
-            'gpu_volt_max':    self.gpu_volt_max,
-            'dram_volt_lo':    self.dram_volt_range[0],
-            'dram_volt_hi':    self.dram_volt_range[1],
-            'fan_min_rpm':     self.fan_min_rpm,
-            'cpu_power_max':   self.cpu_power_max,
-            'gpu_power_max':   self.gpu_power_max,
-            'total_power_max': self.total_power_max,
-            'latency_max_ms':  self.latency_max_ms,
+            'cpu_volt_lo':      self.cpu_volt_range[0],
+            'cpu_volt_hi':      self.cpu_volt_range[1],
+            'gpu_volt_max':     self.gpu_volt_max,
+            'dram_volt_lo':     self.dram_volt_range[0],
+            'dram_volt_hi':     self.dram_volt_range[1],
+            'fan_min_rpm':      self.fan_min_rpm,
+            'cpu_power_max':    self.cpu_power_max,
+            'gpu_power_max':    self.gpu_power_max,
+            'total_power_max':  self.total_power_max,
+            'latency_max_ms':   self.latency_max_ms,
             'frametime_max_ms': self.frametime_max_ms,
-            'fps_min':         self.fps_min,
-            'coolant_max':     self.temp_limits.get('COOLANT', 45.0),
+            'fps_min':          self.fps_min,
+            'coolant_max':      self.temp_limits.get('COOLANT', 45.0),
+            'memory_load_max':  self.memory_load_max,
+            'drive_spare_min':  self.drive_spare_min,
+            'drive_life_min':   self.drive_life_min,
+            'vcore_droop_max':  self.vcore_droop_max,
+            'clock_instability': self.clock_instability,
+            'throttle_threshold': self.throttle_threshold,
         }
         thresholds = {
             'temp_limits': self.temp_limits,
@@ -965,86 +1036,75 @@ class TelemetryApp:
             hdr.configure(bg=bg, fg="#3498db" if self.is_dark else "#2c3e50")
 
     def _is_critical(self, col: str) -> bool:
-        name = col.upper().replace(" ", "")
         raw  = col.upper()
+        name = raw.replace(' ', '')
         series = self.df[col].dropna()
         if series.empty:
             return False
 
-        # Exclusions ────────────────────────────────────────────────────────
-        # Never flag configured limits, headroom values, control signals, or
-        # unit-only columns that carry no diagnostic meaning on their own
-        EXCLUDE_RAW = [
-            '[MB]', '[GB]', '[A]', 'PWM', '(STATIC)',
-            'THERMAL LIMIT', 'POWER LIMIT', 'TDC LIMIT', 'PPT LIMIT', 'EDC LIMIT',
-            'FREQUENCY LIMIT', 'CLOCK LIMIT',
-        ]
-        EXCLUDE_NAME = [
-            'FREQUENCYLIMIT', 'ACCUMULATED', 'EFFECTIVECLOCK', 'REQUESTEDCLOCK',
-            'TARGETTEMP', 'LIMITTEMP', 'THERMALLIMIT', 'POWERLIMIT',
-            'CURRENTLIMIT', 'TDCLIMIT', 'PPTLIMIT', 'EDCLIMIT',
-        ]
-        if any(x in raw for x in EXCLUDE_RAW) or any(x in name for x in EXCLUDE_NAME):
+        # ── Exclusions ────────────────────────────────────────────────────────
+        if any(x in raw for x in _EXCLUDE_RAW) or any(x in name for x in _EXCLUDE_NAME):
             return False
 
-        # Frame timing / FPS ────────────────────────────────────────────────
-        if any(x in raw for x in ['FRAME TIME', 'FRAMETIME']):
+        # ── Frame timing / FPS ────────────────────────────────────────────────
+        if 'FRAME TIME' in raw or 'FRAMETIME' in raw:
             if '1% HIGH' in raw and '0.1%' not in raw:
                 return series.max() > self.frametime_max_ms
             return False
 
-        if any(x in raw for x in ['FRAMERATE', ' FPS', 'FRAMES PER SECOND']):
+        if 'FRAMERATE' in raw or ' FPS' in raw or 'FRAMES PER SECOND' in raw:
             if '0.1%' in raw and 'LOW' in raw and 'PRESENTED' not in raw:
                 return series.min() <= self.fps_min and series.max() > 0
             return False
 
-        # Render pipeline latency
-        if any(x in raw for x in ['LATENCY', 'RENDER TIME', 'PRESENT TIME',
-                                   'GPU BUSY', 'CPU BUSY', 'DISPLAY LATENCY']):
+        if 'LATENCY' in raw or 'RENDER TIME' in raw or 'PRESENT TIME' in raw \
+                or 'GPU BUSY' in raw or 'CPU BUSY' in raw or 'DISPLAY LATENCY' in raw:
             return series.max() > self.latency_max_ms
 
-        # All other [ms] columns (animation error etc.) — skip
         if '[MS]' in raw:
             return False
 
-        # Active throttling flags ───────────────────────────────────────────
-        # HWinfo logs these as boolean-like 0/1 or 0/100 when throttling is active
-        THROTTLE_KW = ['THROTTLING', 'RELIABILITY', 'PERFCAP']
-        if any(x in raw for x in THROTTLE_KW):
-            return series.max() >= 0.9
+        # ── Throttling ────────────────────────────────────────────────────────
+        if any(x in raw for x in _THROTTLE_KW):
+            return series.max() >= self.throttle_threshold
 
-        # Performance Limit [Yes/No] — only flag thermal and power limiters
-        # Skip utilization, SLI sync, voltage limiters (too noisy / system-specific)
+        # ── Yes/No binary flags ───────────────────────────────────────────────
         if 'YES/NO' in raw:
-            if any(x in raw for x in ['THERMAL', 'POWER']) and 'PERFORMANCE LIMIT' in raw:
+            if 'DRIVE FAILURE' in raw or 'DRIVE WARNING' in raw:
+                return series.max() >= 1.0
+            if ('THERMAL' in raw or 'POWER' in raw) and 'PERFORMANCE LIMIT' in raw:
                 return series.max() >= 1.0
             return False
 
-        # [%] columns ───────────────────────────────────────────────────────
+        # ── Total Errors ──────────────────────────────────────────────────────
+        if 'TOTAL ERRORS' in raw:
+            return series.max() > 0
+
+        # ── Drive health ──────────────────────────────────────────────────────
+        if 'AVAILABLE SPARE' in raw and '[%]' in raw:
+            return series.min() < self.drive_spare_min
+
+        if any(x in raw for x in _SMART_KW):
+            return series.min() < self.drive_life_min
+
+        # ── [%] columns ───────────────────────────────────────────────────────
         if '[%]' in raw:
             if 'LIMIT' in raw:
-                return False   # headroom values, not breach indicators
-            # Memory load (system RAM or GPU VRAM)
-            if any(x in raw for x in ['MEMORY', 'RAM']) and any(x in raw for x in ['USAGE', 'LOAD']):
-                return series.max() >= 95.0
-            # Skip video engine / decode / encode usage — not diagnostic
-            if any(x in raw for x in ['DECODE', 'ENCODE', 'VIDEO', 'MEDIA']):
+                return False
+            if ('MEMORY' in raw or 'RAM' in raw) and ('USAGE' in raw or 'LOAD' in raw):
+                return series.max() >= self.memory_load_max
+            if 'DECODE' in raw or 'ENCODE' in raw or 'VIDEO' in raw or 'MEDIA' in raw:
                 return False
 
-        # WHEA / hardware errors ────────────────────────────────────────────
-        # Any nonzero WHEA count = system instability regardless of hardware type
-        WHEA_KW = ['WHEA', 'MACHINE CHECK', 'MCE', 'MCA']
-        if any(x in raw for x in WHEA_KW):
+        # ── WHEA / hardware errors ────────────────────────────────────────────
+        if any(x in raw for x in _WHEA_KW):
             return series.max() > 0
 
-        # Drive / memory errors ─────────────────────────────────────────────
-        ERROR_KW = ['ECC', 'BAD SECTOR', 'REALLOCATED', 'PENDING SECTOR',
-                    'UNCORRECTABLE', 'CRC ERROR']
-        if any(x in raw for x in ERROR_KW):
+        # ── Drive / memory errors ─────────────────────────────────────────────
+        if any(x in raw for x in _ERROR_KW):
             return series.max() > 0
 
-        # Power draw ────────────────────────────────────────────────────────
-        # Only flag actual draw sensors, not configured limits or static values
+        # ── Power draw ────────────────────────────────────────────────────────
         if '[W]' in raw and 'STATIC' not in raw and 'LIMIT' not in raw and 'PPT' not in raw:
             if 'CPU' in raw and series.max() > self.cpu_power_max:
                 return True
@@ -1053,9 +1113,7 @@ class TelemetryApp:
             if 'TOTAL' in raw and series.max() > self.total_power_max:
                 return True
 
-        # CPU power limit saturation ────────────────────────────────────────
-        # Flag if actual CPU power draw is consistently at or above its own PPT limit
-        # This means the CPU is power-throttling regardless of temp
+        # ── CPU PPT saturation ────────────────────────────────────────────────
         if 'CPU PPT' in raw and '[W]' in raw and 'LIMIT' not in raw:
             ppt_limit_col = next(
                 (c for c in self.df.columns if 'PPT' in c.upper() and 'LIMIT' in c.upper()
@@ -1065,69 +1123,62 @@ class TelemetryApp:
                 if limit_val > 0 and series.mean() >= limit_val * 0.98:
                     return True
 
-        # Voltage rails (+12V, +5V, +3.3V) ────────────────────────────────
-        RAIL_SKIP = ['GPU PCIE', 'PCIE', '12VHPWR', 'INPUT']
+        # ── Voltage rails (+12V, +5V, +3.3V) ────────────────────────────────
         for rail, (low, high) in self.volt_rails.items():
             if rail in raw:
-                if any(x.upper() in raw for x in RAIL_SKIP):
+                if any(x in raw for x in _RAIL_SKIP):
                     continue
-                after = raw.split(rail)[-1].upper()
-                if any(x in after for x in ['INPUT', 'PCIE', 'HPWR']):
+                after = raw.split(rail)[-1]
+                if 'INPUT' in after or 'PCIE' in after or 'HPWR' in after:
                     continue
                 return series.min() < low or series.max() > high
 
-        if any(x in raw for x in ['VCORE', 'CPU CORE VOLTAGE', 'VID']):
+        # ── CPU Vcore ─────────────────────────────────────────────────────────
+        if 'VCORE' in raw or 'CPU CORE VOLTAGE' in raw or 'VID' in raw:
             lo, hi = self.cpu_volt_range
-            return series.min() < lo or series.max() > hi
-
-        if any(x in raw for x in ['VCORE', 'CPU CORE VOLTAGE']):
-            if series.max() - series.min() > 0.3:
+            in_range = not (series.min() < lo or series.max() > hi)
+            # Check both range AND droop — fix: don't return early, check both
+            out_of_range = series.min() < lo or series.max() > hi
+            drooping = series.max() - series.min() > self.vcore_droop_max
+            if out_of_range or drooping:
                 return True
 
-        if any(x in raw for x in ['DRAM VOLTAGE', 'DIMM VOLTAGE', 'MEMORY VOLTAGE',
-                                   'VDIMM', 'VDDQ']):
+        # ── DRAM voltage ──────────────────────────────────────────────────────
+        if 'DRAM VOLTAGE' in raw or 'DIMM VOLTAGE' in raw or 'MEMORY VOLTAGE' in raw \
+                or 'VDIMM' in raw or 'VDDQ' in raw:
             lo, hi = self.dram_volt_range
             return series.min() < lo or series.max() > hi
 
+        # ── GPU core voltage ─────────────────────────────────────────────────
         if 'GPU CORE VOLTAGE' in raw and 'GFX' not in raw and 'VDDCR' not in raw:
             return series.max() > self.gpu_volt_max
 
-        # Clock speed instability ───────────────────────────────────────────
-        # If a CPU/GPU clock has very high variance relative to its mean it may
-        # indicate throttling even when temperatures look acceptable.
-        # Only check primary clocks, not per-core or effective/requested variants
-        if any(x in raw for x in ['CPU CLOCK', 'GPU CLOCK', 'CORE CLOCK']):
-            if not any(x in raw for x in ['EFFECTIVE', 'REQUESTED', 'CORE #', 'LIMIT']):
-                if series.mean() > 100 and (series.std() / series.mean()) > 0.35:
+        # ── Clock instability ─────────────────────────────────────────────────
+        if 'CPU CLOCK' in raw or 'GPU CLOCK' in raw or 'CORE CLOCK' in raw:
+            if 'EFFECTIVE' not in raw and 'REQUESTED' not in raw \
+                    and 'CORE #' not in raw and 'LIMIT' not in raw:
+                if series.mean() > 100 and (series.std() / series.mean()) > self.clock_instability:
                     return True
 
-        # Fan speeds ───────────────────────────────────────────────────────
-        # Only flag if the fan was actually spinning (not zero-RPM curve or disconnected)
-        if any(x in raw for x in ['RPM', 'FAN SPEED']):
+        # ── Fan speeds ───────────────────────────────────────────────────────
+        if 'RPM' in raw or 'FAN SPEED' in raw:
             if series.max() > self.fan_min_rpm and series.min() < self.fan_min_rpm:
                 return True
 
-        # Temperatures ─────────────────────────────────────────────────────
-        if any(x in name for x in ['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL']):
+        # ── Temperatures ─────────────────────────────────────────────────────
+        if any(x in name for x in _TEMP_TRIGGERS):
             matched_limit = None
             matched_len   = 0
             for key, limit in self.temp_limits.items():
-                key_norm = key.upper().replace(" ", "")
+                key_norm = key.upper().replace(' ', '')
                 if key_norm in name and len(key_norm) > matched_len:
                     matched_limit = limit
                     matched_len   = len(key_norm)
-            if matched_limit is not None:
-                return series.max() >= matched_limit
-            return series.max() >= 90.0   # conservative fallback for unknown sensors
+            return series.max() >= (matched_limit if matched_limit is not None else 90.0)
 
-        # Drive health (SMART) ──────────────────────────────────────────────
-        SMART_KW = ['HEALTH', 'WEAR LEVEL', 'REMAINING LIFE', 'ENDURANCE REMAINING']
-        if any(x in raw for x in SMART_KW):
-            return series.min() < 10      # <10% remaining life
-
-        # Physical memory load ──────────────────────────────────────────────
+        # ── Physical memory load ──────────────────────────────────────────────
         if 'PHYSICAL MEMORY' in raw and 'LOAD' in raw:
-            return series.max() >= 95.0
+            return series.max() >= self.memory_load_max
 
         return False
 

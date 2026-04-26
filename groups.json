@@ -57,7 +57,7 @@
     },
     "settings": {
         "dark_mode": true,
-        "multi_mode": false,
+        "multi_mode": true,
         "delta_mode": false,
         "ignored_version": "",
         "updates_disabled": false,
@@ -84,6 +84,8 @@
                 "SSD": 65.0,
                 "NVME": 65.0,
                 "HDD": 55.0,
+                "DRIVE": 70.0,
+                "TEMPERATURE": 70.0,
                 "CHIPSET": 90.0,
                 "PCH": 90.0,
                 "MOSFET": 110.0,
@@ -116,7 +118,13 @@
                 "latency_max_ms": 50.0,
                 "frametime_max_ms": 100.0,
                 "fps_min": 10.0,
-                "coolant_max": 45.0
+                "coolant_max": 45.0,
+                "memory_load_max": 95.0,
+                "drive_spare_min": 10.0,
+                "drive_life_min": 10.0,
+                "vcore_droop_max": 0.3,
+                "clock_instability": 0.35,
+                "throttle_threshold": 0.9
             }
         }
     }
