@@ -30,11 +30,10 @@ This approach prioritizes build stability, reproducibility, and cost efficiency 
 
 ## 🚀 Installation & Deployment
 <!-- LATEST_RELEASE_START -->
-### 🚀 Latest Release: v1.3.4 (2026-04-26)
+### 🚀 Latest Release: v1.4.0 (2026-04-27)
 
-- Download: [release_release_v1.3.4.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.3.4/release_v1.3.4.zip)
-- SHA256: 55BDC8B4FABB44BD70AD0E985A561C71D13BE98F2447B3BE163088A078FA218B
-- VirusTotal: MANUAL SCAN | https://www.virustotal.com/gui/file/55bdc8b4fabb44bd70ad0e985a561c71d13be98f2447b3be163088a078fa218b?nocache=1
+- Download: [release_release_v1.4.0.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.4.0/release_v1.4.0.zip)
+- SHA256: D5072F92022019E37E6EB5A605489038D54B3EABA24F2BFD3B8B411D5B292319
 <!-- LATEST_RELEASE_END -->
 
 ### 📦 Option 1: Compiled Executable (Recommended for Users)
@@ -148,4 +147,5 @@ The engine monitors multiple layers of system behavior:
 ## ⚖️ License
 
 MIT License - Developed for the hardware enthusiast community.
+
 
