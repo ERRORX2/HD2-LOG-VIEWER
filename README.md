@@ -34,6 +34,8 @@ This approach prioritizes build stability, reproducibility, and cost efficiency 
 
 - Download: [release_release_v1.4.0.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.4.0/release_v1.4.0.zip)
 - SHA256: D5072F92022019E37E6EB5A605489038D54B3EABA24F2BFD3B8B411D5B292319
+- VirusTotal manual analysis reference (optional, not part of CI pipeline):  
+  https://www.virustotal.com/gui/file-analysis/Y2JhN2Y1NjBhZDJhMDA1ZjhkYzU5ODVmZTg5MmY1ZmI6MTc3NzMwMzA2Mg==
 <!-- LATEST_RELEASE_END -->
 
 ### 📦 Option 1: Compiled Executable (Recommended for Users)
