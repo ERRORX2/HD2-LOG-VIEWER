@@ -61,7 +61,7 @@
         "delta_mode": false,
         "ignored_version": "",
         "updates_disabled": false,
-        "time_mode": true,
+        "time_mode": false,
         "heatmap_mode": false,
         "thresholds": {
             "temp_limits": {
@@ -124,7 +124,33 @@
                 "drive_life_min": 10.0,
                 "vcore_droop_max": 0.3,
                 "clock_instability": 0.35,
-                "throttle_threshold": 0.9
+                "throttle_threshold": 0.9,
+                "sig_cpu_thermal_pct": 0.95,
+                "sig_cpu_thermal_samples": 10,
+                "sig_fan_stall_rpm": 100.0,
+                "sig_fan_min_spinning": 200.0,
+                "sig_fan_hot_cpu_c": 70.0,
+                "sig_fan_hot_gpu_c": 65.0,
+                "sig_drive_temp_max": 70.0,
+                "sig_vrm_temp_max": 105.0,
+                "sig_ram_exhaust_pct": 95.0,
+                "sig_vram_overflow_pct": 98.0,
+                "sig_cpu_bn_gpu_pct": 60.0,
+                "sig_cpu_bn_cpu_pct": 85.0,
+                "sig_cpu_bn_samples": 10,
+                "sig_stutter_mult": 3.0,
+                "sig_stutter_min_hits": 5,
+                "sig_tdr_clock_frac": 0.5,
+                "sig_ppt_sat_pct": 0.98,
+                "sig_ppt_sat_samples": 15,
+                "sig_clock_stretch_mhz": 500.0,
+                "sig_disk_busy_pct": 99.9,
+                "sig_disk_busy_samples": 3,
+                "sig_v12_lo": 11.4,
+                "sig_v5_lo": 4.75,
+                "sig_v5_hi": 5.25,
+                "sig_v33_lo": 3.14,
+                "sig_v33_hi": 3.47
             }
         }
     }

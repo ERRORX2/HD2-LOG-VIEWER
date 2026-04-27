@@ -55,23 +55,21 @@ jobs:
           }
 
           Copy-Item "dist\HD2_LOG_VIEWER.exe" "artifact\" -Force
+          Copy-Item "groups.json" "artifact\" -Force
 
-      - name: Generate SHA256
-        shell: pwsh
-        run: |
-          $hash = Get-FileHash "artifact\HD2_LOG_VIEWER.exe" -Algorithm SHA256
-          $hash.Hash.ToUpper() | Set-Content "artifact\sha256.txt" -Encoding utf8
-
-      - name: Create Release ZIP
+      - name: Create Release ZIP + SHA256
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}" -replace "refs/tags/", ""
           $zip = "release_$tag.zip"
 
           Compress-Archive `
-            -Path "artifact\HD2_LOG_VIEWER.exe", "artifact\sha256.txt" `
+            -Path "artifact\*" `
             -DestinationPath "artifact\$zip" `
             -Force
+
+          $hash = Get-FileHash "artifact\$zip" -Algorithm SHA256
+          $hash.Hash.ToUpper() | Set-Content "artifact\sha256.txt" -Encoding utf8
 
           Set-Content "artifact\zipname.txt" $zip -Encoding utf8
 
@@ -103,48 +101,52 @@ jobs:
           name: build-artifact
           path: artifact/
 
-      - name: VirusTotal Upload
+      - name: VirusTotal Upload + Report Fetch
         shell: pwsh
         env:
           VT_API_KEY: ${{ secrets.VT_API_KEY }}
         run: |
-          $ErrorActionPreference = "Continue"
+          $ErrorActionPreference = "Stop"
 
           $exe = "artifact\HD2_LOG_VIEWER.exe"
-          $hash = Get-Content "artifact\sha256.txt"
-          $url = "https://www.virustotal.com/gui/file/$hash"
+          $zipHash = Get-Content "artifact\sha256.txt"
 
-          $attempt = 0
-          $max = 3
-          $success = $false
-          $vtResult = ""
+          # Upload file
+          $upload = Invoke-RestMethod `
+            -Uri "https://www.virustotal.com/api/v3/files" `
+            -Headers @{ "x-apikey" = $env:VT_API_KEY } `
+            -Method Post `
+            -InFile $exe
 
-          while ($attempt -lt $max -and -not $success) {
-            $attempt++
+          $analysisId = $upload.data.id
 
-            try {
-              $res = Invoke-RestMethod `
-                -Uri "https://www.virustotal.com/api/v3/files" `
-                -Headers @{ "x-apikey" = $env:VT_API_KEY } `
-                -Method Post `
-                -InFile $exe `
-                -ErrorAction Stop
-
-              if ($res.data.id) {
-                $success = $true
-                $vtResult = "SCAN OK: $($res.data.id)"
-              }
-            }
-            catch {
-              Start-Sleep -Seconds 10
-            }
+          if (-not $analysisId) {
+            throw "VirusTotal upload failed"
           }
 
-          if (-not $success) {
-            $vtResult = "VT FAILED"
-          }
+          # Poll for completion
+          $i = 0
+          $maxTries = 20
 
-          "$vtResult | $url" | Set-Content "artifact\vt_result.txt" -Encoding utf8
+          do {
+            Start-Sleep -Seconds 10
+            $i++
+
+            $report = Invoke-RestMethod `
+              -Uri "https://www.virustotal.com/api/v3/analyses/$analysisId" `
+              -Headers @{ "x-apikey" = $env:VT_API_KEY }
+
+            $status = $report.data.attributes.status
+
+          } while ($status -ne "completed" -and $i -lt $maxTries)
+
+          $stats = $report.data.attributes.stats
+
+          $reportUrl = "https://www.virustotal.com/gui/analysis/$analysisId"
+
+          $vtResult = "OK | Malicious: $($stats.malicious) | Suspicious: $($stats.suspicious) | $reportUrl"
+
+          $vtResult | Set-Content "artifact\vt_result.txt" -Encoding utf8
 
       - name: Update README
         if: startsWith(github.ref, 'refs/tags/')
@@ -159,17 +161,15 @@ jobs:
           $start = "<!-- LATEST_RELEASE_START -->"
           $end = "<!-- LATEST_RELEASE_END -->"
 
-          $lines = @(
-            $start
-            "### 🚀 Latest Release: $tag ($date)"
-            ""
-            "- Download: [release_$zip](https://github.com/${{ github.repository }}/releases/download/$tag/$zip)"
-            "- SHA256: $hash"
-            "- VirusTotal: $vt"
-            $end
-          )
+          $block = @"
+          $start
+          ### 🚀 Latest Release: $tag ($date)
 
-          $block = $lines -join "`n"
+          - Download: [release_$zip](https://github.com/${{ github.repository }}/releases/download/$tag/$zip)
+          - SHA256: $hash
+          - VirusTotal: $vt
+          $end
+          "@
 
           $readme = Get-Content README.md -Raw -Encoding utf8
 
