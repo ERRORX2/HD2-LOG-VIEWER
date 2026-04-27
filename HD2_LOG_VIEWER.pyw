@@ -1705,31 +1705,197 @@ class TelemetryApp:
                 "Motherboard power delivery is too hot. ADVICE: Improve case airflow or add a small fan directed at the motherboard heatsinks.", 
                 [f"Max: {mx(vrm_temp):.1f}°C", f"Threshold: {self.sig_vrm_temp_max}°C"])
         
-        # 15. CPU CLOCK STRETCHING (TIERED LOGIC)
-        if eff_clock and cpu_clock and cpu_usage_col:
-            # 1. Define thresholds
-            # We use MAX thread usage to catch single-core stretching often missed by 'average'
-            load_mask = df[cpu_usage_col] > 80 
-            gap = (df[cpu_clock] - df[eff_clock])
-    
-            # 2. Identify stretching levels during load
-            # Minor: 50MHz to 200MHz gap | Major: >200MHz gap
-            is_minor = (gap >= 50) & (gap < 200) & load_mask
-            is_major = (gap >= 200) & load_mask
+        # 15. CPU CLOCK STRETCHING (ACTIVE-CORE VALIDATION)
 
-            major_detected = is_major.rolling(window=3).sum() >= 2
-            minor_detected = is_minor.rolling(window=3).sum() >= 2
+        req_cols = [c for c in df.columns if 'Clock (perf #' in c]
+        if req_cols:
+            n_cores        = len(req_cols)
+            per_core_ratios  = []
+            per_core_active  = []   # boolean Series per core, True = core is active
 
-            if major_detected.any():
-                add(name="CPU Clock Stretching (MAJOR)",severity="CRITICAL",description=(
-                    "Severe clock stretching detected. The CPU is 'pausing' frequently to maintain stability. "
-                    "This is causing significant performance loss. ADVICE: Your undervolt is too aggressive. "
-                    "Reduce your Curve Optimizer magnitude or increase Vcore offset immediately."),evidence=[f"Peak Gap: {gap[is_major].max():.0f} MHz", f"Status: Severe Performance Degradation"])
-            elif minor_detected.any():
-                add(name="CPU Clock Stretching (MINOR)",severity="WARNING",description=(
-                    "Minor clock stretching detected. The CPU is slightly unstable under heavy load. "
-                    "You are losing a small amount of potential performance. ADVICE: Consider backing off "
-                    "your undervolt by 2-3 steps to recover full effective clock speeds."),evidence=[f"Average Gap: {gap[is_minor].mean():.0f} MHz", f"Status: Edge-of-Stability"])
+            for i, req_col in enumerate(req_cols):
+                t0_col = f"Core {i} T0 Effective Clock [MHz]"
+                t1_col = f"Core {i} T1 Effective Clock [MHz]"
+
+                req = df[req_col].replace(0, np.nan)
+
+                # Only consider samples where the requested clock is meaningful
+                # (above 300 MHz rules out C-state idle samples)
+                valid_req = req > 300
+
+                core_ratios  = []
+                core_weights = []
+                core_active  = pd.Series(False, index=df.index)
+
+                for eff_col in [t0_col, t1_col]:
+                    if eff_col not in df.columns:
+                        continue
+                    eff = df[eff_col]
+
+                    # Active = effective clock is at least 35% of requested + 100 MHz
+                    # Stricter than the old formula to avoid flagging genuine C-state exits
+                    active = valid_req & (eff > (0.35 * req + 100))
+
+                    ratio  = (eff / req).where(active)
+                    # Use effective clock as weight so higher-frequency samples
+                    # contribute more — avoids idle samples pulling the ratio down
+                    weight = eff.where(active)
+
+                    core_ratios.append(ratio)
+                    core_weights.append(weight)
+                    core_active = core_active | active
+
+                if not core_ratios:
+                    continue
+
+                ratios  = pd.concat(core_ratios,  axis=1)
+                weights = pd.concat(core_weights, axis=1)
+
+                # Use median across T0/T1 threads to be robust against one thread being parked
+                core_ratio  = ratios.median(axis=1)
+
+                # Weight = fraction of threads that are active (0, 0.5, or 1.0)
+                core_weight = ratios.notna().astype(float).mean(axis=1)
+
+                # Require at least 3 of last 5 samples to show core as active
+                # before we trust the ratio — avoids single-sample bursts
+                stable_active = core_active.rolling(5, min_periods=3).sum() >= 3
+                core_ratio  = core_ratio.where(stable_active)
+                core_weight = core_weight.where(stable_active)
+
+                per_core_ratios.append(core_ratio)
+                per_core_active.append(core_active.astype(int))
+
+            if per_core_ratios:
+                all_ratios  = pd.concat(per_core_ratios, axis=1)
+                all_active  = pd.concat(per_core_active, axis=1)
+
+                # Weighted mean ratio across all cores
+                # Weight columns are fraction-active (0–1), aligned with ratio NaN mask
+                weight_mat   = all_ratios.notna().astype(float)
+                weight_total = weight_mat.sum(axis=1).replace(0, np.nan)
+                weighted_sum = (all_ratios.fillna(0) * weight_mat).sum(axis=1)
+                mean_ratio   = (weighted_sum / weight_total).replace([np.inf, -np.inf], np.nan)
+
+                # Per-core worst ratio (useful for evidence reporting)
+                worst_core_ratio = all_ratios.min(axis=1)
+
+                # Core pressure = fraction of cores that are active at each sample
+                # Fix: use actual active flag sum / total cores (not notna which is always True)
+                active_count  = all_active.sum(axis=1)
+                core_pressure = (active_count / n_cores).rolling(5, min_periods=3).mean()
+
+                # System load from total CPU usage if available
+                system_load = df.get(
+                    'Total CPU Usage [%]',
+                    pd.Series(0.0, index=df.index)
+                ).fillna(0)
+
+                # valid_load: sample is under meaningful load via two signals
+                sys_signal  = np.clip(system_load / 100.0, 0, 1)
+                core_signal = np.clip(core_pressure.fillna(0), 0, 1)
+                # Balanced 60/40 — core pressure is a direct signal, don't underweight it
+                load_score  = 0.6 * sys_signal + 0.4 * core_signal
+                valid_load  = load_score > 0.55
+
+                # Transition filter: suppress detection during rapid load changes
+                # (clock stretching during a load ramp is normal scheduler behavior)
+                # Use a simple rolling std of load as the transition indicator —
+                # more interpretable than the exponential decay that masked real events
+                load_std       = system_load.rolling(5, min_periods=3).std().fillna(0)
+                in_transition  = load_std > 15.0   # >15% std in a 5-sample window = ramp
+
+                # Classification thresholds
+                # major: effective clock is severely behind requested under load
+                # minor: moderate deficit — could be thermal, power, or scheduling
+                major = (
+                    (mean_ratio < 0.60) &
+                    valid_load &
+                    ~in_transition
+                )
+                minor = (
+                    (mean_ratio >= 0.60) &
+                    (mean_ratio < 0.80) &
+                    valid_load &
+                    ~in_transition
+                )
+
+                # Persistence filter: require the condition to hold for a sustained
+                # window, not just a few samples — single rolling pass (no double smooth)
+                major_event = major.rolling(8, min_periods=5).mean() > 0.55
+                minor_event = minor.rolling(8, min_periods=5).mean() > 0.50
+
+                # Per-core breakdown for evidence — which cores were worst
+                core_avg_ratios = all_ratios.mean()
+                worst_cores     = core_avg_ratios.nsmallest(3)
+
+                if major_event.any():
+                    avg_r     = mean_ratio[major_event].mean()
+                    worst_r   = mean_ratio[major_event].min()
+                    peak_load = system_load[major_event].max()
+                    peak_pressure = core_pressure[major_event].max()
+
+                    # Determine likely cause from other signals
+                    cause_hints = []
+                    cpu_temp_col = self._col('CPU', 'TEMP') or self._col('TDIE') or self._col('TCTL')
+                    if cpu_temp_col:
+                        peak_temp = df[cpu_temp_col][major_event].max()
+                        t_limit   = self.temp_limits.get('TDIE', self.temp_limits.get('CORE', 95.0))
+                        if peak_temp >= t_limit * 0.92:
+                            cause_hints.append(f"CPU temp {peak_temp:.1f}°C near limit — likely thermal throttle")
+                    ppt_col = self._col('CPU', 'PPT') or self._col('CPU', 'POWER')
+                    ppt_lim_col = self._col('CPU', 'PPT', 'LIMIT') or self._col('CPU', 'POWER', 'LIMIT')
+                    if ppt_col and ppt_lim_col:
+                        ppt_ratio = df[ppt_col].mean() / (df[ppt_lim_col].mean() + 1e-9)
+                        if ppt_ratio >= 0.95:
+                            cause_hints.append("CPU PPT at limit — power throttling")
+                    if not cause_hints:
+                        cause_hints.append("No obvious thermal/power cause found — check for OS scheduler issues or BIOS power limits")
+
+                    worst_core_strs = [
+                        f"Core {c.split()[1] if 'Core' in str(c) else c}: avg ratio {v:.2f}"
+                        for c, v in worst_cores.items() if not np.isnan(v)
+                    ]
+
+                    add(
+                        name="CPU Clock Stretching — Major",
+                        severity="CRITICAL",
+                        description=(
+                            "The CPU is consistently running well below its requested frequency "
+                            "under load. This means the CPU is not delivering the performance "
+                            "it should be. Causes include thermal throttling, power limit "
+                            "throttling, or a BIOS/OS scheduling misconfiguration. "
+                            "ADVICE: Check CPU temperatures, power limits in BIOS, and whether "
+                            "Windows power plan is set to Balanced instead of High Performance."
+                        ),
+                        evidence=[
+                            f"Average eff/req ratio under load: {avg_r:.2f} (target >0.90)",
+                            f"Worst ratio recorded: {worst_r:.2f}",
+                            f"Peak system load during event: {peak_load:.1f}%",
+                            f"Peak core pressure: {peak_pressure:.2f}",
+                        ] + worst_core_strs + cause_hints
+                    )
+
+                if minor_event.any() and not major_event.any():
+                    avg_r     = mean_ratio[minor_event].mean()
+                    peak_load = system_load[minor_event].max()
+
+                    add(
+                        name="CPU Clock Stretching — Minor",
+                        severity="WARNING",
+                        description=(
+                            "The CPU is running moderately below its requested frequency under "
+                            "load. This is often a sign of a soft power or thermal limit being "
+                            "reached. Performance impact is mild but consistent. "
+                            "ADVICE: Monitor CPU temperatures and check BIOS power limits. "
+                            "If on a laptop, try a cooling pad or update the BIOS."
+                        ),
+                        evidence=[
+                            f"Average eff/req ratio under load: {avg_r:.2f} (target >0.90)",
+                            f"Peak system load during event: {peak_load:.1f}%",
+                        ]
+                    )
+
         # 16. PSU +5V / +3.3V RAIL STABILITY
         
         for r_name, low, high in [('+5V', self.sig_v5_lo, self.sig_v5_hi),
@@ -1759,7 +1925,7 @@ class TelemetryApp:
         disk_busy = self._col('TOTAL', 'ACTIVE', 'TIME') or self._col('DISK', 'BUSY')
         if disk_busy and (df[disk_busy] >= self.sig_disk_busy_pct).rolling(
                 window=self.sig_disk_busy_samples).sum().max() >= self.sig_disk_busy_samples:
-            add("Storage Congestion", "WARNING", 
+            add("Storage Congestion", "INFO", 
                 "System drive was 100% busy. ADVICE: Check for background Windows Updates or Antivirus scans that may be fighting the game for disk access.", 
                 ["Persistent 100% disk usage detected.",
                  f"Threshold: {self.sig_disk_busy_pct}% for {self.sig_disk_busy_samples} samples"])
@@ -1871,7 +2037,7 @@ class TelemetryApp:
             if os_jitter.rolling(window=self.sig_cpu_bn_samples).sum().max() >= self.sig_cpu_bn_samples:
                 add(
                     name="Background Process Interference",
-                    severity="WARNING",
+                    severity="INFO",
                     description=(
                         "High CPU activity detected that isn't being driven by the GPU. "
                         "This usually means a background task (Antivirus, Windows Update, or "
@@ -2045,7 +2211,7 @@ class TelemetryApp:
                 u_val = df[uclk_col].iloc[0]
                 add(
                     name="Ryzen Fabric Desync",
-                    severity="WARNING",
+                    severity="INFO",
                     description=f"FCLK ({f_val:.0f}) and UCLK ({u_val:.0f}) are not 1:1. This increases latency.",
                     evidence=[
                         f"FCLK/UCLK Mismatch: {abs(f_val-u_val):.0f} MHz",
@@ -2155,7 +2321,6 @@ class TelemetryApp:
             is_dark = self.is_dark
             bg     = "#121212" if is_dark else "#f8f9fa"
             fg     = "#e0e0e0" if is_dark else "#212529"
-            bg2    = "#1e1e1e" if is_dark else "#ffffff"
             accent = "#1f6aa5" if is_dark else "#3498db"
 
             dialog = tk.Toplevel(self.root)
@@ -2164,70 +2329,106 @@ class TelemetryApp:
             dialog.minsize(520, 400)
             dialog.grab_set()
             dialog.configure(bg=bg)
+
             self.root.update_idletasks()
             x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 340
             y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 310
             dialog.geometry(f"680x620+{x}+{y}")
 
-            # Title
             tk.Label(dialog, text="Hardware Failure Diagnosis",
-                     font=('Segoe UI', 13, 'bold'), bg=bg, fg=accent).pack(pady=(14, 2))
-            tk.Label(dialog,
-                     text=f"Analyzed {len(self.df)} samples — {len(results)} signature(s) detected",
-                     font=('Segoe UI', 9), bg=bg, fg="#888").pack(pady=(0, 10))
+                    font=('Segoe UI', 13, 'bold'),
+                    bg=bg, fg=accent).pack(pady=(14, 2))
 
-            # Scrollable body
+            tk.Label(dialog,
+                    text=f"Analyzed {len(self.df)} samples — {len(results)} signature(s) detected",
+                    font=('Segoe UI', 9),
+                    bg=bg, fg="#888").pack(pady=(0, 10))
+
             outer = tk.Frame(dialog, bg=bg)
             outer.pack(fill=tk.BOTH, expand=True, padx=12)
+
             canvas = tk.Canvas(outer, bg=bg, highlightthickness=0)
             sb = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
             body = tk.Frame(canvas, bg=bg)
+
             wid = canvas.create_window((0, 0), window=body, anchor="nw")
             body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
             canvas.bind("<Configure>", lambda e: canvas.itemconfig(wid, width=e.width))
             canvas.configure(yscrollcommand=sb.set)
+
             canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             sb.pack(side=tk.RIGHT, fill=tk.Y)
+
             canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>",
                 lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
             canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
 
             if not results:
-                tk.Label(body, text="No hardware failure signatures detected.",
-                         font=('Segoe UI', 11), bg=bg, fg="#2ecc71", pady=30).pack()
                 tk.Label(body,
-                         text="The log looks clean based on the current signature library.",
-                         font=('Segoe UI', 9), bg=bg, fg="#888").pack()
+                        text="No hardware failure signatures detected.",
+                        font=('Segoe UI', 11),
+                        bg=bg, fg="#2ecc71",
+                        pady=30).pack()
+
+                tk.Label(body,
+                        text="The log looks clean based on the current signature library.",
+                        font=('Segoe UI', 9),
+                        bg=bg, fg="#888").pack()
+
             else:
-                # Sort: CRITICAL first
                 results.sort(key=lambda r: 0 if r['severity'] == 'CRITICAL' else 1)
+
                 for r in results:
+
                     is_crit = r['severity'] == 'CRITICAL'
+                    is_info = r.get('severity') == 'INFO'  # 🔥 ONLY ADDITION
+
                     card_bg   = "#2a0a0a" if (is_dark and is_crit) else \
                                 "#1a2a1a" if (is_dark and not is_crit) else \
                                 "#fdecea" if is_crit else "#eafaf1"
+
                     sev_color = "#e74c3c" if is_crit else "#f39c12"
+
+                    # 🔥 ONLY ADDITION (safe)
+                    if is_info:
+                        sev_color = "#3498db"
+
                     card = tk.Frame(body, bg=card_bg, padx=12, pady=10)
                     card.pack(fill=tk.X, pady=5, padx=2)
 
                     hdr = tk.Frame(card, bg=card_bg)
                     hdr.pack(fill=tk.X)
-                    tk.Label(hdr, text="CRITICAL" if is_crit else "WARNING",
-                             font=('Segoe UI', 8, 'bold'), bg=sev_color, fg="white",
-                             padx=6, pady=2).pack(side=tk.LEFT)
-                    tk.Label(hdr, text=f"  {r['name']}",
-                             font=('Segoe UI', 10, 'bold'), bg=card_bg, fg=fg).pack(side=tk.LEFT)
 
-                    tk.Label(card, text=r['description'], bg=card_bg, fg=fg,
-                             font=('Segoe UI', 9), wraplength=580, justify='left').pack(
-                             anchor='w', pady=(6, 4))
+                    tk.Label(hdr,
+                            text="CRITICAL" if is_crit else "INFO" if is_info else "WARNING",
+                            font=('Segoe UI', 8, 'bold'),
+                            bg=sev_color,
+                            fg="white",
+                            padx=6,
+                            pady=2).pack(side=tk.LEFT)
+
+                    tk.Label(hdr,
+                            text=f"  {r['name']}",
+                            font=('Segoe UI', 10, 'bold'),
+                            bg=card_bg,
+                            fg=fg).pack(side=tk.LEFT)
+
+                    tk.Label(card,
+                            text=r['description'],
+                            bg=card_bg,
+                            fg=fg,
+                            font=('Segoe UI', 9),
+                            wraplength=580,
+                            justify='left').pack(anchor='w', pady=(6, 4))
 
                     if r.get('evidence'):
                         for ev in r['evidence']:
                             if ev:
-                                tk.Label(card, text=f"  • {ev}", bg=card_bg,
-                                         fg="#aaaaaa" if is_dark else "#555555",
-                                         font=('Segoe UI', 8)).pack(anchor='w')
+                                tk.Label(card,
+                                        text=f"  • {ev}",
+                                        bg=card_bg,
+                                        fg="#aaaaaa" if is_dark else "#555555",
+                                        font=('Segoe UI', 8)).pack(anchor='w')
 
             ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=10)
 

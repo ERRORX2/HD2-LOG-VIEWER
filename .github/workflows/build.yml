@@ -84,12 +84,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: artifact/release_*.zip
+          prerelease: ${{ contains(github.ref_name, '-dev') }}
 
 
   update_readme:
     runs-on: windows-latest
     needs: build
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-dev')
 
     steps:
       - name: Checkout Code
