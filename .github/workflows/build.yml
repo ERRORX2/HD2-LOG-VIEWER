@@ -86,7 +86,7 @@ jobs:
           files: artifact/release_*.zip
 
 
-  virustotal:
+  update_readme:
     runs-on: windows-latest
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
@@ -101,60 +101,11 @@ jobs:
           name: build-artifact
           path: artifact/
 
-      - name: VirusTotal Upload + Report Fetch
-        shell: pwsh
-        env:
-          VT_API_KEY: ${{ secrets.VT_API_KEY }}
-        run: |
-          $ErrorActionPreference = "Stop"
-
-          $exe = "artifact\HD2_LOG_VIEWER.exe"
-          $zipHash = Get-Content "artifact\sha256.txt"
-
-          # Upload file
-          $upload = Invoke-RestMethod `
-            -Uri "https://www.virustotal.com/api/v3/files" `
-            -Headers @{ "x-apikey" = $env:VT_API_KEY } `
-            -Method Post `
-            -InFile $exe
-
-          $analysisId = $upload.data.id
-
-          if (-not $analysisId) {
-            throw "VirusTotal upload failed"
-          }
-
-          # Poll for completion
-          $i = 0
-          $maxTries = 20
-
-          do {
-            Start-Sleep -Seconds 10
-            $i++
-
-            $report = Invoke-RestMethod `
-              -Uri "https://www.virustotal.com/api/v3/analyses/$analysisId" `
-              -Headers @{ "x-apikey" = $env:VT_API_KEY }
-
-            $status = $report.data.attributes.status
-
-          } while ($status -ne "completed" -and $i -lt $maxTries)
-
-          $stats = $report.data.attributes.stats
-
-          $reportUrl = "https://www.virustotal.com/gui/analysis/$analysisId"
-
-          $vtResult = "OK | Malicious: $($stats.malicious) | Suspicious: $($stats.suspicious) | $reportUrl"
-
-          $vtResult | Set-Content "artifact\vt_result.txt" -Encoding utf8
-
       - name: Update README
-        if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}" -replace "refs/tags/", ""
           $hash = Get-Content "artifact\sha256.txt"
-          $vt = Get-Content "artifact\vt_result.txt"
           $date = Get-Date -Format "yyyy-MM-dd"
           $zip = "release_$tag.zip"
 
@@ -167,7 +118,6 @@ jobs:
 
           - Download: [release_$zip](https://github.com/${{ github.repository }}/releases/download/$tag/$zip)
           - SHA256: $hash
-          - VirusTotal: $vt
           $end
           "@
 
@@ -182,7 +132,6 @@ jobs:
           Set-Content README.md $readme -Encoding utf8
 
       - name: Commit README Safely
-        if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
