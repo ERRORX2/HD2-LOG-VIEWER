@@ -40,7 +40,7 @@ _RAIL_SKIP     = ('GPU PCIE', 'PCIE', '12VHPWR', 'INPUT')
 _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
 GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.4.0"  # Bump 
+CURRENT_VERSION = "1.4.1"  # Bump 
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
