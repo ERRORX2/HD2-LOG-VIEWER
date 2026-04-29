@@ -30,12 +30,16 @@ This approach prioritizes build stability, reproducibility, and cost efficiency 
 
 ## 🚀 Installation & Deployment
 <!-- LATEST_RELEASE_START -->
-### 🚀 Latest Release: v1.4.0 (2026-04-27)
+### 🚀 Latest Release: v1.4.1 (2026-04-29)
 
-- Download: [release_release_v1.4.0.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.4.0/release_v1.4.0.zip)
-- SHA256: D5072F92022019E37E6EB5A605489038D54B3EABA24F2BFD3B8B411D5B292319
-- VirusTotal manual analysis reference (optional, not part of CI pipeline):  
-  https://www.virustotal.com/gui/file-analysis/Y2JhN2Y1NjBhZDJhMDA1ZjhkYzU5ODVmZTg5MmY1ZmI6MTc3NzMwMzA2Mg==
+- Download: [release_release_v1.4.1.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.4.1/release_v1.4.1.zip)
+
+### 🔐 Integrity
+
+- EXE SHA256: 3A39800F10F69C45CF0A5D8A5F0475289B5455CDB69A3294A2845B623BE427AA
+- Groups JSON SHA256: 23D61C23D4E5D605D1CAB518647C0BB5BAE026AE86D3B9E065ACEA67FE11F1D4
+- Manifest SHA256: CD924172E3312519FB0542B092B5ECE2A19DAD831AE1EADE0A49309F0E5E04AA
+- ZIP SHA256: 67B3D2F7B6CD73522C15F5FDB0037098119745DA6513C9AA1C44A47E14D1CA30
 <!-- LATEST_RELEASE_END -->
 
 ### 📦 Option 1: Compiled Executable (Recommended for Users)
@@ -149,5 +153,6 @@ The engine monitors multiple layers of system behavior:
 ## ⚖️ License
 
 MIT License - Developed for the hardware enthusiast community.
+
 
 
