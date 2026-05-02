@@ -40,7 +40,7 @@ _RAIL_SKIP     = ('GPU PCIE', 'PCIE', '12VHPWR', 'INPUT')
 _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
 GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.4.1"  # Bump 
+CURRENT_VERSION = "1.4.2"  # Bump 
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
@@ -1448,9 +1448,9 @@ class TelemetryApp:
         # ── CPU Metrics ───────────────────────────────────────────────────────────────
 
         cpu_temp      = self._col('TCTL') or self._col('TDIE') or self._col('PROZESSOR', 'TEMPERATUR') or self._col('TEMPERATUR') or self._col('CPU')
-        cpu_hotspot   = self._col('HOT', 'SPOT') or self._col('GPU', 'HOT')
+       #cpu_hotspot   = self._col('HOT', 'SPOT') or self._col('GPU', 'HOT')
         cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col('CLOCK')
-        eff_clock     = self._col('CPU', 'EFF') or self._col('EFFIZIENZ') or self._col('EFFECTIVE')
+       #eff_clock     = self._col('CPU', 'EFF') or self._col('EFFIZIENZ') or self._col('EFFECTIVE')
         cpu_usage_col = self._col('CPU', 'AUSLASTUNG') or self._col('CPU', 'USAGE') or self._col('CPU', 'UTIL') or self._col('CPU', 'LOAD') or self._col('PROZESSOR') or self._col('TOTAL', 'CPU')
         cpu_power     = self._col('CPU-Gesamt-Leistungsaufnahme') or self._col('CPU', 'PACKAGE') or self._col('CPU', 'PPT') or self._col('CPU', 'POWER') or self._col('CPU Package Power')
         throttle      = self._col('THROTTLE') or self._col('PROCHOT')
@@ -1701,17 +1701,71 @@ class TelemetryApp:
                             ["RPM hit 0 during load samples."])
                         break
         
-        # 9. GPU VRAM OVERFLOW (SMART SCALE)
-        
-        if gpu_mem_usage:
-            vram_val = mx(gpu_mem_usage)
-            is_percentage = "[%]" in gpu_mem_usage or vram_val <= 100.0
-            is_overflow = vram_val > self.sig_vram_overflow_pct if is_percentage else vram_val > (df[gpu_mem_usage].max() * (self.sig_vram_overflow_pct / 100.0))
-            if is_overflow:
-                unit = "%" if is_percentage else " MB"
-                add("GPU VRAM Overflow", "WARNING", 
-                    "The GPU is out of video memory. ADVICE: Lower 'Texture Quality' or 'Render Resolution' in settings.", 
-                    [f"VRAM Usage: {vram_val:.1f}{unit}", f"Threshold: {self.sig_vram_overflow_pct}%"])
+        # 9. GPU VRAM OVERFLOW ANALYSIS (EVENT + DURATION BASED)
+        df = df.copy()
+        if gpu_mem_usage and gpu_mem_dynamic:
+
+            vram = df[gpu_mem_usage]
+            spill = df[gpu_mem_dynamic]
+
+            vram_pct = vram / vram.max() * 100
+            spill_trend = spill.diff().rolling(5, min_periods=1).mean()
+            spill_active = spill_trend > spill.std() * 0.6
+            overflow = (vram_pct > 95) & spill_active
+            overflow = overflow.rolling(3, min_periods=1).sum() >= 2
+            overflow_shifted = overflow.shift(1, fill_value=False)
+
+            event_start = (~overflow_shifted) & overflow
+            event_end   = overflow_shifted & (~overflow)
+
+            overflow_events = event_start.sum()
+            df["_overflow_state"] = overflow.astype(int)
+            # assume uniform sampling; if timestamp exists, use it instead
+            if "Timestamp" in df.columns:
+                df["Timestamp"] = pd.to_datetime(df["Timestamp"])
+                df["_time_diff"] = df["Timestamp"].diff().dt.total_seconds().fillna(0)
+                time_unit = "seconds"
+            else:
+                df["_time_diff"] = 1  # fallback = 1 sample = 1 unit
+                time_unit = "samples"
+
+            overflow_time = df["_time_diff"] * df["_overflow_state"]
+
+            total_overflow_duration = overflow_time.sum()
+
+            # per-event durations
+            event_durations = []
+            current = 0
+
+            for state, dt in zip(overflow, df["_time_diff"]):
+                if state:
+                    current += dt
+                elif current > 0:
+                    event_durations.append(current)
+                    current = 0
+
+            if current > 0:
+                event_durations.append(current)
+
+            avg_duration = sum(event_durations) / len(event_durations) if event_durations else 0
+
+            if overflow_events > 0:
+
+                add(
+                    "GPU VRAM Overflow Analysis",
+                    "WARNING",
+                    "VRAM pressure caused system memory spillover. This leads to PCIe transfers, "
+                    "stuttering, and frame-time instability.",
+                    [
+                        f"Overflow Events: {int(overflow_events)}",
+                        f"Total Duration: {total_overflow_duration:.2f} {time_unit}",
+                        f"Average Event Duration: {avg_duration:.2f} {time_unit}",
+                        f"Max VRAM Pressure: {vram_pct.max():.1f}%",
+                        f"Max Spill Memory: {spill.max():.0f}"
+                    ]
+                )
+
+            df.drop(columns=["_overflow_state", "_time_diff"], inplace=True, errors="ignore")
         
         # 10. S.M.A.R.T. & WEAR-LEVELING FAILURE (HIGH-SAFETY TIER)
         
@@ -2183,27 +2237,43 @@ class TelemetryApp:
         # 24. VRAM SWAPPING (SHARED MEMORY OVERFLOW)
 
         if gpu_mem_dedicated and gpu_mem_dynamic:
-            
-            vram_full = df[gpu_mem_dedicated] > (df[gpu_mem_dedicated].max() * 0.95)
-            is_spilling = (df[gpu_mem_dynamic] > 512) & vram_full
-            
-            if is_spilling.any():
-                # Cross-reference with Bus Load. If Bus Load is >10%, it's a confirmed bottleneck.
-                avg_bus_load = df.loc[is_spilling, gpu_bus_col].mean() if gpu_bus_col else 0
-                
+
+            vram_used = df[gpu_mem_dedicated]
+            spill_mem = df[gpu_mem_dynamic]
+
+
+            vram_saturated = vram_used > vram_used.quantile(0.98)
+            spill_growth = spill_mem.diff().rolling(3, min_periods=1).mean()
+
+            spill_threshold = spill_mem.std() * 0.6
+            is_spilling = vram_saturated & (spill_growth > spill_threshold)
+
+            persistence = is_spilling.rolling(window=5, min_periods=1).sum() >= 3
+            confirmed_spill = is_spilling & persistence
+
+            avg_bus_load = 0
+
+            if gpu_bus_col and confirmed_spill.any():
+                bus_series = df.loc[confirmed_spill, gpu_bus_col].dropna()
+
+                if not bus_series.empty:
+                    avg_bus_load = bus_series.median()
+
+            if confirmed_spill.any():
+                severity = "CRITICAL" if spill_mem.max() > spill_mem.quantile(0.99) else "WARNING"
+
                 add(
-                    name="VRAM Swapping / Shared Memory Spillover",
-                    severity="CRITICAL" if avg_bus_load > 15 else "WARNING",
+                    name="VRAM Swapping / System Memory Spillover",
+                    severity=severity,
                     description=(
-                        "The GPU has run out of dedicated VRAM and is now using slow System RAM. "
-                        "This causes massive stutters and 'hitchy' FPS because the PCIe bus "
-                        "cannot move texture data fast enough. "
-                        "ADVICE: Reduce Texture Quality or 'Texture Pool Size' in game settings."
+                        "The GPU has exceeded effective VRAM capacity and is now spilling into "
+                        "system memory (D3D dynamic allocation). This causes PCIe transfers, "
+                        "high latency, and severe frame-time instability."
                     ),
                     evidence=[
-                        f"Dedicated VRAM: FULL",
-                        f"Dynamic Usage: {df[gpu_mem_dynamic].max():.0f} MB",
-                        f"PCIe Bus Congestion: {avg_bus_load:.1f}%"
+                        f"VRAM Usage Peak: {vram_used.max():.0f}",
+                        f"System Spill Memory Peak: {spill_mem.max():.0f} MB",
+                        f"PCIe Bus Load (median during event): {avg_bus_load:.1f}%" if gpu_bus_col else "PCIe Bus Load: N/A"
                     ]
                 )
         # 25. CONNECTOR THERMAL RISK (MELTING/FIRE HAZARD)
@@ -2468,7 +2538,7 @@ class TelemetryApp:
                         evidence=[f"Min USB Voltage: {min_usb_v:.2f}V"],
                         advice="Unplug non-essential USB devices or use a powered USB hub."
                     )
-
+        
         return hits
 
     def _open_diagnosis(self):
