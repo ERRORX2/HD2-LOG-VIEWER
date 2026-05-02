@@ -40,7 +40,7 @@ _RAIL_SKIP     = ('GPU PCIE', 'PCIE', '12VHPWR', 'INPUT')
 _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
 GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.4.2"  # Bump 
+CURRENT_VERSION = "1.4.3"  # Bump 
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
@@ -256,6 +256,200 @@ class TelemetryAnalyzer:
         if self.time_series is not None:
             self.time_series = self.time_series.iloc[:len(self.df)].reset_index(drop=True)
         self.df = self.df.reset_index(drop=True)
+
+    def extract_hardware_names(self) -> dict:
+        """
+        Extract unique hardware device names from a HWiNFO64 CSV.
+
+        HWiNFO64 appends a hardware-label row somewhere in the file (often row 2,
+        but may also appear at the very end). Each cell in that row contains the
+        source device for its column, e.g.:
+            "CPU [#0]: Intel Core i7-13620H"
+            "dGPU [#1]: NVIDIA GeForce RTX 4070 Laptop"
+            "S.M.A.R.T.: WD PC SN560 ..."
+            "System: ASUS TUF Gaming F15 ..."
+            "Network: Intel Wi-Fi 6 AX201 160MHz - Wi-Fi"
+            "Battery: AS3GWAF3KC GA50358"
+            "PresentMon [AsusMyASUS.exe]"
+
+        Strategy: read ALL rows of the raw file, find any row where a significant
+        fraction of non-empty cells match the HWiNFO device-label pattern, then
+        collect unique device names from that row.
+        """
+        # ── Known HWiNFO type-tag prefixes ─────────────────────────────────
+        # These appear before the first ": " in each label cell.
+        _KNOWN_TAGS = re.compile(
+            r'^(CPU|iGPU|dGPU|GPU|DDR\d*\s*DIMM|S\.M\.A\.R\.T\.|Drive|'
+            r'Network|Battery|System|PresentMon|Memory Timings|'
+            r'ASUS\s+NB\s+EC|ASUS\s+FX|PCH|Chipset|EC\b)',
+            re.IGNORECASE
+        )
+
+        def _is_label_cell(cell: str) -> bool:
+            """Return True if this cell looks like a HWiNFO device label."""
+            c = cell.strip()
+            if not c:
+                return False
+            # Must start with a known HWiNFO type tag
+            if not _KNOWN_TAGS.match(c):
+                return False
+            # Reject cells that look like numeric sensor readings
+            # e.g. "12.34", "0", "Yes", "No", "100.0"
+            if re.match(r'^-?\d+(\.\d+)?$', c):
+                return False
+            if c.upper() in ('YES', 'NO', 'N/A', 'OK', 'FAIL', 'WARNING'):
+                return False
+            # Reject if it ends with a unit bracket — that's a column header, not a device label
+            # e.g. "CPU Package [°C]" — the real label rows have no unit suffixes
+            if re.search(r'\[(°C|MHz|W|V|%|RPM|MB|GB|A|ms|FPS|x|T|GT/s)\]\s*$', c, re.IGNORECASE):
+                return False
+            # Must contain at least one letter after the tag separator
+            if ': ' in c:
+                _, device_part = c.split(': ', 1)
+                if not re.search(r'[A-Za-z]', device_part):
+                    return False
+            return True
+
+        # Read raw rows (all encodings to be safe)
+        all_rows = []
+        for enc in ('utf-8-sig', 'latin-1', 'cp1252'):
+            try:
+                with open(self.path, 'r', encoding=enc, errors='ignore') as f:
+                    reader = csv.reader(f)
+                    all_rows = list(reader)
+                break
+            except Exception:
+                continue
+
+        if not all_rows:
+            return {}
+
+        # ── Find the label row(s) ───────────────────────────────────────────
+        # Score each row by the fraction of non-empty cells that are label cells.
+        best_row = []
+        best_score = 0.0
+
+        for row in all_rows:
+            non_empty = [c for c in row if c.strip()]
+            if not non_empty:
+                continue
+            label_cells = [c for c in non_empty if _is_label_cell(c)]
+            score = len(label_cells) / len(non_empty)
+            if score > best_score:
+                best_score = score
+                best_row = row
+
+        # Require at least 10% of non-empty cells to match AND at least 3 absolute hits
+        # before we trust the row — prevents a stray sensor name triggering a false positive
+        if best_score < 0.25 or not best_row:
+            return {}
+        if sum(1 for c in best_row if _is_label_cell(c)) < 3:
+            return {}
+
+        # ── Category rules (matched against the TYPE TAG, first match wins) ─
+        _TYPE_CATEGORY = [
+            (['IGPU'],                                      'iGPU (Integrated Graphics)'),
+            (['DGPU', 'GPU'],                               'GPU'),
+            (['CPU'],                                       'CPU'),
+            (['DDR', 'DIMM'],                               'Memory (RAM)'),
+            (['S.M.A.R.T', 'SMART', 'DRIVE', 'DISK'],      'Storage'),
+            (['NETWORK', 'NIC'],                            'Network'),
+            (['BATTERY'],                                   'Battery'),
+            (['PRESENTMON'],                                'PresentMon (Frame Timing)'),
+            (['MEMORY TIMING'],                             'Memory Timings'),
+            (['PCH', 'CHIPSET'],                            'Chipset'),
+            (['EC', 'EMBEDDED'],                            'Embedded Controller'),
+            (['SYSTEM', 'ASUS', 'GIGABYTE', 'MSI',
+              'ASROCK', 'EVGA', 'BIOSTAR', 'MAINBOARD',
+              'MOTHERBOARD'],                               'System / Motherboard'),
+        ]
+
+        def _categorize(type_tag: str) -> str:
+            tt = type_tag.upper().strip()
+            for keywords, label in _TYPE_CATEGORY:
+                if any(k in tt for k in keywords):
+                    return label
+            return 'Other'
+
+        def _clean_parens(s: str) -> str:
+            """Remove trailing parenthesised serial/slot info."""
+            return re.sub(r'\s*\([^)]*\)\s*$', '', s).strip()
+
+        seen: dict = {}  # device_name -> category
+
+        for cell in best_row:
+            cell = cell.strip().strip('\ufeff')
+            if not cell or not _is_label_cell(cell):
+                continue
+
+            if ': ' in cell:
+                type_tag, device_part = cell.split(': ', 1)
+                # Strip sub-type suffixes like ": DTS", ": Enhanced", ": C-State Residency"
+                # These appear when HWiNFO groups sensors under a sub-category.
+                # The real device name is everything up to the SECOND ": " if the remainder
+                # looks like a sub-label (no spaces before it, or known suffix patterns).
+                _SUBLABEL = re.compile(
+                    r':\s*(DTS|Enhanced|C-State Residency|Performance Limit Reasons|'
+                    r'Clocks?|Temperatures?|Voltages?|Powers?|Fan\s*Speeds?|'
+                    r'Throttling|Usage|Utilization|Residency|Load|Misc\w*)\s*$',
+                    re.IGNORECASE
+                )
+                device_part = _SUBLABEL.sub('', device_part).strip()
+                # Also strip the "Brand: Model" GPU sub-label e.g. "AMD Radeon RX 6700 XT: Sapphire RX 6700 XT"
+                # Keep the longer/more specific of the two sides
+                if ': ' in device_part:
+                    left, right = device_part.split(': ', 1)
+                    device_name = _clean_parens(left if len(left) >= len(right) else right)
+                else:
+                    device_name = _clean_parens(device_part.strip())
+            else:
+                type_tag = cell
+                device_name = cell.strip()
+
+            if not device_name or len(device_name) <= 1:
+                continue
+            if device_name.upper() in ('DATE', 'TIME', 'TIMESTAMP', '#'):
+                continue
+
+            cat = _categorize(type_tag)
+
+            # Deduplication: if we already have a name that is a prefix of this one
+            # (or vice versa), keep the longer/more specific one.
+            existing = [k for k in seen if cat == seen[k]]
+            dominated = None
+            for ex in existing:
+                if device_name.startswith(ex) or ex.startswith(device_name):
+                    dominated = ex
+                    break
+            if dominated is not None:
+                if len(device_name) > len(dominated):
+                    del seen[dominated]
+                else:
+                    continue  # existing is already more specific
+
+            if device_name not in seen:
+                seen[device_name] = cat
+
+        # ── Build ordered result ────────────────────────────────────────────
+        _CAT_ORDER = [
+            'System / Motherboard', 'CPU', 'iGPU (Integrated Graphics)', 'GPU',
+            'Memory (RAM)', 'Memory Timings', 'Storage', 'Chipset',
+            'Embedded Controller', 'Network', 'Battery',
+            'PresentMon (Frame Timing)', 'Other',
+        ]
+        result: dict = {}
+        for name, cat in seen.items():
+            result.setdefault(cat, []).append(name)
+
+        ordered = {}
+        for cat in _CAT_ORDER:
+            if cat in result:
+                ordered[cat] = sorted(result[cat])
+        for cat in sorted(result):
+            if cat not in ordered:
+                ordered[cat] = sorted(result[cat])
+
+        return ordered
 
     def _detect_time_column(self):
         """Find the best time column and parse it into self.time_series."""
@@ -2541,6 +2735,114 @@ class TelemetryApp:
         
         return hits
 
+    def _open_hardware_info(self):
+        """Parse and display detected hardware device names from the loaded CSV."""
+        is_dark = self.is_dark
+        bg     = "#121212" if is_dark else "#f8f9fa"
+        fg     = "#e0e0e0" if is_dark else "#212529"
+        accent = "#1f6aa5" if is_dark else "#3498db"
+        bg2    = "#1e1e1e" if is_dark else "#ffffff"
+        sep_col = "#2a2a2a" if is_dark else "#dee2e6"
+
+        hw = self.analyzer.extract_hardware_names()
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Detected Hardware")
+        dialog.geometry("560x520")
+        dialog.minsize(440, 380)
+        dialog.grab_set()
+        dialog.configure(bg=bg)
+
+        self.root.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 280
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 260
+        dialog.geometry(f"560x520+{x}+{y}")
+
+        tk.Label(dialog, text="Detected Hardware",
+                 font=('Segoe UI', 13, 'bold'), bg=bg, fg=accent).pack(pady=(14, 2))
+
+        total = sum(len(v) for v in hw.values())
+        tk.Label(dialog,
+                 text=f"{total} unique device(s) identified across {len(hw)} category(ies)",
+                 font=('Segoe UI', 9), bg=bg, fg="#888").pack(pady=(0, 10))
+
+        # Scrollable body
+        outer = tk.Frame(dialog, bg=bg)
+        outer.pack(fill=tk.BOTH, expand=True, padx=12)
+        canvas = tk.Canvas(outer, bg=bg, highlightthickness=0)
+        sb = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        body = tk.Frame(canvas, bg=bg)
+        win_id = canvas.create_window((0, 0), window=body, anchor="nw")
+        body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(win_id, width=e.width))
+        canvas.configure(yscrollcommand=sb.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        sb.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>",
+            lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
+        canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
+
+        _CATEGORY_ICONS = {
+            'CPU':            '🖥',
+            'GPU':            '🎮',
+            'Memory':         '💾',
+            'Storage':        '💿',
+            'Motherboard':    '🔧',
+            'Power / Battery':'🔋',
+            'Network':        '🌐',
+            'Cooling':        '❄',
+            'Other':          '📡',
+        }
+
+        if not hw:
+            tk.Label(body,
+                     text="No hardware names could be extracted.\n"
+                          "This CSV may not be in HWiNFO64 format,\n"
+                          "or columns use a non-standard naming scheme.",
+                     font=('Segoe UI', 10), bg=bg, fg="#888",
+                     justify='center', pady=30).pack()
+        else:
+            for cat, names in hw.items():
+                icon = _CATEGORY_ICONS.get(cat, '📡')
+
+                # Category header
+                hdr_f = tk.Frame(body, bg=bg)
+                hdr_f.pack(fill=tk.X, pady=(12, 2), padx=4)
+                tk.Label(hdr_f, text=f"{icon}  {cat.upper()}",
+                         font=('Segoe UI', 9, 'bold'), bg=bg, fg=accent,
+                         anchor='w').pack(side=tk.LEFT)
+                tk.Label(hdr_f, text=f"({len(names)})",
+                         font=('Segoe UI', 8), bg=bg, fg="#666",
+                         anchor='w').pack(side=tk.LEFT, padx=(4, 0))
+                tk.Frame(body, bg=accent, height=1).pack(fill=tk.X, padx=4)
+
+                # Device name cards
+                for name in names:
+                    row_f = tk.Frame(body, bg=bg2, padx=10, pady=6)
+                    row_f.pack(fill=tk.X, padx=4, pady=2)
+
+                    tk.Label(row_f, text=name,
+                             font=('Segoe UI', 9), bg=bg2, fg=fg,
+                             anchor='w', wraplength=480, justify='left').pack(anchor='w')
+
+        # Copy all button
+        def _copy_all():
+            lines = []
+            for cat, names in hw.items():
+                lines.append(f"[{cat}]")
+                for n in names:
+                    lines.append(f"  {n}")
+            self.root.clipboard_clear()
+            self.root.clipboard_append("\n".join(lines))
+            self.show_toast("Hardware list copied to clipboard")
+
+        btn_f = tk.Frame(dialog, bg=bg)
+        btn_f.pack(fill=tk.X, padx=12, pady=10)
+        ttk.Button(btn_f, text="📋 Copy All to Clipboard",
+                   command=_copy_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 4))
+        ttk.Button(btn_f, text="Close",
+                   command=dialog.destroy).pack(side=tk.LEFT, expand=True, fill=tk.X)
+
     def _open_diagnosis(self):
         """Run signature analysis and display results in a themed dialog."""
         self.show_toast("Analyzing signatures...")
@@ -2749,12 +3051,19 @@ class TelemetryApp:
         ttk.Button(ent_f, text="Save", command=self._save_group, width=8).pack(side=tk.RIGHT)
         ttk.Button(self.left, text="📋 Import from Clipboard", command=self._import_from_clipboard).pack(fill=tk.X, pady=2)
 
+        btn_frame = ttk.Frame(self.left)
+        btn_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=(6, 2))
+        ttk.Button(btn_frame, text="New CSV", command=self._import_new_csv).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        ttk.Button(btn_frame, text="Clear", command=self._clear_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        ttk.Button(btn_frame, text="Export PNG", command=self._export, style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+
         search_f = ttk.LabelFrame(self.left, text=" Sensor Selection ", padding=8)
         search_f.pack(fill=tk.BOTH, expand=True, pady=5)
 
         self.filter_btn = ttk.Button(search_f, text="🚨 Detect Out-of-Spec Issues", style="Issue.TButton", command=self._toggle_filter)
         self.filter_btn.pack(fill=tk.X, pady=(0, 4))
         ttk.Button(search_f, text="🔬 Diagnose Hardware Signatures", command=self._open_diagnosis, style="Action.TButton").pack(fill=tk.X, pady=(0, 4))
+        ttk.Button(search_f, text="🖥 View Detected Hardware", command=self._open_hardware_info).pack(fill=tk.X, pady=(0, 4))
         ttk.Button(search_f, text="⚙ Edit Detection Limits", command=self._open_limits_editor).pack(fill=tk.X, pady=(0, 8))
 
         search_top = ttk.Frame(search_f)
@@ -2803,12 +3112,6 @@ class TelemetryApp:
         self.canvas_checklist.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.sc_checklist.pack(side=tk.RIGHT, fill=tk.Y)
         self._build_checklist()
-
-        btn_frame = ttk.Frame(self.left)
-        btn_frame.pack(fill=tk.X, pady=(10, 0))
-        ttk.Button(btn_frame, text="New CSV", command=self._import_new_csv).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        ttk.Button(btn_frame, text="Clear", command=self._clear_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        ttk.Button(btn_frame, text="Export PNG", command=self._export, style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
         self.right = ttk.Frame(self.paned, padding="5")
         self.paned.add(self.right, weight=4)
