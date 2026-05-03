@@ -40,7 +40,7 @@ _RAIL_SKIP     = ('GPU PCIE', 'PCIE', '12VHPWR', 'INPUT')
 _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
 GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.4.4"  # Bump 
+CURRENT_VERSION = "1.4.5"  # Bump 
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
@@ -2737,120 +2737,174 @@ class TelemetryApp:
 
     def _open_hardware_info(self):
         """Parse and display detected hardware device names from the loaded CSV."""
+        import threading
+
         is_dark = self.is_dark
-        bg     = "#121212" if is_dark else "#f8f9fa"
-        fg     = "#e0e0e0" if is_dark else "#212529"
-        accent = "#1f6aa5" if is_dark else "#3498db"
-        bg2    = "#1e1e1e" if is_dark else "#ffffff"
-        sep_col = "#2a2a2a" if is_dark else "#dee2e6"
+        bg      = "#121212" if is_dark else "#f8f9fa"
+        fg      = "#e0e0e0" if is_dark else "#212529"
+        accent  = "#1f6aa5" if is_dark else "#3498db"
+        bg2     = "#1e1e1e" if is_dark else "#ffffff"
 
-        hw = self.analyzer.extract_hardware_names()
-
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Detected Hardware")
-        dialog.geometry("560x520")
-        dialog.minsize(440, 380)
-        dialog.grab_set()
-        dialog.configure(bg=bg)
-
+        # -- Spinner dialog while extract_hardware_names() runs -------------
+        wait_win = tk.Toplevel(self.root)
+        wait_win.title("Detecting Hardware")
+        wait_win.resizable(False, False)
+        wait_win.protocol("WM_DELETE_WINDOW", lambda: None)
+        wait_win.configure(bg=bg)
         self.root.update_idletasks()
-        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 280
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 260
-        dialog.geometry(f"560x520+{x}+{y}")
+        pw, ph = 340, 120
+        rx = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
+        ry = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
+        wait_win.geometry(f"{pw}x{ph}+{rx}+{ry}")
+        wait_win.transient(self.root)
+        wait_win.grab_set()
 
-        tk.Label(dialog, text="Detected Hardware",
-                 font=('Segoe UI', 13, 'bold'), bg=bg, fg=accent).pack(pady=(14, 2))
+        outer_w = tk.Frame(wait_win, bg="#1f6aa5", padx=2, pady=2)
+        outer_w.pack(fill=tk.BOTH, expand=True)
+        inner_w = tk.Frame(outer_w, bg=bg, padx=20, pady=16)
+        inner_w.pack(fill=tk.BOTH, expand=True)
 
-        total = sum(len(v) for v in hw.values())
-        tk.Label(dialog,
-                 text=f"{total} unique device(s) identified across {len(hw)} category(ies)",
-                 font=('Segoe UI', 9), bg=bg, fg="#888").pack(pady=(0, 10))
+        title_row = tk.Frame(inner_w, bg=bg)
+        title_row.pack(anchor='w')
+        tk.Label(title_row, text="🖥  Scanning Hardware",
+                 font=('Segoe UI', 11, 'bold'), bg=bg, fg="#4f8ef7").pack(side=tk.LEFT)
+        spin_var = tk.StringVar(value=" ⠋")
+        tk.Label(title_row, textvariable=spin_var,
+                 font=('Segoe UI', 11), bg=bg, fg="#1f6aa5").pack(side=tk.LEFT, padx=(6, 0))
+        tk.Label(inner_w, text="Parsing hardware labels from CSV…",
+                 font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w', pady=(6, 0))
 
-        # Scrollable body
-        outer = tk.Frame(dialog, bg=bg)
-        outer.pack(fill=tk.BOTH, expand=True, padx=12)
-        canvas = tk.Canvas(outer, bg=bg, highlightthickness=0)
-        sb = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
-        body = tk.Frame(canvas, bg=bg)
-        win_id = canvas.create_window((0, 0), window=body, anchor="nw")
-        body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.bind("<Configure>", lambda e: canvas.itemconfig(win_id, width=e.width))
-        canvas.configure(yscrollcommand=sb.set)
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        sb.pack(side=tk.RIGHT, fill=tk.Y)
-        canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>",
-            lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
-        canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
+        bar_frame = tk.Frame(inner_w, bg=bg)
+        bar_frame.pack(fill=tk.X, pady=(8, 0))
+        bar_bg = tk.Frame(bar_frame, bg="#2a2a2a" if is_dark else "#dee2e6", height=4, bd=0)
+        bar_bg.pack(fill=tk.X)
+        bar_fg = tk.Frame(bar_bg, bg="#1f6aa5", height=4, bd=0)
+        bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
 
-        _CATEGORY_ICONS = {
-            'CPU':            '🖥',
-            'GPU':            '🎮',
-            'Memory':         '💾',
-            'Storage':        '💿',
-            'Motherboard':    '🔧',
-            'Power / Battery':'🔋',
-            'Network':        '🌐',
-            'Cooling':        '❄',
-            'Other':          '📡',
-        }
+        _bar_pos = [0.0]; _bar_dir = [1]
+        def _tick_bar():
+            if not wait_win.winfo_exists(): return
+            _bar_pos[0] += 0.06 * _bar_dir[0]
+            if _bar_pos[0] >= 0.85:  _bar_dir[0] = -1
+            elif _bar_pos[0] <= 0.0: _bar_dir[0] = 1
+            bar_fg.place(relwidth=min(_bar_pos[0], 1.0))
+            wait_win.after(40, _tick_bar)
+        _tick_bar()
 
-        if not hw:
-            tk.Label(body,
-                     text="No hardware names could be extracted.\n"
-                          "This CSV may not be in HWiNFO64 format,\n"
-                          "or columns use a non-standard naming scheme.",
-                     font=('Segoe UI', 10), bg=bg, fg="#888",
-                     justify='center', pady=30).pack()
-        else:
-            for cat, names in hw.items():
-                icon = _CATEGORY_ICONS.get(cat, '📡')
+        _SPIN = [" ⠋", " ⠙", " ⠹", " ⠸", " ⠼", " ⠴", " ⠦", " ⠧", " ⠇", " ⠏"]
+        _si = [0]
+        def _tick_spin():
+            if not wait_win.winfo_exists(): return
+            _si[0] = (_si[0] + 1) % len(_SPIN)
+            spin_var.set(_SPIN[_si[0]])
+            wait_win.after(80, _tick_spin)
+        _tick_spin()
 
-                # Category header
-                hdr_f = tk.Frame(body, bg=bg)
-                hdr_f.pack(fill=tk.X, pady=(12, 2), padx=4)
-                tk.Label(hdr_f, text=f"{icon}  {cat.upper()}",
-                         font=('Segoe UI', 9, 'bold'), bg=bg, fg=accent,
-                         anchor='w').pack(side=tk.LEFT)
-                tk.Label(hdr_f, text=f"({len(names)})",
-                         font=('Segoe UI', 8), bg=bg, fg="#666",
-                         anchor='w').pack(side=tk.LEFT, padx=(4, 0))
-                tk.Frame(body, bg=accent, height=1).pack(fill=tk.X, padx=4)
+        def _worker():
+            hw = self.analyzer.extract_hardware_names()
+            self.root.after(0, lambda: _show_results(hw))
 
-                # Device name cards
-                for name in names:
-                    row_f = tk.Frame(body, bg=bg2, padx=10, pady=6)
-                    row_f.pack(fill=tk.X, padx=4, pady=2)
+        def _show_results(hw):
+            if wait_win.winfo_exists():
+                wait_win.grab_release()
+                wait_win.destroy()
 
-                    tk.Label(row_f, text=name,
-                             font=('Segoe UI', 9), bg=bg2, fg=fg,
-                             anchor='w', wraplength=480, justify='left').pack(anchor='w')
+            # -- Main hardware dialog ---------------------------------------
+            dialog = tk.Toplevel(self.root)
+            dialog.title("Detected Hardware")
+            dialog.geometry("560x520")
+            dialog.minsize(440, 380)
+            dialog.grab_set()
+            dialog.configure(bg=bg)
+            self.root.update_idletasks()
+            x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - 280
+            y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 260
+            dialog.geometry(f"560x520+{x}+{y}")
 
-        # Copy all button
-        def _copy_all():
-            lines = []
-            for cat, names in hw.items():
-                lines.append(f"[{cat}]")
-                for n in names:
-                    lines.append(f"  {n}")
-            self.root.clipboard_clear()
-            self.root.clipboard_append("\n".join(lines))
-            self.show_toast("Hardware list copied to clipboard")
+            tk.Label(dialog, text="Detected Hardware",
+                     font=('Segoe UI', 13, 'bold'), bg=bg, fg=accent).pack(pady=(14, 2))
+            total = sum(len(v) for v in hw.values())
+            tk.Label(dialog,
+                     text=f"{total} unique device(s) identified across {len(hw)} category(ies)",
+                     font=('Segoe UI', 9), bg=bg, fg="#888").pack(pady=(0, 10))
 
-        btn_f = tk.Frame(dialog, bg=bg)
-        btn_f.pack(fill=tk.X, padx=12, pady=10)
-        ttk.Button(btn_f, text="📋 Copy All to Clipboard",
-                   command=_copy_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 4))
-        ttk.Button(btn_f, text="Close",
-                   command=dialog.destroy).pack(side=tk.LEFT, expand=True, fill=tk.X)
+            outer = tk.Frame(dialog, bg=bg)
+            outer.pack(fill=tk.BOTH, expand=True, padx=12)
+            canvas = tk.Canvas(outer, bg=bg, highlightthickness=0)
+            sb = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+            body = tk.Frame(canvas, bg=bg)
+            win_id = canvas.create_window((0, 0), window=body, anchor="nw")
+            body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+            canvas.bind("<Configure>", lambda e: canvas.itemconfig(win_id, width=e.width))
+            canvas.configure(yscrollcommand=sb.set)
+            canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            sb.pack(side=tk.RIGHT, fill=tk.Y)
+            canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>",
+                lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
+            canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
+
+            _CATEGORY_ICONS = {
+                'System / Motherboard': '🔧', 'CPU': '🖥',
+                'iGPU (Integrated Graphics)': '💡', 'GPU': '🎮',
+                'Memory (RAM)': '💾', 'Memory Timings': '⏱',
+                'Storage': '💿', 'Network': '🌐', 'Battery': '🔋',
+                'PresentMon (Frame Timing)': '📊', 'Chipset': '⚙', 'Other': '📡',
+            }
+
+            if not hw:
+                tk.Label(body,
+                         text="No hardware names could be extracted.\n"
+                              "This CSV may not be in HWiNFO64 format,\n"
+                              "or columns use a non-standard naming scheme.",
+                         font=('Segoe UI', 10), bg=bg, fg="#888",
+                         justify='center', pady=30).pack()
+            else:
+                for cat, names in hw.items():
+                    icon = _CATEGORY_ICONS.get(cat, '📡')
+                    hdr_f = tk.Frame(body, bg=bg)
+                    hdr_f.pack(fill=tk.X, pady=(12, 2), padx=4)
+                    tk.Label(hdr_f, text=f"{icon}  {cat.upper()}",
+                             font=('Segoe UI', 9, 'bold'), bg=bg, fg=accent,
+                             anchor='w').pack(side=tk.LEFT)
+                    tk.Label(hdr_f, text=f"({len(names)})",
+                             font=('Segoe UI', 8), bg=bg, fg="#666",
+                             anchor='w').pack(side=tk.LEFT, padx=(4, 0))
+                    tk.Frame(body, bg=accent, height=1).pack(fill=tk.X, padx=4)
+                    for name in names:
+                        row_f = tk.Frame(body, bg=bg2, padx=10, pady=6)
+                        row_f.pack(fill=tk.X, padx=4, pady=2)
+                        tk.Label(row_f, text=name, font=('Segoe UI', 9),
+                                 bg=bg2, fg=fg, anchor='w',
+                                 wraplength=480, justify='left').pack(anchor='w')
+
+            def _copy_all():
+                lines = []
+                for cat, names in hw.items():
+                    lines.append(f"[{cat}]")
+                    for n in names:
+                        lines.append(f"  {n}")
+                self.root.clipboard_clear()
+                self.root.clipboard_append("\n".join(lines))
+                self.show_toast("Hardware list copied to clipboard")
+
+            btn_f = tk.Frame(dialog, bg=bg)
+            btn_f.pack(fill=tk.X, padx=12, pady=10)
+            ttk.Button(btn_f, text="📋 Copy All to Clipboard",
+                       command=_copy_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 4))
+            ttk.Button(btn_f, text="Close",
+                       command=dialog.destroy).pack(side=tk.LEFT, expand=True, fill=tk.X)
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     def _export_html_report(self):
-        """Generate a self-contained HTML session report with hardware info,
-        per-sensor stats, detected issues, signature hits, and chart screenshots."""
+        """Generate a self-contained HTML session report.
+        The heavy work runs in a background thread so the UI stays responsive."""
         import io
         import base64
         import datetime
         import html as html_mod
         import traceback
+        import threading
 
         f_path = filedialog.asksaveasfilename(
             defaultextension=".html",
@@ -2860,182 +2914,126 @@ class TelemetryApp:
         if not f_path:
             return
 
-        # -- Blocking "please wait" dialog ----------------------------------
-        is_dark = self.is_dark
-        wait_win = tk.Toplevel(self.root)
-        wait_win.title("Exporting Report")
-        wait_win.resizable(False, False)
-        wait_win.grab_set()
-        wait_win.configure(bg="#121212" if is_dark else "#f0f0f0")
-        wait_win.overrideredirect(True)   # borderless
+        # -- Wait dialog (non-blocking, stays alive via mainloop) -----------
+        is_dark  = self.is_dark
+        bg_dark  = "#121212" if is_dark else "#f8f9fa"
 
-        # Centre over main window
+        wait_win = tk.Toplevel(self.root)
+        wait_win.title("Generating Report")
+        wait_win.resizable(False, False)
+        wait_win.protocol("WM_DELETE_WINDOW", lambda: None)
+        wait_win.configure(bg=bg_dark)
+
         self.root.update_idletasks()
-        pw, ph = 320, 110
+        pw, ph = 340, 120
         rx = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
         ry = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
         wait_win.geometry(f"{pw}x{ph}+{rx}+{ry}")
+        wait_win.transient(self.root)
+        wait_win.grab_set()
 
         outer = tk.Frame(wait_win, bg="#1f6aa5", padx=2, pady=2)
         outer.pack(fill=tk.BOTH, expand=True)
-        inner = tk.Frame(outer, bg="#121212" if is_dark else "#f8f9fa", padx=20, pady=18)
+        inner = tk.Frame(outer, bg=bg_dark, padx=20, pady=16)
         inner.pack(fill=tk.BOTH, expand=True)
 
-        tk.Label(inner, text="📄  Generating HTML Report",
-                 font=('Segoe UI', 11, 'bold'),
-                 bg="#121212" if is_dark else "#f8f9fa",
-                 fg="#e0e0e0" if is_dark else "#212529").pack(anchor='w')
-        status_var = tk.StringVar(value="Preparing data…")
+        # Title row with inline spinner
+        title_row = tk.Frame(inner, bg=bg_dark)
+        title_row.pack(anchor='w')
+        tk.Label(title_row, text="\U0001f4c4  Generating HTML Report",
+                 font=('Segoe UI', 11, 'bold'), bg=bg_dark, fg="#4f8ef7").pack(side=tk.LEFT)
+        spin_var = tk.StringVar(value=" ⠋")
+        tk.Label(title_row, textvariable=spin_var,
+                 font=('Segoe UI', 11), bg=bg_dark, fg="#1f6aa5").pack(side=tk.LEFT, padx=(6, 0))
+
+        status_var = tk.StringVar(value="Preparing data\u2026")
         tk.Label(inner, textvariable=status_var,
-                 font=('Segoe UI', 9),
-                 bg="#121212" if is_dark else "#f8f9fa",
-                 fg="#888").pack(anchor='w', pady=(6, 0))
+                 font=('Segoe UI', 9), bg=bg_dark, fg="#888").pack(anchor='w', pady=(6, 0))
 
-        # Animated progress dots
-        dot_var = tk.StringVar(value="●○○○○")
-        _DOT_FRAMES = ["●○○○○", "○●○○○", "○○●○○", "○○○●○", "○○○○●"]
-        dot_label = tk.Label(inner, textvariable=dot_var,
-                             font=('Segoe UI', 9),
-                             bg="#121212" if is_dark else "#f8f9fa",
-                             fg="#1f6aa5")
-        dot_label.pack(anchor='w', pady=(4, 0))
+        # Progress bar
+        bar_frame = tk.Frame(inner, bg=bg_dark)
+        bar_frame.pack(fill=tk.X, pady=(8, 0))
+        bar_bg = tk.Frame(bar_frame, bg="#2a2a2a" if is_dark else "#dee2e6", height=4, bd=0)
+        bar_bg.pack(fill=tk.X)
+        bar_fg = tk.Frame(bar_bg, bg="#1f6aa5", height=4, bd=0)
+        bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
 
-        _dot_idx = [0]
-        def _animate_dots():
-            _dot_idx[0] = (_dot_idx[0] + 1) % len(_DOT_FRAMES)
-            dot_var.set(_DOT_FRAMES[_dot_idx[0]])
-            if wait_win.winfo_exists():
-                wait_win.after(120, _animate_dots)
-        _animate_dots()
+        # Braille spinner — runs purely on main thread via after(), costs nothing
+        _SPIN_FRAMES = [" ⠋", " ⠙", " ⠹", " ⠸", " ⠼", " ⠴", " ⠦", " ⠧", " ⠇", " ⠏"]
+        _spin_idx = [0]
+        def _tick_spinner():
+            if not wait_win.winfo_exists():
+                return
+            _spin_idx[0] = (_spin_idx[0] + 1) % len(_SPIN_FRAMES)
+            spin_var.set(_SPIN_FRAMES[_spin_idx[0]])
+            wait_win.after(80, _tick_spinner)
+        _tick_spinner()
 
-        def _set_status(msg: str):
-            status_var.set(msg)
-            wait_win.update_idletasks()
+        # Thread-safe UI updaters via after()
+        def _set_status(msg: str, progress: float = None):
+            def _do():
+                if not wait_win.winfo_exists():
+                    return
+                status_var.set(msg)
+                if progress is not None:
+                    bar_fg.place(relwidth=min(progress, 1.0))
+            self.root.after(0, _do)
 
-        self.root.update_idletasks()
+        def _close_wait():
+            def _do():
+                if wait_win.winfo_exists():
+                    wait_win.grab_release()
+                    wait_win.destroy()
+            self.root.after(0, _do)
 
-        try:
-            df   = self.df
-            cols = list(df.columns)
-            sel  = [c for c, v in self.vars.items() if v.get() and c in df.columns]
-            x_vals, ts, use_time = self._get_x_axis()
-            colors_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        def _show_error(err_msg: str):
+            def _do():
+                _close_wait()
+                messagebox.showerror("Report Export Error", err_msg)
+            self.root.after(0, _do)
 
-            # -- helpers ----------------------------------------------------
-            def _fig_to_b64(fig) -> str:
-                buf = io.BytesIO()
-                fig.savefig(buf, format='png', dpi=150, bbox_inches='tight',
-                            facecolor='#1a1a2e')
-                buf.seek(0)
-                return base64.b64encode(buf.read()).decode()
+        def _show_success(filename: str):
+            def _do():
+                _close_wait()
+                self.show_toast(f"Report saved: {filename}")
+            self.root.after(0, _do)
 
-            def _chart_html(b64: str, caption: str) -> str:
-                return (f'<figure><img src="data:image/png;base64,{b64}" '
-                        f'alt="{html_mod.escape(caption)}">'
-                        f'<figcaption>{html_mod.escape(caption)}</figcaption></figure>')
+        # -- All heavy work runs here, off the main thread ------------------
+        def _generate():
+            try:
+                import matplotlib
+                matplotlib.use('Agg')   # non-interactive PNG-only backend, safe off main thread
+                import matplotlib.pyplot as _plt
+                df   = self.df
+                cols = list(df.columns)
+                sel  = [c for c, v in self.vars.items() if v.get() and c in df.columns]
+                x_vals, ts, use_time = self._get_x_axis()
+                colors_cycle = _plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-            def _make_chart(sensor_cols: list, title: str, figsize=(13, 3.5)) -> str:
-                fig, ax = plt.subplots(figsize=figsize)
-                fig.patch.set_facecolor('#1a1a2e')
-                ax.set_facecolor('#0f0f23')
-                for i, col in enumerate(sensor_cols):
-                    if col not in df.columns:
-                        continue
-                    ax.plot(x_vals, df[col], lw=1.2,
-                            color=colors_cycle[i % len(colors_cycle)],
-                            label=col[:60])
-                ax.set_title(title, color='#a0c4ff', fontsize=9, pad=4)
-                ax.tick_params(colors='#ccc', labelsize=7)
-                ax.grid(True, ls=':', alpha=0.3, color='#444')
-                for spine in ax.spines.values():
-                    spine.set_edgecolor('#333')
-                leg = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1),
-                                fontsize=6, frameon=False)
-                if leg:
-                    for t in leg.get_texts():
-                        t.set_color('#ddd')
-                if use_time:
-                    import matplotlib.ticker as ticker
-                    ax.xaxis.set_major_formatter(
-                        ticker.FuncFormatter(lambda v, _: self._format_elapsed(v)))
-                    ax.tick_params(axis='x', labelrotation=20)
-                fig.subplots_adjust(right=0.72)
-                b64 = _fig_to_b64(fig)
-                plt.close(fig)
-                return _chart_html(b64, title)
+                # helpers
+                def _fig_to_b64(fig) -> str:
+                    buf = io.BytesIO()
+                    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight',
+                                facecolor='#1a1a2e')
+                    buf.seek(0)
+                    return base64.b64encode(buf.read()).decode()
 
-            # -- 1. Selected sensors chart -----------------------------------
-            _set_status("Rendering selected sensor chart…")
-            charts_selected_html = ""
-            if sel:
-                charts_selected_html = _make_chart(
-                    sel, "Selected Sensors",
-                    figsize=(13, max(3.5, len(sel) * 0.35)))
+                def _chart_html(b64: str, caption: str) -> str:
+                    return (f'<figure><img src="data:image/png;base64,{b64}" '
+                            f'alt="{html_mod.escape(caption)}">'
+                            f'<figcaption>{html_mod.escape(caption)}</figcaption></figure>')
 
-            # -- 2. Category overview charts ---------------------------------
-            _set_status("Rendering category charts…")
-            cat_charts_html = ""
-            cat_groups: dict = {}
-            for col in cols:
-                cat = self._get_category(col)
-                cat_groups.setdefault(cat, []).append(col)
-
-            for cat_name in self.sorted_cats:
-                group = cat_groups.get(cat_name, [])
-                if not group:
-                    continue
-                chunk = group[:20]
-                cat_charts_html += _make_chart(
-                    chunk, f"Category: {cat_name}",
-                    figsize=(13, max(3.5, len(chunk) * 0.28)))
-
-            # -- 2b. PSU Rail charts (+12V, +5V, +3.3V) ---------------------
-            _set_status("Rendering PSU rail charts…")
-            psu_charts_html = ""
-            _RAIL_KEYWORDS = {
-                '+12V':  ['12V', '12 V'],
-                '+5V':   ['5V', '5 V'],
-                '+3.3V': ['3.3V', '3.3 V', '3V3'],
-            }
-            # Tokens that disqualify a column even if the rail keyword matches
-            _RAIL_EXCL = ['[W]', '[A]', 'POWER', 'CURRENT', 'WATT',
-                          'VID', 'OFFSET', 'LIMIT', 'PPT', 'TDP',
-                          'PCIE', 'INPUT', 'GPU', 'HPWR', 'VDDQ', 'FBVDD']
-            for rail_name, keywords in _RAIL_KEYWORDS.items():
-                rail_cols = []
-                for c in cols:
-                    if c not in df.columns:
-                        continue
-                    cu = c.upper()
-                    # Must end with a voltage unit
-                    if '[V]' not in cu:
-                        continue
-                    # Must not match any exclusion token
-                    if any(ex in cu for ex in _RAIL_EXCL):
-                        continue
-                    # Must contain the rail keyword
-                    if any(k.upper() in cu for k in keywords):
-                        rail_cols.append(c)
-                if not rail_cols:
-                    continue
-                lo, hi = self.volt_rails.get(rail_name, (None, None))
-
-                def _make_rail_chart(rcols, rtitle, rlo, rhi):
-                    fig, ax = plt.subplots(figsize=(13, 3.5))
+                def _make_chart(sensor_cols: list, title: str, figsize=(13, 3.5)) -> str:
+                    fig, ax = _plt.subplots(figsize=figsize)
                     fig.patch.set_facecolor('#1a1a2e')
                     ax.set_facecolor('#0f0f23')
-                    for i, col in enumerate(rcols):
+                    for i, col in enumerate(sensor_cols):
+                        if col not in df.columns:
+                            continue
                         ax.plot(x_vals, df[col], lw=1.2,
                                 color=colors_cycle[i % len(colors_cycle)],
                                 label=col[:60])
-                    if rlo is not None and rhi is not None:
-                        ax.axhline(rlo, color='#ff4d4d', ls='--', lw=1, alpha=0.7,
-                                   label=f'Min spec ({rlo}V)')
-                        ax.axhline(rhi, color='#ff4d4d', ls='--', lw=1, alpha=0.7,
-                                   label=f'Max spec ({rhi}V)')
-                        ax.axhspan(rlo - 0.5, rlo, color='#ff4d4d', alpha=0.07)
-                        ax.axhspan(rhi, rhi + 0.5, color='#ff4d4d', alpha=0.07)
-                    ax.set_title(rtitle, color='#a0c4ff', fontsize=9, pad=4)
+                    ax.set_title(title, color='#a0c4ff', fontsize=9, pad=4)
                     ax.tick_params(colors='#ccc', labelsize=7)
                     ax.grid(True, ls=':', alpha=0.3, color='#444')
                     for spine in ax.spines.values():
@@ -3052,115 +3050,216 @@ class TelemetryApp:
                         ax.tick_params(axis='x', labelrotation=20)
                     fig.subplots_adjust(right=0.72)
                     b64 = _fig_to_b64(fig)
-                    plt.close(fig)
-                    return _chart_html(b64, rtitle)
+                    _plt.close(fig)
+                    return _chart_html(b64, title)
 
-                spec_str = f"  |  Spec: {lo}V \u2013 {hi}V" if lo is not None else ""
-                psu_charts_html += _make_rail_chart(
-                    rail_cols, f"PSU Rail: {rail_name}{spec_str}", lo, hi)
+                # 1. Selected sensors
+                _set_status("Rendering selected sensor chart\u2026", 0.10)
+                charts_selected_html = ""
+                if sel:
+                    charts_selected_html = _make_chart(
+                        sel, "Selected Sensors",
+                        figsize=(13, max(3.5, len(sel) * 0.35)))
 
-            # -- 3. Hardware info --------------------------------------------
-            _set_status("Extracting hardware info…")
-            hw = self.analyzer.extract_hardware_names()
-            _CAT_ICONS = {
-                'System / Motherboard': '\U0001f527', 'CPU': '\U0001f5a5',
-                'iGPU (Integrated Graphics)': '\U0001f4a1', 'GPU': '\U0001f3ae',
-                'Memory (RAM)': '\U0001f4be', 'Memory Timings': '\u23f1',
-                'Storage': '\U0001f4bf', 'Network': '\U0001f310',
-                'Battery': '\U0001f50b', 'PresentMon (Frame Timing)': '\U0001f4ca',
-                'Chipset': '\u2699', 'Other': '\U0001f4e1',
-            }
-            hw_rows = ""
-            for cat, names in hw.items():
-                icon = _CAT_ICONS.get(cat, '\U0001f4e1')
-                for name in names:
-                    hw_rows += (f'<tr><td class="hw-cat">{icon} {html_mod.escape(cat)}</td>'
-                                f'<td>{html_mod.escape(name)}</td></tr>')
-            hw_section = (
-                f'<table class="hw-table"><thead><tr><th>Category</th><th>Device</th>'
-                f'</tr></thead><tbody>{hw_rows}</tbody></table>'
-            ) if hw_rows else '<p class="muted">No hardware names detected in this CSV.</p>'
+                # 2. Category charts
+                _set_status("Rendering category charts\u2026", 0.25)
+                cat_charts_html = ""
+                cat_groups: dict = {}
+                # Units that make no sense on a shared chart — skip these columns
+                _SKIP_UNITS = ['[yes/no]', '[t]', '[gb/s]', '[mb/s]', '[gt/s]',
+                               '[]', '[gear mode]', '[cdtp level]']
+                _SKIP_NAMES = ['date', 'time', 'timestamp', 'command rate',
+                               'gear mode', 'memory clock ratio']
+                for col in cols:
+                    cu = col.lower()
+                    if any(cu.endswith(u) for u in _SKIP_UNITS):
+                        continue
+                    if any(s in cu for s in _SKIP_NAMES):
+                        continue
+                    cat = self._get_category(col)
+                    cat_groups.setdefault(cat, []).append(col)
+                _SKIP_CATS = {'Other Sensors', 'Other', 'Memory Timings'}
+                for cat_name in self.sorted_cats:
+                    if cat_name in _SKIP_CATS:
+                        continue
+                    group = cat_groups.get(cat_name, [])
+                    if not group:
+                        continue
+                    chunk = group[:20]
+                    cat_charts_html += _make_chart(
+                        chunk, f"Category: {cat_name}",
+                        figsize=(13, max(3.5, len(chunk) * 0.28)))
 
-            # -- 4. Session metadata -----------------------------------------
-            generated_at  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            csv_name      = html_mod.escape(str(self.analyzer.path).replace('\\', '/').split('/')[-1])
-            sample_count  = len(df)
-            duration_str  = "N/A"
-            sample_rate_str = "N/A"
-            if use_time and len(x_vals) > 1:
-                duration_str = self._format_elapsed(float(x_vals[-1] - x_vals[0]))
-                intervals = [x_vals[i+1] - x_vals[i] for i in range(min(20, len(x_vals)-1))]
-                avg_iv = sum(intervals) / len(intervals)
-                sample_rate_str = f"{avg_iv:.2f}s / sample"
+                # 3. PSU rail charts
+                _set_status("Rendering PSU rail charts\u2026", 0.50)
+                psu_charts_html = ""
+                _RAIL_KEYWORDS = {
+                    '+12V':  ['12V', '12 V'],
+                    '+5V':   ['5V', '5 V'],
+                    '+3.3V': ['3.3V', '3.3 V', '3V3'],
+                }
+                _RAIL_EXCL = ['[W]', '[A]', 'POWER', 'CURRENT', 'WATT',
+                              'VID', 'OFFSET', 'LIMIT', 'PPT', 'TDP',
+                              'PCIE', 'INPUT', 'GPU', 'HPWR', 'VDDQ', 'FBVDD']
+                for rail_name, keywords in _RAIL_KEYWORDS.items():
+                    rail_cols = []
+                    for c in cols:
+                        if c not in df.columns:
+                            continue
+                        cu = c.upper()
+                        if '[V]' not in cu:
+                            continue
+                        if any(ex in cu for ex in _RAIL_EXCL):
+                            continue
+                        if any(k.upper() in cu for k in keywords):
+                            rail_cols.append(c)
+                    if not rail_cols:
+                        continue
+                    lo, hi = self.volt_rails.get(rail_name, (None, None))
 
-            # -- 5. Per-sensor stats -----------------------------------------
-            stat_rows = ""
-            for col in sel:
-                if col not in df.columns:
-                    continue
-                s = df[col].dropna()
-                if s.empty:
-                    continue
-                is_crit = self._is_critical(col)
-                flag = ' <span class="flag-crit">\u26a0 OUT OF SPEC</span>' if is_crit else ''
-                stat_rows += (
-                    f'<tr class="{"crit-row" if is_crit else ""}">'
-                    f'<td>{html_mod.escape(col)}{flag}</td>'
-                    f'<td>{s.min():.2f}</td><td>{s.mean():.2f}</td>'
-                    f'<td>{s.max():.2f}</td><td>{s.std():.2f}</td></tr>'
-                )
-            stats_section = (
-                f'<table class="stat-table"><thead><tr>'
-                f'<th>Sensor</th><th>Min</th><th>Avg</th><th>Max</th><th>Std Dev</th>'
-                f'</tr></thead><tbody>{stat_rows}</tbody></table>'
-            ) if stat_rows else '<p class="muted">No sensors selected.</p>'
+                    def _make_rail_chart(rcols, rtitle, rlo, rhi):
+                        fig, ax = _plt.subplots(figsize=(13, 3.5))
+                        fig.patch.set_facecolor('#1a1a2e')
+                        ax.set_facecolor('#0f0f23')
+                        for i, col in enumerate(rcols):
+                            ax.plot(x_vals, df[col], lw=1.2,
+                                    color=colors_cycle[i % len(colors_cycle)],
+                                    label=col[:60])
+                        if rlo is not None and rhi is not None:
+                            ax.axhline(rlo, color='#ff4d4d', ls='--', lw=1, alpha=0.7,
+                                       label=f'Min spec ({rlo}V)')
+                            ax.axhline(rhi, color='#ff4d4d', ls='--', lw=1, alpha=0.7,
+                                       label=f'Max spec ({rhi}V)')
+                            ax.axhspan(rlo - 0.5, rlo, color='#ff4d4d', alpha=0.07)
+                            ax.axhspan(rhi, rhi + 0.5, color='#ff4d4d', alpha=0.07)
+                        ax.set_title(rtitle, color='#a0c4ff', fontsize=9, pad=4)
+                        ax.tick_params(colors='#ccc', labelsize=7)
+                        ax.grid(True, ls=':', alpha=0.3, color='#444')
+                        for spine in ax.spines.values():
+                            spine.set_edgecolor('#333')
+                        leg = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1),
+                                        fontsize=6, frameon=False)
+                        if leg:
+                            for t in leg.get_texts():
+                                t.set_color('#ddd')
+                        if use_time:
+                            import matplotlib.ticker as ticker
+                            ax.xaxis.set_major_formatter(
+                                ticker.FuncFormatter(lambda v, _: self._format_elapsed(v)))
+                            ax.tick_params(axis='x', labelrotation=20)
+                        fig.subplots_adjust(right=0.72)
+                        b64 = _fig_to_b64(fig)
+                        _plt.close(fig)
+                        return _chart_html(b64, rtitle)
 
-            # -- 6. Signatures -----------------------------------------------
-            _set_status("Running hardware signature analysis…")
-            sigs = self._run_signatures()
-            _SEV_CLASS = {'CRITICAL': 'sev-crit', 'WARNING': 'sev-warn', 'INFO': 'sev-info'}
-            _SEV_ICON  = {'CRITICAL': '\U0001f534', 'WARNING': '\U0001f7e1', 'INFO': '\U0001f535'}
-            sig_cards = ""
-            if sigs:
-                for s in sorted(sigs, key=lambda x: ['CRITICAL','WARNING','INFO'].index(x.get('severity','INFO'))):
-                    sev  = s.get('severity', 'INFO')
-                    cls  = _SEV_CLASS.get(sev, 'sev-info')
-                    icon = _SEV_ICON.get(sev, '\U0001f535')
-                    ev_items = "".join(f'<li>{html_mod.escape(str(e))}</li>'
-                                       for e in s.get('evidence', []))
-                    ev_block = f'<ul class="ev-list">{ev_items}</ul>' if ev_items else ''
-                    sig_cards += (
-                        f'<div class="sig-card {cls}">'
-                        f'<div class="sig-title">{icon} {html_mod.escape(s["name"])} '
-                        f'<span class="sev-badge">{sev}</span></div>'
-                        f'<div class="sig-desc">{html_mod.escape(s.get("description",""))}</div>'
-                        f'{ev_block}</div>'
-                    )
-            else:
-                sig_cards = '<p class="muted all-clear">\u2705 No issues detected. All signatures passed.</p>'
+                    spec_str = f"  |  Spec: {lo}V \u2013 {hi}V" if lo is not None else ""
+                    psu_charts_html += _make_rail_chart(
+                        rail_cols, f"PSU Rail: {rail_name}{spec_str}", lo, hi)
 
-            # -- 7. Out-of-spec sensors --------------------------------------
-            oos_rows = ""
-            for col in cols:
-                if self._is_critical(col) and col in df.columns:
+                # 4. Hardware info
+                _set_status("Extracting hardware info\u2026", 0.62)
+                hw = self.analyzer.extract_hardware_names()
+                _CAT_ICONS = {
+                    'System / Motherboard': '\U0001f527', 'CPU': '\U0001f5a5',
+                    'iGPU (Integrated Graphics)': '\U0001f4a1', 'GPU': '\U0001f3ae',
+                    'Memory (RAM)': '\U0001f4be', 'Memory Timings': '\u23f1',
+                    'Storage': '\U0001f4bf', 'Network': '\U0001f310',
+                    'Battery': '\U0001f50b', 'PresentMon (Frame Timing)': '\U0001f4ca',
+                    'Chipset': '\u2699', 'Other': '\U0001f4e1',
+                }
+                hw_rows = ""
+                for cat, names in hw.items():
+                    icon = _CAT_ICONS.get(cat, '\U0001f4e1')
+                    for name in names:
+                        hw_rows += (f'<tr><td class="hw-cat">{icon} {html_mod.escape(cat)}</td>'
+                                    f'<td>{html_mod.escape(name)}</td></tr>')
+                hw_section = (
+                    f'<table class="hw-table"><thead><tr><th>Category</th><th>Device</th>'
+                    f'</tr></thead><tbody>{hw_rows}</tbody></table>'
+                ) if hw_rows else '<p class="muted">No hardware names detected in this CSV.</p>'
+
+                # 5. Metadata
+                generated_at    = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                csv_name        = html_mod.escape(str(self.analyzer.path).replace('\\', '/').split('/')[-1])
+                sample_count    = len(df)
+                duration_str    = "N/A"
+                sample_rate_str = "N/A"
+                if use_time and len(x_vals) > 1:
+                    duration_str = self._format_elapsed(float(x_vals[-1] - x_vals[0]))
+                    intervals    = [x_vals[i+1] - x_vals[i] for i in range(min(20, len(x_vals)-1))]
+                    avg_iv       = sum(intervals) / len(intervals)
+                    sample_rate_str = f"{avg_iv:.2f}s / sample"
+
+                # 6. Per-sensor stats
+                _set_status("Computing sensor statistics\u2026", 0.70)
+                stat_rows = ""
+                for col in sel:
+                    if col not in df.columns:
+                        continue
                     s = df[col].dropna()
                     if s.empty:
                         continue
-                    oos_rows += (f'<tr><td>{html_mod.escape(col)}</td>'
-                                 f'<td>{s.min():.2f}</td><td>{s.mean():.2f}</td>'
-                                 f'<td class="val-crit">{s.max():.2f}</td></tr>')
-            oos_section = (
-                f'<table class="stat-table"><thead><tr>'
-                f'<th>Sensor</th><th>Min</th><th>Avg</th><th>Peak</th>'
-                f'</tr></thead><tbody>{oos_rows}</tbody></table>'
-            ) if oos_rows else '<p class="muted all-clear">\u2705 No out-of-spec sensors detected.</p>'
+                    is_crit = self._is_critical(col)
+                    flag = ' <span class="flag-crit">\u26a0 OUT OF SPEC</span>' if is_crit else ''
+                    stat_rows += (
+                        f'<tr class="{"crit-row" if is_crit else ""}">'
+                        f'<td>{html_mod.escape(col)}{flag}</td>'
+                        f'<td>{s.min():.2f}</td><td>{s.mean():.2f}</td>'
+                        f'<td>{s.max():.2f}</td><td>{s.std():.2f}</td></tr>'
+                    )
+                stats_section = (
+                    f'<table class="stat-table"><thead><tr>'
+                    f'<th>Sensor</th><th>Min</th><th>Avg</th><th>Max</th><th>Std Dev</th>'
+                    f'</tr></thead><tbody>{stat_rows}</tbody></table>'
+                ) if stat_rows else '<p class="muted">No sensors selected.</p>'
 
-            crit_count = sum(1 for s in sigs if s.get('severity') == 'CRITICAL')
-            warn_count = sum(1 for s in sigs if s.get('severity') == 'WARNING')
-            info_count = sum(1 for s in sigs if s.get('severity') == 'INFO')
+                # 7. Signatures
+                _set_status("Running signature analysis\u2026", 0.80)
+                sigs = self._run_signatures()
+                _SEV_CLASS = {'CRITICAL': 'sev-crit', 'WARNING': 'sev-warn', 'INFO': 'sev-info'}
+                _SEV_ICON  = {'CRITICAL': '\U0001f534', 'WARNING': '\U0001f7e1', 'INFO': '\U0001f535'}
+                sig_cards = ""
+                if sigs:
+                    for s in sorted(sigs, key=lambda x: ['CRITICAL','WARNING','INFO'].index(x.get('severity','INFO'))):
+                        sev  = s.get('severity', 'INFO')
+                        cls  = _SEV_CLASS.get(sev, 'sev-info')
+                        icon = _SEV_ICON.get(sev, '\U0001f535')
+                        ev_items = "".join(f'<li>{html_mod.escape(str(e))}</li>'
+                                           for e in s.get('evidence', []))
+                        ev_block = f'<ul class="ev-list">{ev_items}</ul>' if ev_items else ''
+                        sig_cards += (
+                            f'<div class="sig-card {cls}">'
+                            f'<div class="sig-title">{icon} {html_mod.escape(s["name"])} '
+                            f'<span class="sev-badge">{sev}</span></div>'
+                            f'<div class="sig-desc">{html_mod.escape(s.get("description",""))}</div>'
+                            f'{ev_block}</div>'
+                        )
+                else:
+                    sig_cards = '<p class="muted all-clear">\u2705 No issues detected. All signatures passed.</p>'
 
-            # -- 8. Assemble HTML --------------------------------------------
-            html_out = f"""<!DOCTYPE html>
+                # 8. Out-of-spec sensors
+                oos_rows = ""
+                for col in cols:
+                    if self._is_critical(col) and col in df.columns:
+                        s = df[col].dropna()
+                        if s.empty:
+                            continue
+                        oos_rows += (f'<tr><td>{html_mod.escape(col)}</td>'
+                                     f'<td>{s.min():.2f}</td><td>{s.mean():.2f}</td>'
+                                     f'<td class="val-crit">{s.max():.2f}</td></tr>')
+                oos_section = (
+                    f'<table class="stat-table"><thead><tr>'
+                    f'<th>Sensor</th><th>Min</th><th>Avg</th><th>Peak</th>'
+                    f'</tr></thead><tbody>{oos_rows}</tbody></table>'
+                ) if oos_rows else '<p class="muted all-clear">\u2705 No out-of-spec sensors detected.</p>'
+
+                crit_count = sum(1 for s in sigs if s.get('severity') == 'CRITICAL')
+                warn_count = sum(1 for s in sigs if s.get('severity') == 'WARNING')
+                info_count = sum(1 for s in sigs if s.get('severity') == 'INFO')
+
+                # 9. Assemble & write
+                _set_status("Writing report file\u2026", 0.95)
+                html_out = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -3258,17 +3357,16 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 <div class="footer">RESYNC.ERR v{CURRENT_VERSION} &nbsp;&middot;&nbsp; Report generated {generated_at}</div>
 </div></body></html>"""
 
-            _set_status("Writing report file…")
-            with open(f_path, 'w', encoding='utf-8') as fh:
-                fh.write(html_out)
-            wait_win.destroy()
-            self.show_toast(f"Report saved: {str(f_path).replace(chr(92), '/').split('/')[-1]}")
+                with open(f_path, 'w', encoding='utf-8') as fh:
+                    fh.write(html_out)
 
-        except Exception as e:
-            if wait_win.winfo_exists():
-                wait_win.destroy()
-            messagebox.showerror("Report Export Error",
-                                 f"{type(e).__name__}: {e}\n\n{traceback.format_exc()[-1000:]}")
+                fname = str(f_path).replace('\\', '/').split('/')[-1]
+                _show_success(fname)
+
+            except Exception as e:
+                _show_error(f"{type(e).__name__}: {e}\n\n{traceback.format_exc()[-1000:]}")
+
+        threading.Thread(target=_generate, daemon=True).start()
 
 
     def _open_diagnosis(self):
@@ -3856,22 +3954,118 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
     def _import_new_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
-        if path:
+        if not path:
+            return
+        self._load_csv_threaded(path, on_success=self._apply_new_csv)
+
+    def _apply_new_csv(self, new_analyzer):
+        """Called on the main thread once a new CSV has loaded successfully."""
+        self.analyzer = new_analyzer
+        self.df = self.analyzer.df
+        new_cols = set(self.df.columns)
+        for col, var in list(self.vars.items()):
+            if col not in new_cols:
+                var.set(False)
+        self.filter_active = False
+        self._setup_ui()
+        self._apply_theme_colors()
+        self.update_plot()
+
+    def _load_csv_threaded(self, path: str, on_success, on_error=None):
+        """Show a spinner dialog, load the CSV in a background thread,
+        then call on_success(analyzer) or on_error(exc) on the main thread."""
+        import threading
+
+        is_dark = self.is_dark
+        bg_dark = "#121212" if is_dark else "#f8f9fa"
+
+        wait_win = tk.Toplevel(self.root)
+        wait_win.title("Loading CSV")
+        wait_win.resizable(False, False)
+        wait_win.protocol("WM_DELETE_WINDOW", lambda: None)
+        wait_win.configure(bg=bg_dark)
+        self.root.update_idletasks()
+        pw, ph = 340, 120
+        rx = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
+        ry = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
+        wait_win.geometry(f"{pw}x{ph}+{rx}+{ry}")
+        wait_win.transient(self.root)
+        wait_win.grab_set()
+
+        outer = tk.Frame(wait_win, bg="#1f6aa5", padx=2, pady=2)
+        outer.pack(fill=tk.BOTH, expand=True)
+        inner = tk.Frame(outer, bg=bg_dark, padx=20, pady=16)
+        inner.pack(fill=tk.BOTH, expand=True)
+
+        title_row = tk.Frame(inner, bg=bg_dark)
+        title_row.pack(anchor='w')
+        tk.Label(title_row, text="📂  Loading CSV",
+                 font=('Segoe UI', 11, 'bold'), bg=bg_dark, fg="#4f8ef7").pack(side=tk.LEFT)
+        spin_var = tk.StringVar(value=" ⠋")
+        tk.Label(title_row, textvariable=spin_var,
+                 font=('Segoe UI', 11), bg=bg_dark, fg="#1f6aa5").pack(side=tk.LEFT, padx=(6, 0))
+
+        fname = path.replace('\\', '/').split('/')[-1]
+        tk.Label(inner, text=fname, font=('Segoe UI', 9), bg=bg_dark,
+                 fg="#888", anchor='w').pack(fill=tk.X, pady=(6, 0))
+
+        bar_frame = tk.Frame(inner, bg=bg_dark)
+        bar_frame.pack(fill=tk.X, pady=(8, 0))
+        bar_bg = tk.Frame(bar_frame, bg="#2a2a2a" if is_dark else "#dee2e6", height=4, bd=0)
+        bar_bg.pack(fill=tk.X)
+        bar_fg = tk.Frame(bar_bg, bg="#1f6aa5", height=4, bd=0)
+        bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
+
+        # Indeterminate bar — bounces back and forth
+        _bar_pos  = [0.0]
+        _bar_dir  = [1]
+        _bar_step = 0.06
+        def _tick_bar():
+            if not wait_win.winfo_exists():
+                return
+            _bar_pos[0] += _bar_step * _bar_dir[0]
+            if _bar_pos[0] >= 0.85:
+                _bar_dir[0] = -1
+            elif _bar_pos[0] <= 0.0:
+                _bar_dir[0] = 1
+            bar_fg.place(relwidth=min(_bar_pos[0], 1.0))
+            wait_win.after(40, _tick_bar)
+        _tick_bar()
+
+        _SPIN = [" ⠋", " ⠙", " ⠹", " ⠸", " ⠼", " ⠴", " ⠦", " ⠧", " ⠇", " ⠏"]
+        _si   = [0]
+        def _tick_spin():
+            if not wait_win.winfo_exists():
+                return
+            _si[0] = (_si[0] + 1) % len(_SPIN)
+            spin_var.set(_SPIN[_si[0]])
+            wait_win.after(80, _tick_spin)
+        _tick_spin()
+
+        def _close():
+            if wait_win.winfo_exists():
+                wait_win.grab_release()
+                wait_win.destroy()
+
+        def _worker():
             try:
-                new_analyzer = TelemetryAnalyzer(path)
-                new_analyzer.load()
-                self.analyzer = new_analyzer
-                self.df = self.analyzer.df
-                new_cols = set(self.df.columns)
-                for col, var in list(self.vars.items()):
-                    if col not in new_cols:
-                        var.set(False)
-                self.filter_active = False
-                self._setup_ui()
-                self._apply_theme_colors()
-                self.update_plot()
-            except Exception as e:
-                messagebox.showerror("Error", str(e))
+                analyzer = TelemetryAnalyzer(path)
+                analyzer.load()
+                def _done():
+                    _close()
+                    on_success(analyzer)
+                self.root.after(0, _done)
+            except Exception as exc:
+                def _fail():
+                    _close()
+                    if on_error:
+                        on_error(exc)
+                    else:
+                        messagebox.showerror("Load Error", str(exc))
+                self.root.after(0, _fail)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
 
     def _clear_all(self):
         for v in self.vars.values():
@@ -4118,18 +4312,85 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
 
 if __name__ == "__main__":
+    import threading
     root = tk.Tk()
     root.withdraw()
     path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
-    if path:
-        try:
-            a = TelemetryAnalyzer(path)
-            a.load()
-            root.deiconify()
-            TelemetryApp(root, a)
-            root.mainloop()
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-            root.destroy()
-    else:
+    if not path:
         root.destroy()
+    else:
+        # -- Startup loading spinner -------------------------------------
+        splash = tk.Toplevel(root)
+        splash.title("RESYNC.ERR")
+        splash.resizable(False, False)
+        splash.protocol("WM_DELETE_WINDOW", lambda: None)
+        splash.configure(bg="#121212")
+        splash.geometry("340x120")
+        splash.grab_set()
+
+        outer = tk.Frame(splash, bg="#1f6aa5", padx=2, pady=2)
+        outer.pack(fill=tk.BOTH, expand=True)
+        inner = tk.Frame(outer, bg="#121212", padx=20, pady=16)
+        inner.pack(fill=tk.BOTH, expand=True)
+
+        title_row = tk.Frame(inner, bg="#121212")
+        title_row.pack(anchor='w')
+        tk.Label(title_row, text="📂  Loading CSV",
+                 font=('Segoe UI', 11, 'bold'), bg="#121212", fg="#4f8ef7").pack(side=tk.LEFT)
+        spin_var = tk.StringVar(value=" ⠋")
+        tk.Label(title_row, textvariable=spin_var,
+                 font=('Segoe UI', 11), bg="#121212", fg="#1f6aa5").pack(side=tk.LEFT, padx=(6, 0))
+
+        fname = path.replace('\\', '/').split('/')[-1]
+        tk.Label(inner, text=fname, font=('Segoe UI', 9),
+                 bg="#121212", fg="#888", anchor='w').pack(fill=tk.X, pady=(6, 0))
+
+        bar_frame = tk.Frame(inner, bg="#121212")
+        bar_frame.pack(fill=tk.X, pady=(8, 0))
+        bar_bg = tk.Frame(bar_frame, bg="#2a2a2a", height=4, bd=0)
+        bar_bg.pack(fill=tk.X)
+        bar_fg = tk.Frame(bar_bg, bg="#1f6aa5", height=4, bd=0)
+        bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
+
+        _bar_pos = [0.0]
+        _bar_dir = [1]
+        def _tick_bar():
+            if not splash.winfo_exists():
+                return
+            _bar_pos[0] += 0.06 * _bar_dir[0]
+            if _bar_pos[0] >= 0.85:   _bar_dir[0] = -1
+            elif _bar_pos[0] <= 0.0:  _bar_dir[0] = 1
+            bar_fg.place(relwidth=min(_bar_pos[0], 1.0))
+            splash.after(40, _tick_bar)
+        _tick_bar()
+
+        _SPIN = [" ⠋", " ⠙", " ⠹", " ⠸", " ⠼", " ⠴", " ⠦", " ⠧", " ⠇", " ⠏"]
+        _si   = [0]
+        def _tick_spin():
+            if not splash.winfo_exists():
+                return
+            _si[0] = (_si[0] + 1) % len(_SPIN)
+            spin_var.set(_SPIN[_si[0]])
+            splash.after(80, _tick_spin)
+        _tick_spin()
+
+        def _worker():
+            try:
+                a = TelemetryAnalyzer(path)
+                a.load()
+                def _done():
+                    splash.grab_release()
+                    splash.destroy()
+                    root.deiconify()
+                    TelemetryApp(root, a)
+                root.after(0, _done)
+            except Exception as exc:
+                def _fail():
+                    splash.grab_release()
+                    splash.destroy()
+                    messagebox.showerror("Error", str(exc))
+                    root.destroy()
+                root.after(0, _fail)
+
+        threading.Thread(target=_worker, daemon=True).start()
+        root.mainloop()
