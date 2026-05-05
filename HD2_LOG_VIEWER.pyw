@@ -40,13 +40,13 @@ _RAIL_SKIP     = ('GPU PCIE', 'PCIE', '12VHPWR', 'INPUT')
 _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
 GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.4.5"  # Bump 
+CURRENT_VERSION = "1.4.6"  # Bump 
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
                 ignored_version: str = "", updates_disabled: bool = False, time_mode: bool = False,
-                thresholds: Dict = None, heatmap_mode: bool = False):
+                thresholds: Dict = None, heatmap_mode: bool = False, disabled_sigs: list = None):
     config = {
         "groups": groups_dict,
         "settings": {
@@ -57,7 +57,8 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
             "updates_disabled": updates_disabled,
             "time_mode": time_mode,
             "heatmap_mode": heatmap_mode,
-            "thresholds": thresholds or {}
+            "thresholds": thresholds or {},
+            "disabled_sigs": disabled_sigs or []
         }
     }
     try:
@@ -66,9 +67,9 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
     except:
         pass
 
-def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool]:
+def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, list]:
     if not Path(GROUPS_FILE).exists():
-        return {}, False, False, False, "", False, False, {}, False
+        return {}, False, False, False, "", False, False, {}, False, []
     try:
         with open(GROUPS_FILE, 'r') as f:
             data = json.load(f)
@@ -82,10 +83,11 @@ def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool]:
                         sets.get("updates_disabled", False),
                         sets.get("time_mode", False),
                         sets.get("thresholds", {}),
-                        sets.get("heatmap_mode", False))
-            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False
+                        sets.get("heatmap_mode", False),
+                        sets.get("disabled_sigs", []))
+            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False, []
     except:
-        return {}, False, False, False, "", False, False, {}, False
+        return {}, False, False, False, "", False, False, {}, False, []
 
 
 def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: bool = False,
@@ -502,7 +504,8 @@ class TelemetryApp:
 
         (self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
          self.ignored_version, self.updates_disabled, self.time_mode,
-         saved_thresholds, self.heatmap_mode) = load_config()
+         saved_thresholds, self.heatmap_mode, disabled_sigs_list) = load_config()
+        self.disabled_sigs = set(disabled_sigs_list)
 
         self.vars = {}
         self.cb_widgets = {}
@@ -511,8 +514,7 @@ class TelemetryApp:
         self.cursor_lines = []
         self.cursor_text = None
         self.filter_active = False
-
-        # Default thresholds — these are the fallback values
+        self.debug_mode    = False   # toggled with Ctrl+F8 — these are the fallback values
         self._default_temp_limits = {
             'HOTSPOT': 95.0, 'HOT SPOT': 95.0,
             'GPU': 88.0,
@@ -827,6 +829,58 @@ class TelemetryApp:
         range_row("+5V range",   "sig_v5_lo",   "sig_v5_hi",   self.sig_v5_lo,  self.sig_v5_hi,  "V")
         range_row("+3.3V range", "sig_v33_lo",  "sig_v33_hi",  self.sig_v33_lo, self.sig_v33_hi, "V")
 
+        # -- Signature Enable / Disable ----------------------------------------
+        section("Signature Enable / Disable")
+        tk.Label(body, text="Uncheck a signature to exclude it from detection and reports.",
+                 bg=bg, fg="#888", font=('Segoe UI', 8), wraplength=480,
+                 justify='left').pack(anchor='w', padx=8, pady=(2, 6))
+
+        _ALL_SIGNATURES = [
+            # name                              default severity hint
+            ("CPU Thermal Throttling",          "CRITICAL/WARNING"),
+            ("CPU Power Limit Reached",         "WARNING"),
+            ("CPU Bottleneck",                  "WARNING"),
+            ("GPU Overheating (Hotspot)",        "CRITICAL"),
+            ("GPU Thermal Warning",              "WARNING"),
+            ("GPU VRAM Overflow Analysis",       "WARNING"),
+            ("PSU +12V Rail Sag",               "CRITICAL/WARNING"),
+            ("PSU +5V Rail Unstable",           "WARNING"),
+            ("PSU +3.3V Rail Unstable",         "WARNING"),
+            ("Fan Stall Detected",              "CRITICAL"),
+            ("Hardware (WHEA) Errors",          "CRITICAL"),
+            ("VRM Overheating",                 "CRITICAL"),
+            ("System RAM Exhaustion",           "WARNING"),
+            ("Virtual Memory Limit",            "CRITICAL"),
+            ("Storage Thermal Critical",        "CRITICAL"),
+            ("Storage Overheating",             "WARNING"),
+            ("Storage Congestion",              "INFO"),
+            ("S.M.A.R.T. Hardware Failure",     "CRITICAL"),
+            ("SSD Lifespan Critical",           "CRITICAL"),
+            ("SSD Wear Warning",                "WARNING"),
+            ("Micro-Stuttering Detected",       "WARNING"),
+        ]
+
+        _SEV_COLORS = {"CRITICAL": "#ff4d4d", "WARNING": "#f59e0b",
+                       "INFO": "#38bdf8", "CRITICAL/WARNING": "#ff8c42"}
+        sig_vars = {}   # name -> BooleanVar
+        for sig_name, sev_hint in _ALL_SIGNATURES:
+            enabled = sig_name not in self.disabled_sigs
+            var = tk.BooleanVar(value=enabled)
+            sig_vars[sig_name] = var
+            sev_color = _SEV_COLORS.get(sev_hint, "#aaa")
+
+            row_f = tk.Frame(body, bg=bg)
+            row_f.pack(fill=tk.X, pady=1, padx=8)
+            cb = tk.Checkbutton(row_f, variable=var, bg=bg, activebackground=bg,
+                                selectcolor="#1f6aa5" if is_dark else "#ffffff",
+                                fg=fg, activeforeground=fg,
+                                relief='flat', cursor='hand2')
+            cb.pack(side=tk.LEFT)
+            tk.Label(row_f, text=sig_name, bg=bg, fg=fg,
+                     font=('Segoe UI', 9), anchor='w').pack(side=tk.LEFT)
+            tk.Label(row_f, text=sev_hint, bg=bg, fg=sev_color,
+                     font=('Segoe UI', 8), anchor='w').pack(side=tk.LEFT, padx=(6, 0))
+
         # Buttons 
         btn_f = tk.Frame(dialog, bg=bg)
         btn_f.pack(fill=tk.X, padx=10, pady=10)
@@ -916,6 +970,9 @@ class TelemetryApp:
                 self.sig_v33_lo              = float(entries['sig_v33_lo'].get())
                 self.sig_v33_hi              = float(entries['sig_v33_hi'].get())
 
+                # Apply signature enable/disable toggles
+                self.disabled_sigs = {name for name, var in sig_vars.items() if not var.get()}
+
                 # All parsed OK — save and update
                 self._save_config()
                 self._build_checklist()
@@ -996,6 +1053,10 @@ class TelemetryApp:
                 self.sig_v5_hi               = misc['sig_v5_hi']
                 self.sig_v33_lo              = misc['sig_v33_lo']
                 self.sig_v33_hi              = misc['sig_v33_hi']
+                self.disabled_sigs           = set()
+                # Reset checkboxes in dialog
+                for name, var in sig_vars.items():
+                    var.set(True)
                 self._save_config()
                 self._build_checklist()
                 self._apply_theme_colors()
@@ -1076,7 +1137,7 @@ class TelemetryApp:
         }
         save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
                     self.ignored_version, self.updates_disabled, self.time_mode, thresholds,
-                    self.heatmap_mode)
+                    self.heatmap_mode, list(self.disabled_sigs))
 
     def show_toast(self, message: str, duration: int = 2000):
         toast = tk.Toplevel(self.root)
@@ -1314,7 +1375,10 @@ class TelemetryApp:
         ax.set_title("Sensor Heatmap  —  Green: safe  |  Yellow: approaching limit  |  Red: at/above limit",
                      color=text_color, fontsize=8, pad=6)
 
-        self.fig.tight_layout()
+        try:
+            self.fig.tight_layout(h_pad=0.5)
+        except Exception:
+            pass
         self.canvas_widget.draw_idle()
 
         # Store for mouse hover
@@ -1624,11 +1688,457 @@ class TelemetryApp:
                 return c
         return None
 
+    def _toggle_debug(self):
+        """Ctrl+F8 — open/refresh the debug window."""
+        self.debug_mode = not self.debug_mode
+        flag = " [DEBUG]" if self.debug_mode else ""
+        self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}{flag}")
+        if self.debug_mode:
+            self._open_debug_window()
+        else:
+            # Close the window if it's open
+            if hasattr(self, '_debug_win') and self._debug_win and self._debug_win.winfo_exists():
+                self._debug_win.destroy()
+            self.show_toast("Debug mode OFF")
+
+    def _open_debug_window(self):
+        """Open (or refresh) the debug output window."""
+        is_dark = self.is_dark
+        bg      = "#0d0d0d" if is_dark else "#f8f9fa"
+        bg2     = "#1a1a1a" if is_dark else "#ffffff"
+        fg      = "#d4d4d4" if is_dark else "#212529"
+        accent  = "#1f6aa5"
+        fg_ok   = "#4ec94e"
+        fg_miss = "#ff5555"
+        fg_sec  = "#4f8ef7"
+        fg_val  = "#f0c060"
+
+        # If window already exists just refresh it
+        if hasattr(self, '_debug_win') and self._debug_win and self._debug_win.winfo_exists():
+            win = self._debug_win
+            txt = self._debug_txt
+            txt.config(state='normal')
+            txt.delete('1.0', tk.END)
+        else:
+            win = tk.Toplevel(self.root)
+            win.title("RESYNC.ERR — Debug Dump  [Ctrl+F8 to refresh / close]")
+            win.geometry("860x700")
+            win.minsize(600, 400)
+            win.configure(bg=bg)
+            win.transient(self.root)
+            self._debug_win = win
+
+            def _on_debug_close():
+                self.debug_mode = False
+                self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}")
+                win.destroy()
+            win.protocol("WM_DELETE_WINDOW", _on_debug_close)
+
+            # Toolbar
+            tb = tk.Frame(win, bg="#111" if is_dark else "#dee2e6", pady=4, padx=8)
+            tb.pack(fill=tk.X)
+            tk.Label(tb, text="🐛  Debug Dump", font=('Segoe UI', 10, 'bold'),
+                     bg=tb['bg'], fg=accent).pack(side=tk.LEFT)
+            ttk.Button(tb, text="⟳ Refresh", command=self._open_debug_window).pack(side=tk.RIGHT, padx=2)
+            ttk.Button(tb, text="📋 Copy All", command=lambda: (
+                win.clipboard_clear(),
+                win.clipboard_append(txt.get('1.0', tk.END)),
+                self.show_toast("Debug output copied to clipboard")
+            )).pack(side=tk.RIGHT, padx=2)
+            ttk.Button(tb, text="✕ Close", command=_on_debug_close).pack(side=tk.RIGHT, padx=2)
+
+            # Text area
+            frame = tk.Frame(win, bg=bg)
+            frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
+            txt = tk.Text(frame, bg=bg2, fg=fg, font=('Cascadia Code', 9) if is_dark else ('Consolas', 9),
+                          wrap='none', relief='flat', padx=10, pady=8,
+                          insertbackground=fg, selectbackground=accent)
+            sb_y = ttk.Scrollbar(frame, orient='vertical',   command=txt.yview)
+            sb_x = ttk.Scrollbar(frame, orient='horizontal',  command=txt.xview)
+            txt.configure(yscrollcommand=sb_y.set, xscrollcommand=sb_x.set)
+            sb_y.pack(side=tk.RIGHT,  fill=tk.Y)
+            sb_x.pack(side=tk.BOTTOM, fill=tk.X)
+            txt.pack(fill=tk.BOTH, expand=True)
+            self._debug_txt = txt
+
+            # Colour tags
+            txt.tag_config('header',  foreground='#a78bfa', font=('Consolas', 9, 'bold'))
+            txt.tag_config('section', foreground=fg_sec,    font=('Consolas', 9, 'bold'))
+            txt.tag_config('ok',      foreground=fg_ok)
+            txt.tag_config('miss',    foreground=fg_miss)
+            txt.tag_config('val',     foreground=fg_val)
+            txt.tag_config('crit',    foreground='#ff4d4d', font=('Consolas', 9, 'bold'))
+            txt.tag_config('warn',    foreground='#f59e0b', font=('Consolas', 9, 'bold'))
+            txt.tag_config('info',    foreground='#38bdf8')
+            txt.tag_config('muted',   foreground='#555' if is_dark else '#999')
+
+        # -- Build the dump into the text widget ----------------------------
+        df   = self.df
+        MISS = "<not found>"
+        SEP  = "-" * 72
+
+        def w(text, tag=None):
+            txt.insert(tk.END, text, tag or '')
+
+        def wl(text='', tag=None):
+            w(text + '\n', tag)
+
+        def col(name, value):
+            tag = 'ok' if value else 'miss'
+            sym = '✓' if value else '✗'
+            w(f"  [{sym}] {name:44s} → ", tag)
+            wl(value or MISS, tag)
+
+        def val(name, value, fmt=".2f"):
+            try:    v = f"{value:{fmt}}" if value is not None else MISS
+            except: v = str(value)
+            w(f"       {name:44s} = ")
+            wl(v, 'val')
+
+        def section(title):
+            wl()
+            wl(SEP, 'section')
+            wl(f"  {title}", 'section')
+            wl(SEP, 'section')
+
+        def mx(c):  return df[c].max()  if c and c in df.columns else None
+        def avg(c): return df[c].mean() if c and c in df.columns else None
+
+        wl('═' * 72, 'header')
+        wl(f"  RESYNC.ERR v{CURRENT_VERSION}  —  Debug Dump", 'header')
+        wl(f"  CSV     : {self.analyzer.path}", 'header')
+        wl(f"  Rows    : {len(df):,}   Columns: {len(df.columns):,}", 'header')
+        wl(f"  Disabled: {sorted(self.disabled_sigs) or 'none'}", 'header')
+        wl('═' * 72, 'header')
+
+        # -- CPU ------------------------------------------------------------
+        cpu_temp      = self._col('TCTL') or self._col('TDIE') or self._col('CPU')
+        cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col('CLOCK')
+        cpu_usage_col = self._col('CPU', 'USAGE') or self._col('CPU', 'UTIL') or self._col('CPU', 'LOAD') or self._col('TOTAL', 'CPU')
+        cpu_power     = self._col('CPU', 'PACKAGE') or self._col('CPU', 'PPT') or self._col('CPU', 'POWER')
+        throttle      = self._col('THROTTLE') or self._col('PROCHOT')
+
+        section("CPU COLUMNS")
+        col("cpu_temp",      cpu_temp)
+        col("cpu_clock",     cpu_clock)
+        col("cpu_usage_col", cpu_usage_col)
+        col("cpu_power",     cpu_power)
+        col("throttle",      throttle)
+
+        if cpu_temp:
+            limit = self.temp_limits.get('TDIE', 95.0)
+            section("CPU THERMAL VALUES")
+            val("Max temp",       mx(cpu_temp))
+            val("Mean temp",      avg(cpu_temp))
+            val("TDIE limit",     limit)
+            val("Warn threshold", limit * 0.85)
+            val("Crit threshold", limit * 0.92)
+
+        if cpu_power:
+            section("CPU POWER VALUES")
+            val("Max power",  mx(cpu_power))
+            val("Mean power", avg(cpu_power))
+
+        section("CPU CLOCK STRETCHING COLUMNS")
+        req_cols = [c for c in df.columns if 'Clock (perf #' in c]
+        eff_cols = [c for c in df.columns if 'Effective Clock' in c and 'GPU' not in c]
+        wl(f"  Requested clock cols ({len(req_cols)}): {req_cols[:5] or MISS}")
+        wl(f"  Effective clock cols ({len(eff_cols)}): {eff_cols[:5] or MISS}")
+
+        # -- GPU ------------------------------------------------------------
+        gpu_hotspot       = self._col_excl(('GPU', 'HOT'),  excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
+        gpu_usage_col     = self._col('GPU', 'USAGE') or self._col('GPU', 'LOAD')
+        gpu_clock         = self._col('GPU', 'CLOCK') or self._col('GPU', 'FREQUENCY')
+        gpu_power         = self._col('GPU', 'POWER')
+        gpu_throttle      = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
+        gpu_pwr_limit     = self._col('Performance Limit - Power [Yes/No]') or self._col('PERFCAP', 'PWR')
+        gpu_eff_clock     = self._col('GPU Effective Clock [MHz]')
+        gpu_mem_usage     = self._col('GPU', 'MEMORY', 'USAGE') or self._col('GPU', 'MEMORY', 'ALLOCATED')
+        gpu_mem_dedicated = self._col('GPU D3D Memory Dedicated')
+        gpu_mem_dynamic   = self._col('GPU D3D Memory Dynamic')
+        gpu_bus_col       = self._col('GPU Bus Load') or self._col('Bus Load')
+        vram_junc         = self._col('GPU Memory Junction Temperature [°C]')
+
+        section("GPU COLUMNS")
+        col("gpu_hotspot",        gpu_hotspot)
+        col("gpu_usage_col",      gpu_usage_col)
+        col("gpu_clock",          gpu_clock)
+        col("gpu_eff_clock",      gpu_eff_clock)
+        col("gpu_power",          gpu_power)
+        col("gpu_throttle",       gpu_throttle)
+        col("gpu_pwr_limit",      gpu_pwr_limit)
+        col("gpu_mem_usage",      gpu_mem_usage)
+        col("gpu_mem_dedicated",  gpu_mem_dedicated)
+        col("gpu_mem_dynamic",    gpu_mem_dynamic)
+        col("gpu_bus_col",        gpu_bus_col)
+        col("vram_junction_temp", vram_junc)
+
+        if gpu_hotspot:
+            section("GPU THERMAL VALUES")
+            val("Max hotspot",   mx(gpu_hotspot))
+            val("Mean hotspot",  avg(gpu_hotspot))
+            val("Hotspot limit", self.temp_limits.get('GPU_HOTSPOT', 110.0))
+
+        if gpu_clock and gpu_usage_col:
+            section("GPU CLOCK / TDR VALUES")
+            val("Max clock",  mx(gpu_clock))
+            val("Min clock",  df[gpu_clock].min())
+            val("Clock std",  df[gpu_clock].std())
+            low_u  = df[gpu_usage_col] < 5
+            stall  = (df[gpu_clock].rolling(3).std() < 1.0) & (df[gpu_clock] > 0)
+            tdr_ev = (low_u & stall).rolling(5).sum() >= 3
+            val("TDR candidate samples", int(tdr_ev.sum()), "d")
+
+        # -- FRAME TIMING ---------------------------------------------------
+        ft_col      = self._col('Frametime [ms]') or self._col('Frame Time')
+        gpu_busy_ms = self._col('GPU Busy (avg) [ms]')
+        gpu_wait_ms = self._col('GPU Wait (avg) [ms]')
+
+        section("FRAME TIMING COLUMNS")
+        col("ft_col",      ft_col)
+        col("gpu_busy_ms", gpu_busy_ms)
+        col("gpu_wait_ms", gpu_wait_ms)
+
+        if ft_col:
+            section("FRAME TIMING VALUES")
+            val("Avg frame time", avg(ft_col))
+            val("Max frame time", mx(ft_col))
+            val("P99 frame time", df[ft_col].quantile(0.99))
+            if gpu_busy_ms and gpu_wait_ms:
+                wr = df[gpu_wait_ms] / (df[gpu_busy_ms] + df[gpu_wait_ms] + 1e-9)
+                val("Max wait ratio",  wr.max())
+                val("Mean wait ratio", wr.mean())
+
+        # -- STORAGE --------------------------------------------------------
+        section("STORAGE COLUMNS")
+        drive_t = [c for c in df.columns if 'TEMP' in c.upper()
+                   and any(k in c.upper() for k in ['DRIVE','NVME','SSD','HDD'])]
+        drive_h = [c for c in df.columns if any(k in c.upper()
+                   for k in ['REMAINING LIFE','WEAR LEVEL','AVAILABLE SPARE'])]
+        wl(f"  Drive temp cols   ({len(drive_t)}): {drive_t or MISS}")
+        wl(f"  Drive health cols ({len(drive_h)}): {drive_h or MISS}")
+        for c in drive_t:
+            val(f"  Max {c[:35]}", mx(c))
+
+        # -- FABRIC / MEMORY -------------------------------------------------
+        fclk_col = self._col('FCLK')
+        uclk_col = next((c for c in df.columns if 'UCLK' in c), None)
+        mclk_col = self._col('MCLK') or self._col('MEMORY CLOCK') or self._col('DRAM CLOCK')
+
+        section("FABRIC / MEMORY CLOCK COLUMNS")
+        col("fclk_col", fclk_col)
+        col("uclk_col", uclk_col)
+        col("mclk_col", mclk_col)
+        if fclk_col and uclk_col and mclk_col:
+            section("FABRIC VALUES  (Ryzen Desync detection)")
+            val("FCLK median",         df[fclk_col].median())
+            val("UCLK median",         df[uclk_col].median())
+            val("MCLK median",         df[mclk_col].median())
+            delta = (df[fclk_col] - df[uclk_col]).abs()
+            val("FCLK/UCLK max delta", delta.max())
+            val("Desync fraction",     float((delta > 10).mean()), ".4f")
+
+        # -- PSU RAILS ------------------------------------------------------
+        section("PSU RAIL COLUMNS")
+        for r in ['+12V', '+5V', '+3.3V']:
+            c = self._col(r)
+            col(r, c)
+            if c and c in df.columns:
+                val(f"  {r} min", df[c].min())
+                val(f"  {r} max", df[c].max())
+
+        # -- SYSTEM ---------------------------------------------------------
+        chipset_t      = self._col('Chipset [°C]') or self._col('Motherboard [°C]')
+        pcie_errors    = self._col('PCI Express Error Counters (avg)')
+        sys_interrupts = self._col('System Interrupts') or self._col('DPC Latency')
+        is_laptop      = any(k in "".join(df.columns).upper()
+                             for k in ['BATTERY','CHARGE','AC ADAPTER','DISCHARGE'])
+
+        section("SYSTEM COLUMNS")
+        col("chipset_t",      chipset_t)
+        col("pcie_errors",    pcie_errors)
+        col("sys_interrupts", sys_interrupts)
+        w(f"       {'is_laptop':44s} = ")
+        wl(str(is_laptop), 'val')
+        if pcie_errors and pcie_errors in df.columns:
+            val("Max PCIe errors", mx(pcie_errors))
+
+        # -- THRESHOLDS -----------------------------------------------------
+        section("ACTIVE THRESHOLDS  (limits editor)")
+        val("CPU thermal samples",  self.sig_cpu_thermal_samples, "d")
+        val("Fan stall RPM",        self.sig_fan_stall_rpm)
+        val("Fan min spinning RPM", self.sig_fan_min_spinning)
+        val("Fan hot CPU °C",       self.sig_fan_hot_cpu_c)
+        val("Fan hot GPU °C",       self.sig_fan_hot_gpu_c)
+        val("Drive temp max °C",    self.sig_drive_temp_max)
+        val("VRM temp max °C",      self.sig_vrm_temp_max)
+        val("RAM exhaust %",        self.sig_ram_exhaust_pct)
+        val("VRAM overflow %",      self.sig_vram_overflow_pct)
+        val("+12V lower limit V",   self.sig_v12_lo)
+        val("+5V range V",          f"{self.sig_v5_lo} – {self.sig_v5_hi}", "s")
+        val("+3.3V range V",        f"{self.sig_v33_lo} – {self.sig_v33_hi}", "s")
+
+        # -- TEMPERATURE LIMITS ---------------------------------------------
+        section("TEMPERATURE LIMITS  (active values)")
+        for k, v in sorted(self.temp_limits.items()):
+            default = self._default_temp_limits.get(k)
+            modified = " ★ modified" if default is not None and abs(v - default) > 0.01 else ""
+            w(f"       {k:20s} = ")
+            wl(f"{v:.1f} °C{modified}", 'val')
+
+        # -- VOLTAGE RAILS --------------------------------------------------
+        section("VOLTAGE RAIL LIMITS  (active values)")
+        for rail, (lo, hi) in self.volt_rails.items():
+            d_lo, d_hi = self._default_volt_rails.get(rail, (lo, hi))
+            modified = " ★" if abs(lo - d_lo) > 0.001 or abs(hi - d_hi) > 0.001 else ""
+            w(f"       {rail:10s} = ")
+            wl(f"{lo}V – {hi}V{modified}", 'val')
+
+        # -- MISC THRESHOLDS ------------------------------------------------
+        section("MISC THRESHOLDS  (active values)")
+        misc_display = [
+            ("cpu_volt_range",       f"{self.cpu_volt_range[0]}V – {self.cpu_volt_range[1]}V"),
+            ("gpu_volt_max",         f"{self.gpu_volt_max}V"),
+            ("dram_volt_range",      f"{self.dram_volt_range[0]}V – {self.dram_volt_range[1]}V"),
+            ("fan_min_rpm",          f"{self.fan_min_rpm} RPM"),
+            ("cpu_power_max",        f"{self.cpu_power_max} W"),
+            ("gpu_power_max",        f"{self.gpu_power_max} W"),
+            ("total_power_max",      f"{self.total_power_max} W"),
+            ("frametime_max_ms",     f"{self.frametime_max_ms} ms"),
+            ("fps_min",              f"{self.fps_min}"),
+            ("sig_cpu_thermal_pct",  f"{self.sig_cpu_thermal_pct}"),
+            ("sig_cpu_thermal_samp", f"{self.sig_cpu_thermal_samples}"),
+            ("sig_fan_stall_rpm",    f"{self.sig_fan_stall_rpm} RPM"),
+            ("sig_fan_hot_cpu_c",    f"{self.sig_fan_hot_cpu_c} °C"),
+            ("sig_fan_hot_gpu_c",    f"{self.sig_fan_hot_gpu_c} °C"),
+            ("sig_drive_temp_max",   f"{self.sig_drive_temp_max} °C"),
+            ("sig_vrm_temp_max",     f"{self.sig_vrm_temp_max} °C"),
+            ("sig_ram_exhaust_pct",  f"{self.sig_ram_exhaust_pct} %"),
+            ("sig_vram_overflow_pct",f"{self.sig_vram_overflow_pct} %"),
+            ("sig_stutter_mult",     f"{self.sig_stutter_mult}×"),
+            ("sig_stutter_min_hits", f"{self.sig_stutter_min_hits}"),
+            ("sig_tdr_clock_frac",   f"{self.sig_tdr_clock_frac}"),
+            ("sig_ppt_sat_pct",      f"{self.sig_ppt_sat_pct}"),
+            ("sig_clock_stretch_mhz",f"{self.sig_clock_stretch_mhz} MHz"),
+        ]
+        for name, v in misc_display:
+            w(f"       {name:26s} = ")
+            wl(v, 'val')
+
+        # -- FAN & COOLING COLUMNS ------------------------------------------
+        section("FAN / COOLING COLUMNS")
+        fan_cols = [c for c in df.columns if any(k in c.upper() for k in ['FAN','RPM','PUMP','COOLER'])]
+        if fan_cols:
+            for c in fan_cols[:10]:
+                mn, av, mx2 = df[c].min(), df[c].mean(), df[c].max()
+                w(f"  {c[:50]:50s}  ")
+                wl(f"min={mn:.0f}  avg={av:.0f}  max={mx2:.0f}", 'val')
+        else:
+            wl(f"  {MISS}", 'miss')
+
+        # -- VRM COLUMNS ----------------------------------------------------
+        section("VRM / MOSFET COLUMNS")
+        vrm_cols = [c for c in df.columns if any(k in c.upper()
+                    for k in ['VRM','MOSFET','CHOKE','PHASE','MOS TEMP'])]
+        if vrm_cols:
+            for c in vrm_cols[:8]:
+                w(f"  {c[:50]:50s}  ")
+                wl(f"max={df[c].max():.1f}", 'val')
+        else:
+            wl(f"  {MISS}", 'miss')
+
+        # -- BATTERY / LAPTOP COLUMNS ---------------------------------------
+        section("BATTERY / LAPTOP COLUMNS")
+        batt_cols = [c for c in df.columns if any(k in c.upper()
+                     for k in ['BATTERY','CHARGE','DISCHARGE','AC ADAPTER','REMAINING CAPACITY'])]
+        if batt_cols:
+            for c in batt_cols[:8]:
+                w(f"  {c[:50]:50s}  ")
+                wl(f"min={df[c].min():.2f}  max={df[c].max():.2f}", 'val')
+        else:
+            wl("  No battery/laptop columns found — desktop system assumed.", 'muted')
+
+        # -- OUT-OF-SPEC SENSOR SUMMARY -------------------------------------
+        section("OUT-OF-SPEC SENSOR SUMMARY")
+        oos = [c for c in df.columns if self._is_critical(c)]
+        if oos:
+            wl(f"  {len(oos)} column(s) currently flagged as out-of-spec:", 'crit')
+            for c in oos[:15]:
+                s = df[c].dropna()
+                if s.empty: continue
+                w(f"  ⚠ {c[:55]:55s}  ")
+                wl(f"peak={s.max():.2f}", 'crit')
+            if len(oos) > 15:
+                wl(f"  … and {len(oos)-15} more", 'muted')
+        else:
+            wl("  No out-of-spec sensors detected.", 'ok')
+
+        # -- COLUMN COVERAGE SCORE ------------------------------------------
+        section("COLUMN COVERAGE SCORE")
+        _key_cols = {
+            "CPU temp":        cpu_temp,
+            "CPU usage":       cpu_usage_col,
+            "CPU power":       cpu_power,
+            "CPU throttle":    throttle,
+            "GPU temp":        gpu_hotspot,
+            "GPU usage":       gpu_usage_col,
+            "GPU clock":       gpu_clock,
+            "GPU power":       gpu_power,
+            "GPU mem usage":   gpu_mem_usage,
+            "VRAM junction":   vram_junc,
+            "Frame time":      ft_col,
+            "GPU busy ms":     gpu_busy_ms,
+            "GPU wait ms":     gpu_wait_ms,
+            "FCLK":            fclk_col,
+            "UCLK":            uclk_col,
+            "MCLK":            mclk_col,
+            "PCIe errors":     pcie_errors,
+            "Sys interrupts":  sys_interrupts,
+            "Chipset temp":    chipset_t,
+        }
+        found_n = sum(1 for v in _key_cols.values() if v)
+        total_n = len(_key_cols)
+        pct = found_n / total_n * 100
+        score_tag = 'ok' if pct >= 70 else ('warn' if pct >= 40 else 'crit')
+        wl(f"  {found_n}/{total_n} key columns resolved  ({pct:.0f}%)", score_tag)
+        wl()
+        for name, c in _key_cols.items():
+            tag = 'ok' if c else 'miss'
+            sym = '✓' if c else '✗'
+            wl(f"  [{sym}] {name}", tag)
+
+        # -- SIGNATURE HITS -------------------------------------------------
+        section("SIGNATURE HIT SUMMARY")
+        hits = self._run_signatures()
+        if hits:
+            _sev_tag = {'CRITICAL': 'crit', 'WARNING': 'warn', 'INFO': 'info'}
+            for h in sorted(hits, key=lambda x: ['CRITICAL','WARNING','INFO'].index(x.get('severity','INFO'))):
+                tag = _sev_tag.get(h['severity'], 'info')
+                wl(f"  [{h['severity']:8s}] {h['name']}", tag)
+                for ev in h.get('evidence', []):
+                    wl(f"             • {ev}", 'muted')
+        else:
+            wl("  No signatures triggered.", 'ok')
+
+        wl()
+        wl('═' * 72, 'header')
+        wl(f"  End of dump — Ctrl+F8 to refresh, ✕ to close", 'header')
+        wl('═' * 72, 'header')
+
+        txt.config(state='disabled')
+        txt.see('1.0')
+
+    def _run_debug_dump(self):
+        """Legacy stub — debug output now goes to the in-app window via _open_debug_window()."""
+        self._open_debug_window()
+
     def _run_signatures(self) -> list:
         hits = []
         df = self.df
 
         def add(name, severity, description, evidence):
+            if name in self.disabled_sigs:
+                return
             clean_ev = [str(e) for e in evidence if e and str(e).strip()]
             hits.append({
                 'name': name, 
@@ -1686,52 +2196,7 @@ class TelemetryApp:
         uclk_col = next((c for c in df.columns if 'UCLK' in c), None)
         mclk_col = self._col('MCLK') or self._col('MEMORY CLOCK') or self._col('DRAM CLOCK') or None
 
-        # -- Sensor Debug ---------------------------------------------------------------
-
-        # def dbg(name, value):
-        #     status = "ok" if value is not none else "miss"
-        #     print(f"[{status}] {name}: {value}")
-        # mapping_debug = {
-        #     "cpu_temp": cpu_temp,
-        #     "cpu_hotspot": cpu_hotspot,
-        #     "cpu_clock": cpu_clock,
-        #     "eff_clock": eff_clock,
-        #     "cpu_usage_col": cpu_usage_col,
-        #     "cpu_power": cpu_power,
-        #     "throttle": throttle,
-        #     "cpu_utility": cpu_utility,
-
-        #     "gpu_hotspot": gpu_hotspot,
-        #     "gpu_usage_col": gpu_usage_col,
-        #     "gpu_clock": gpu_clock,
-        #     "gpu_power": gpu_power,
-        #     "gpu_throttle": gpu_throttle,
-        #     "gpu_clk_col": gpu_clk_col,
-
-        #     "gpu_mem_usage": gpu_mem_usage,
-        #     "vram_junction_temp": vram_junction_temp,
-        #     "gpu_mem_dedicated": gpu_mem_dedicated,
-        #     "gpu_mem_dynamic": gpu_mem_dynamic,
-        #     "gpu_bus_col": gpu_bus_col,
-
-        #     "chipset_t": chipset_t,
-        #     "usb_v_col": usb_v_col,
-        #     "pcie_errors": pcie_errors,
-        #     "system_interrupts": system_interrupts,
-
-        #     "ft_col": ft_col,
-        #     "gpu_wait_ms": gpu_wait_ms,
-        #     "gpu_busy_ms": gpu_busy_ms,
-        #     "gpu_eff_clock": gpu_eff_clock,
-
-        #     "fclk_col": fclk_col,
-        #     "uclk_col": uclk_col,
-        #     "mclk_col": mclk_col,
-        # }
-
-        # for k, v in mapping_debug.items():
-        #     dbg(k, v)
-        
+        # Sensor Debug ---------------------------------------------------------------
 
         def mx(col): return df[col].max() if col and col in df.columns else 0
         def avg(col): return df[col].mean() if col and col in df.columns else 0
@@ -3438,6 +3903,185 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             else:
                 results.sort(key=lambda r: {'CRITICAL': 0, 'WARNING': 1, 'INFO': 2}.get(r['severity'], 3))
 
+                cols = set(self.df.columns)
+
+                def _cols(*keywords):
+                    """Return all df columns whose name contains ALL given keywords (case-insensitive).
+                    Use for precise multi-word matches e.g. _cols('GPU', 'TEMP')."""
+                    kw = [k.upper() for k in keywords]
+                    return {c for c in cols if all(k in c.upper() for k in kw)}
+
+                def _any(*keywords):
+                    """Return all df columns whose name contains ANY of the given keywords."""
+                    kw = [k.upper() for k in keywords]
+                    return {c for c in cols if any(k in c.upper() for k in kw)}
+
+                def _sensors_for_signature(sig_name: str) -> set:
+                    """Return the set of df column names most relevant to a given signature."""
+                    m = {
+                        "CPU Thermal Throttling": (
+                            _any("TDIE", "TCTL", "TJMAX", "PROCHOT", "THROTTL",
+                                 "CPU PACKAGE [", "CORE TEMP", "CPU TEMP") |
+                            _cols("CPU", "POWER") | _cols("CORE", "DISTANCE")
+                        ),
+                        "CPU Power Limit Reached": (
+                            _any("PL1", "PL2", "PPT", "POWER LIMIT", "THROTTL", "PROCHOT") |
+                            _cols("CPU", "POWER") | _cols("CPU", "PACKAGE", "POWER")
+                        ),
+                        "CPU Bottleneck": (
+                            _any("TOTAL CPU", "CPU USAGE", "CPU LOAD", "CPU UTIL",
+                                 "GPU USAGE", "GPU CORE LOAD", "GPU LOAD")
+                        ),
+                        "GPU Overheating (Hotspot)": (
+                            _any("GPU TEMPERATURE", "GPU HOT", "GPU JUNCTION",
+                                 "GPU THERMAL", "HOTSPOT", "HOT SPOT") |
+                            _cols("GPU", "POWER") | _cols("GPU", "CLOCK")
+                        ),
+                        "GPU Thermal Warning": (
+                            _any("GPU TEMPERATURE", "GPU HOT", "GPU JUNCTION",
+                                 "GPU THERMAL", "HOTSPOT", "HOT SPOT")
+                        ),
+                        "GPU VRAM Overflow Analysis": (
+                            _any("VRAM", "GPU MEMORY", "D3D MEMORY", "GPU MEM",
+                                 "MEMORY ALLOCATED", "VIRTUAL MEMORY", "GPU D3D")
+                        ),
+                        "GPU Driver TDR (Timeout)": (
+                            _cols("GPU", "USAGE") | _cols("GPU", "LOAD") |
+                            _cols("GPU", "CLOCK") | _cols("GPU", "FREQUENCY")
+                        ),
+                        "CPU Clock Stretching — Major": (
+                            _cols("EFFECTIVE", "CLOCK") |
+                            _cols("CLOCK", "PERF") |
+                            _cols("GPU", "USAGE") | _cols("GPU", "LOAD") |
+                            _cols("CPU", "USAGE") | _cols("CPU", "LOAD") |
+                            _any("TOTAL CPU USAGE", "TOTAL CPU LOAD")
+                        ),
+                        "CPU Clock Stretching — Minor": (
+                            _cols("EFFECTIVE", "CLOCK") |
+                            _cols("CLOCK", "PERF") |
+                            _cols("CPU", "USAGE") | _cols("CPU", "LOAD") |
+                            _any("TOTAL CPU USAGE", "TOTAL CPU LOAD")
+                        ),
+                        "GPU Power Limit Saturated": (
+                            _any("GPU POWER", "GPU BOARD POWER", "TGP", "PERFORMANCE LIMIT",
+                                 "POWER LIMIT", "PERFCAP") |
+                            _cols("GPU", "CLOCK") | _cols("GPU", "USAGE")
+                        ),
+                        "GPU Power Limit Oscillation": (
+                            _any("GPU POWER", "GPU BOARD POWER", "TGP", "PERFORMANCE LIMIT",
+                                 "POWER LIMIT") |
+                            _cols("GPU", "CLOCK")
+                        ),
+                        "VRAM Thermal Throttling": (
+                            _any("GPU MEMORY JUNCTION", "VRAM TEMP", "GPU MEM TEMP",
+                                 "MEMORY JUNCTION") |
+                            _cols("GPU", "MEMORY", "CLOCK") | _cols("GPU", "CLOCK")
+                        ),
+                        "VRAM Swapping / System Memory Spillover": (
+                            _any("GPU D3D MEMORY", "D3D MEMORY DYNAMIC", "D3D MEMORY DEDICATED",
+                                 "GPU MEMORY ALLOCATED", "VIRTUAL MEMORY", "PAGE FILE")
+                        ),
+                        "PSU +12V Rail Sag": (
+                            _any("+12V [V]", "ATX 12V", "EPS 12V") | _cols("GPU", "POWER")
+                        ),
+                        "PSU +5V Rail Unstable":  _any("+5V [V]", "ATX 5V"),
+                        "PSU +3.3V Rail Unstable": _any("+3.3V [V]", "3V3 [V]", "ATX 3.3"),
+                        "Fan Stall Detected": (
+                            _any("FAN", "RPM", "PUMP") |
+                            _cols("CPU", "TEMP") | _cols("GPU", "TEMP")
+                        ),
+                        "Hardware (WHEA) Errors": (
+                            _any("WHEA", "HARDWARE ERROR", "CORRECTABLE", "NON-FATAL",
+                                 "FATAL ERROR", "PCIe LANE")
+                        ),
+                        "VRM Overheating": (
+                            _any("VRM", "MOSFET", "CHOKE", "MOS TEMP", "PHASE TEMP",
+                                 "SVI", "VDDCR", "CPU VRM")
+                        ),
+                        "System RAM Exhaustion": (
+                            _any("PHYSICAL MEMORY", "MEMORY USED", "MEMORY LOAD",
+                                 "MEMORY AVAILABLE", "RAM LOAD", "RAM USAGE")
+                        ),
+                        "Virtual Memory Limit": (
+                            _any("VIRTUAL MEMORY", "PAGE FILE", "COMMIT", "PAGEFILE")
+                        ),
+                        "Storage Thermal Critical": (
+                            _any("DRIVE TEMP", "SSD TEMP", "NVME TEMP", "HDD TEMP",
+                                 "DRIVE TEMPERATURE")
+                        ),
+                        "Storage Overheating": (
+                            _any("DRIVE TEMP", "SSD TEMP", "NVME TEMP", "HDD TEMP",
+                                 "DRIVE TEMPERATURE")
+                        ),
+                        "Storage Congestion": (
+                            _any("READ RATE", "WRITE RATE", "READ ACTIVITY",
+                                 "WRITE ACTIVITY", "TOTAL ACTIVITY", "DRIVE ACTIVITY")
+                        ),
+                        "Storage I/O Bottleneck / Hitching": (
+                            _any("READ RATE", "WRITE RATE", "READ ACTIVITY", "WRITE ACTIVITY",
+                                 "TOTAL ACTIVITY", "FRAME TIME", "FRAMETIME",
+                                 "GPU BUSY", "CPU BUSY")
+                        ),
+                        "S.M.A.R.T. Hardware Failure": (
+                            _any("DRIVE FAIL", "DRIVE WARN", "S.M.A.R.T", "SMART",
+                                 "FAILURE [YES", "WARNING [YES")
+                        ),
+                        "SSD Lifespan Critical": (
+                            _any("REMAINING LIFE", "DRIVE HEALTH", "WEAR LEVEL",
+                                 "AVAILABLE SPARE", "DRIVE REMAINING")
+                        ),
+                        "SSD Wear Warning": (
+                            _any("REMAINING LIFE", "DRIVE HEALTH", "WEAR LEVEL",
+                                 "AVAILABLE SPARE", "DRIVE REMAINING")
+                        ),
+                        "Micro-Stuttering Detected": (
+                            _any("FRAME TIME", "FRAMETIME", "FPS", "FRAME RATE",
+                                 "GPU BUSY", "CPU BUSY", "GPU WAIT", "CPU WAIT",
+                                 "PRESENTED", "DISPLAYED")
+                        ),
+                        "Background Process Interference": (
+                            _any("CPU USAGE", "TOTAL CPU", "CPU LOAD", "CPU UTIL",
+                                 "GPU USAGE", "GPU LOAD", "GPU CORE LOAD",
+                                 "FRAME TIME", "FRAMETIME")
+                        ),
+                        "GPU Priority Conflict (Background App)": (
+                            _any("FRAME TIME", "FRAMETIME", "GPU USAGE", "GPU LOAD",
+                                 "GPU BUS", "BUS LOAD", "GPU WAIT", "GPU BUSY",
+                                 "GPU CLOCK", "FPS")
+                        ),
+                        "GPU Engine Wait Bottleneck": (
+                            _any("GPU WAIT", "GPU BUSY", "GPU WAIT (AVG)",
+                                 "GPU BUSY (AVG)", "FRAME TIME", "FRAMETIME",
+                                 "CPU WAIT", "CPU BUSY", "FPS")
+                        ),
+                        "Chipset Thermal Throttling": (
+                            _any("CHIPSET", "PCH TEMP", "PCH [", "MOTHERBOARD [")
+                        ),
+                        "PCIe Bus Interface Chokepoint": (
+                            _any("GPU BUS", "BUS LOAD", "PCIE LINK", "PCIE SPEED",
+                                 "GPU USAGE", "GPU CLOCK", "FRAME TIME")
+                        ),
+                        "PCIe Bus Signal Instability": (
+                            _any("PCIE", "PCIe ERROR", "RECEIVER ERROR", "REPLAY",
+                                 "BAD TLP", "BAD DLLP", "RECOVERY COUNT",
+                                 "CORRECTABLE ERROR", "NON-FATAL ERROR", "FATAL ERROR")
+                        ),
+                        "Kernel Driver Latency (DPC/ISR)": (
+                            _any("DPC", "SYSTEM INTERRUPT", "LATENCY",
+                                 "FRAME TIME", "FRAMETIME", "CPU BUSY", "CPU WAIT")
+                        ),
+                        "Laptop Power Delivery Failure (Limp Mode)": (
+                            _any("BATTERY", "CHARGE", "DISCHARGE", "AC ADAPTER",
+                                 "REMAINING CAPACITY", "CHARGE LEVEL", "CHARGE RATE") |
+                            _cols("CPU", "POWER") | _cols("GPU", "POWER")
+                        ),
+                        "Phantom Clock Cap": (
+                            _any("GPU CLOCK", "GPU CORE CLOCK", "GPU EFFECTIVE CLOCK",
+                                 "PERFORMANCE LIMIT", "POWER LIMIT", "THERMAL LIMIT")
+                        ),
+                    }
+                    return m.get(sig_name, set()) & cols
+
                 for r in results:
 
                     is_crit = r['severity'] == 'CRITICAL'
@@ -3490,16 +4134,36 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                         fg="#aaaaaa" if is_dark else "#555555",
                                         font=('Segoe UI', 8)).pack(anchor='w')
 
+                    # "Select Relevant Sensors" button per signature card
+                    def _make_select(sig_name):
+                        def _select():
+                            selected = _sensors_for_signature(sig_name)
+                            if not selected:
+                                self.show_toast(f"No matching sensors found for: {sig_name}")
+                                return
+                            for col, var in self.vars.items():
+                                var.set(col in selected)
+                            self.update_plot()
+                            self.show_toast(f"Selected {len(selected)} sensor(s) for: {sig_name}")
+                            dialog.lift()
+                        return _select
+
+                    ttk.Button(card, text="📌 Select Relevant Sensors",
+                               command=_make_select(r['name'])).pack(anchor='w', pady=(6, 0))
+
             ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=10)
 
         threading.Thread(target=_run, daemon=True).start()
 
     def _setup_ui(self):
-        self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}")
+        flag = " [DEBUG]" if self.debug_mode else ""
+        self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}{flag}")
         self.root.geometry("1600x950")
         self.root.minsize(1000, 700)
         for widget in self.root.winfo_children():
             widget.destroy()
+
+        self.root.bind("<Control-F8>", lambda e: self._toggle_debug())
 
         self.paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.paned.pack(fill=tk.BOTH, expand=True)
@@ -3970,6 +4634,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
+        if self.debug_mode:
+            self._open_debug_window()
 
     def _load_csv_threaded(self, path: str, on_success, on_error=None):
         """Show a spinner dialog, load the CSV in a background thread,
@@ -4303,7 +4969,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 for t in l.get_texts():
                     t.set_color(text_color)
 
-        self.fig.tight_layout()
+        try:
+            self.fig.tight_layout(h_pad=0.5)
+        except Exception:
+            pass
         if self.multi_mode:
             self.fig.subplots_adjust(right=0.80)
         else:
