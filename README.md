@@ -69,18 +69,20 @@ pythonw HD2_LOG_VIEWER.pyw
 
 ## 🛠️ Core Functionality
 
-* **📊 Multi-Plot Mode:** Categorized subplots for Temperatures, Clocks, and Voltages.
-* **Δ Delta Analysis:** Graph absolute differences (e.g., GPU Core vs. Hotspot).
-* **🔍 Comparison Engine:** Overlay live data against a reference baseline.
-* **🔬 Signature-Based Diagnostics:** Cross-system hardware anomaly detection engine.
-* **🚨 Intelligent Diagnostics:** Automatic flagging of thermal throttling and voltage sag.
-* **🌗 Adaptive UI:** Full Dark and Light mode support.
-* **🔔 Update Notifications:** Automatic update checks on startup with options to ignore a specific version or disable notifications entirely.
-* **🕒 Time Mode:** Switch the graph between raw data ticks and actual time (H:MM:SS).
-* **📋 Preset Management:** Save sensor groups, rename them with the pencil icon, and share them via clipboard.
-* **🌡️ Heatmap Mode:** Dynamic color-coded stress mapping (Green/Yellow/Red).
-* **⚙️ Limits Editor:** Fully customizable threshold engine—fine-tune thermal and voltage "Danger Zones" for your specific hardware.
-* **🧹 Crash Recovery:** Smart data cleaning that automatically trims corrupted/zeroed rows typically found at the end of logs after a system crash.
+* **📊 Multi-Plot Mode:** Categorized subplots for temperatures, clocks, voltages, and utilization metrics.
+* **🧠 Sensor Alias System:** Persistent user-configurable sensor aliasing improves automatic sensor matching across differently formatted CSV logs.
+* **Δ Delta Analysis:** Graph absolute differences between related sensors (for example GPU Core vs. Hotspot).
+* **🔍 Comparison Engine:** Overlay live telemetry data against a reference baseline.
+* **📄 HTML Report Export:** Generate structured HTML reports from analyzed logs for sharing, archiving, and offline review.
+* **🔬 Signature-Based Diagnostics:** Detects hardware instability patterns across thermals, power delivery, memory, storage, and OS behavior.
+* **🚨 Automated Diagnostics:** Flags thermal throttling, voltage instability, PSU sag, and related hardware anomalies.
+* **🌗 Adaptive UI:** Full dark and light mode support.
+* **🔔 Update Notifications:** Automatic update checks on startup with ignore-version and disable options.
+* **🕒 Time Mode:** Switch graphs between raw polling ticks and actual elapsed time.
+* **📋 Preset Management:** Save, rename, organize, and share sensor groups.
+* **🌡️ Heatmap Mode:** Dynamic color-coded stress visualization.
+* **⚙️ Limits Editor:** Customizable threshold system for thermal and voltage warning zones.
+* **🧹 Crash Recovery:** Automatically trims corrupted or zeroed rows commonly left at the end of logs after crashes or hard resets.
 
 ---
 
@@ -92,39 +94,41 @@ HD2 LOG VIEWER includes an advanced signature detection system that analyzes sys
 
 The engine monitors multiple layers of system behavior:
 
-#### 🌡️ Thermal & Cooling Stability
+🌡️ Thermal & Cooling Stability
 
 * CPU thermal throttling
 * GPU hotspot deltas
 * VRAM and VRM temperature stress
 * Chipset and CCD thermal imbalance
 
-#### ⚡ Power & Voltage Behavior
+⚡ Power & Voltage Behavior
 
 * Clock stretching and performance loss under load
 * GPU power limit oscillation
 * Voltage reliability limits
+* Multi-rail voltage sag detection
+* PSU ripple and transient instability analysis
 
-#### 🧬 Memory & Fabric Integrity
+🧬 Memory & Fabric Integrity
 
 * RAM saturation and memory controller load
 * VRAM swapping and memory pressure
 * Ryzen fabric synchronization (FCLK/UCLK behavior)
 
-#### 🧩 System & OS-Level Stability
+🧩 System & OS-Level Stability
 
 * WHEA hardware errors
-* Kernel/DPC latency spikes
+* Kernel and DPC latency spikes
 * CPU core parking under load
 * Background process CPU spikes
 
-#### 💾 Storage & I/O Performance
+💾 Storage & I/O Performance
 
 * SSD congestion and sustained 100% I/O usage
 * SMART health monitoring
 * Pagefile overuse and memory leak detection
 
-#### 🧪 Meta Diagnostics
+🧪 Meta Diagnostics
 
 * Sensor integrity validation
 * Log stability and data consistency checks
