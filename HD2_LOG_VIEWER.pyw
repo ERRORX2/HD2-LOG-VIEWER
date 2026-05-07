@@ -39,8 +39,9 @@ _ERROR_KW      = ('ECC', 'BAD SECTOR', 'REALLOCATED', 'PENDING SECTOR',
 _RAIL_SKIP     = ('GPU PCIE', 'PCIE', '12VHPWR', 'INPUT')
 _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
-GROUPS_FILE = "groups.json"
-CURRENT_VERSION = "1.4.6"  # Bump 
+GROUPS_FILE         = "groups.json"
+SENSOR_ALIASES_FILE = "sensor_aliases.json"
+CURRENT_VERSION = "1.4.7"  # Bump 
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
@@ -206,6 +207,39 @@ class TelemetryAnalyzer:
         self.df: pd.DataFrame = pd.DataFrame()
         self.time_col: str = ""           # Name of detected time column, "" if none
         self.time_series = None           # Parsed datetime/timedelta Series, None if unavailable
+        self.aliases: dict = {}           # canonical_key -> actual column name (user-confirmed)
+
+    @staticmethod
+    def load_aliases() -> dict:
+        """Load user-confirmed sensor aliases from disk."""
+        try:
+            if Path(SENSOR_ALIASES_FILE).exists():
+                with open(SENSOR_ALIASES_FILE, 'r') as f:
+                    return json.load(f)
+        except Exception:
+            pass
+        return {}
+
+    @staticmethod
+    def save_aliases(aliases: dict) -> None:
+        """Persist user-confirmed sensor aliases to disk."""
+        try:
+            with open(SENSOR_ALIASES_FILE, 'w') as f:
+                json.dump(aliases, f, indent=2)
+        except Exception:
+            pass
+
+    def resolve(self, key: str) -> str | None:
+        """Return the first valid confirmed alias for key that exists in current df.
+        Aliases are stored as a list so multiple CSVs with different column names all work."""
+        entry = self.aliases.get(key)
+        if not entry:
+            return None
+        candidates = entry if isinstance(entry, list) else [entry]
+        for c in candidates:
+            if c and c != '__SKIP__' and c in self.df.columns:
+                return c
+        return None
 
     def load(self) -> None:
         success = False
@@ -268,6 +302,7 @@ class TelemetryAnalyzer:
         if self.time_series is not None:
             self.time_series = self.time_series.iloc[:len(self.df)].reset_index(drop=True)
         self.df = self.df.reset_index(drop=True)
+        self.aliases = self.load_aliases()
 
     def extract_hardware_names(self) -> dict:
         """
@@ -651,6 +686,7 @@ class TelemetryApp:
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
+        self.root.after(300, self._prompt_sensor_aliases) 
 
         # Silent startup update check
         check_for_updates(
@@ -856,6 +892,7 @@ class TelemetryApp:
             ("PSU +5V Rail Unstable",           "WARNING"),
             ("PSU +3.3V Rail Unstable",         "WARNING"),
             ("Fan Stall Detected",              "CRITICAL"),
+            ("PSU Hardware Failure Indicators", "CRITICAL/WARNING"),
             ("Hardware (WHEA) Errors",          "CRITICAL"),
             ("VRM Overheating",                 "CRITICAL"),
             ("System RAM Exhaustion",           "WARNING"),
@@ -1077,6 +1114,8 @@ class TelemetryApp:
                    style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0,4))
         ttk.Button(btn_f, text="Reset to Defaults",
                    command=_reset).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(4,4))
+        ttk.Button(btn_f, text="Manage Sensor Aliases",
+                   command=self._open_alias_manager).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0,4))
         ttk.Button(btn_f, text="Cancel",
                    command=dialog.destroy).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(4,0))
 
@@ -1513,31 +1552,84 @@ class TelemetryApp:
             _ALWAYS_CRIT = (
                 'DRIVE FAILURE', 'DRIVE FAIL',
                 'CRITICAL TEMPERATURE', 'CORE CRITICAL',
+                'PACKAGE/RING CRITICAL',
                 'HARDWARE ERROR', 'WHEA',
-                'POWER LIMIT EXCEEDED',
                 'PMIC HIGH TEMPERATURE', 'PMIC OVER VOLTAGE', 'PMIC UNDER VOLTAGE',
                 'FATAL ERROR',
+                'CHASSIS INTRUSION',
+                'ELECTRICAL DESIGN POINT',
+                'ICCMAX',
+                'ICCmax PL4',
             )
             if any(k in raw for k in _ALWAYS_CRIT):
                 return series.max() >= 1.0
 
             _WARN_THRESH = (
-                'THERMAL THROTTL', 'THERMAL LIMIT',
-                'POWER LIMIT', 'PACKAGE POWER', 'POWER EXCEEDED',
-                'PROCHOT', 'VR THERMAL', 'VR TDC', 'RUNNING AVERAGE THERMAL',
-                'MAX TURBO', 'TURBO ATTENUATION', 'THERMAL VELOCITY',
-                'RESIDENCY STATE REGULATION',
-                'PERFORMANCE LIMIT - POWER', 'PERFORMANCE LIMIT - THERMAL',
-                'PERFORMANCE LIMIT - RELIABILITY', 'PERFORMANCE LIMIT - MAX',
+                'THERMAL THROTTL',      
+                'PACKAGE/RING THERMAL',    
+                'POWER LIMIT EXCEEDED',
+                'IA: PROCHOT',
+                'IA: THERMAL EVENT',
+                'IA: RESIDENCY STATE REGULATION',
+                'IA: RUNNING AVERAGE THERMAL LIMIT',
+                'IA: VR THERMAL ALERT',
+                'IA: VR TDC',
+                'IA: PACKAGE-LEVEL RAPL',
+                'IA: MAX TURBO LIMIT',
+                'IA: TURBO ATTENUATION',
+                'IA: THERMAL VELOCITY BOOST',
+                'IA LIMIT REASONS',
+
+                'GT: PROCHOT',
+                'GT: THERMAL EVENT',
+                'GT: DDR RAPL',
+                'GT: RESIDENCY STATE REGULATION',
+                'GT: RUNNING AVERAGE THERMAL LIMIT',
+                'GT: VR THERMAL ALERT',
+                'GT: VR TDC',
+                'GT: MAX VR VOLTAGE',
+                'GT: DOMAIN-LEVEL PBM',
+                'GT: PACKAGE-LEVEL RAPL',
+                'GT: INEFFICIENT OPERATION',
+                'GT: FUSES LIMIT',
+                'GT LIMIT REASONS',
+
+                'RING: PROCHOT',
+                'RING: THERMAL EVENT',
+                'RING: DDR RAPL',
+                'RING: RESIDENCY STATE REGULATION',
+                'RING: RUNNING AVERAGE THERMAL LIMIT',
+                'RING: VR THERMAL ALERT',
+                'RING: VR TDC',
+                'RING: MAX VR VOLTAGE',
+                'RING: PACKAGE-LEVEL RAPL',
+                'RING LIMIT REASONS',
+
+                'PERFORMANCE LIMIT - POWER',
+                'PERFORMANCE LIMIT - THERMAL',
+                'PERFORMANCE LIMIT - RELIABILITY VOLTAGE',
+                'PERFORMANCE LIMIT - MAX OPERATING VOLTAGE',
                 'PERFORMANCE LIMIT - UTILIZATION',
+                'PERFORMANCE LIMIT - SLI',
+                'GPU PERFORMANCE LIMITERS',
+
+                'AVG. POWER (PL1)',
+                'BURST POWER (PL2)',
+                'CURRENT (PL4)',
+                'THERMAL',
+                'POWER SUPPLY',
+                'SOFTWARE LIMIT',
+                'HARDWARE LIMIT',
+                'GPU THROTTLE REASONS',
+
+                'DRIVE WARNING', 'DRIVE WARN',
+
                 'PPT LIMIT', 'TDC LIMIT', 'EDC LIMIT',
                 'SOC THROTTLE', 'GFX THROTTLE',
-                'DRIVE WARNING', 'DRIVE WARN',
-                'POWER SUPPLY', 'HARDWARE LIMIT', 'SOFTWARE LIMIT',
-                'AVG. POWER', 'BURST POWER', 'CURRENT (PL',
+                'STAPM LIMIT', 'SLOW PPT', 'FAST PPT',
             )
             if any(k in raw for k in _WARN_THRESH):
-                # Flag if triggered in more than 1% of samples
+                # Require >1% of samples to be active to filter single-sample noise
                 return series.max() >= 1.0 and (series >= 1.0).mean() > 0.01
 
             return False
@@ -1979,8 +2071,86 @@ class TelemetryApp:
             c = self._col(r)
             col(r, c)
             if c and c in df.columns:
-                val(f"  {r} min", df[c].min())
-                val(f"  {r} max", df[c].max())
+                s = df[c].dropna()
+                val(f"  {r} min",   s.min())
+                val(f"  {r} max",   s.max())
+                val(f"  {r} mean",  s.mean())
+                val(f"  {r} σ (ripple)", s.std(), ".4f")
+
+        section("PSU FAILURE ANALYSIS")
+        _psu_score = 0
+        _psu_notes = []
+
+        v12c = self._col('+12V')
+        if v12c:
+            s12 = df[v12c].dropna()
+            sag_pct = float((s12 < self.sig_v12_lo).mean()) * 100
+            ripple  = s12.std()
+            w(f"  +12V sag >limit in ")
+            wl(f"{sag_pct:.1f}% of samples", 'crit' if sag_pct > 5 else 'ok')
+            w(f"  +12V ripple σ = ")
+            wl(f"{ripple:.4f}V", 'crit' if ripple > 0.15 else 'ok')
+            if sag_pct > 5:  _psu_score += 2 if s12.min() < 11.2 else 1
+            if ripple > 0.15: _psu_score += 1
+
+        def _safe_alias(key, *fallbacks):
+            """Return alias or fallback column only if it exists in df.
+            Supports list of aliases — tries each in order."""
+            entry = self.analyzer.aliases.get(key)
+            if entry:
+                candidates = entry if isinstance(entry, list) else [entry]
+                for c in candidates:
+                    if c and c != '__SKIP__' and c in df.columns:
+                        return c
+            for c in fallbacks:
+                if c and c in df.columns:
+                    return c
+            return None
+
+        v5c  = _safe_alias('rail_5v',  self._col('+5V'),  self._col('5V'))
+        v33c = _safe_alias('rail_33v', self._col('+3.3V'), self._col('3.3V'),
+                           self._col('3V3'), self._col('VCC3'))
+
+        if v5c:
+            s5 = df[v5c].dropna()
+            out = s5.min() < self.sig_v5_lo or s5.max() > self.sig_v5_hi
+            w(f"  +5V in spec: ")
+            wl("NO" if out else "YES", 'crit' if out else 'ok')
+            if out: _psu_score += 1
+
+        if v33c:
+            s33 = df[v33c].dropna()
+            out = s33.min() < self.sig_v33_lo or s33.max() > self.sig_v33_hi
+            w(f"  +3.3V in spec: ")
+            wl("NO" if out else "YES", 'crit' if out else 'ok')
+            if out: _psu_score += 1
+
+        rails_below = sum(1 for c2, lo in [(v12c, self.sig_v12_lo),
+                                            (v5c, self.sig_v5_lo),
+                                            (v33c, self.sig_v33_lo)]
+                          if c2 and df[c2].dropna().min() < lo)
+        w(f"  Rails simultaneously below spec: ")
+        wl(str(rails_below), 'crit' if rails_below >= 2 else 'val')
+        if rails_below >= 2: _psu_score += 2
+
+        # PSU Yes/No flags
+        psu_yn_cols = [c2 for c2 in df.columns if 'YES/NO' in c2.upper()
+                       and any(k in c2.upper() for k in
+                               ('POWER SUPPLY','HARDWARE LIMIT','AVG. POWER',
+                                'BURST POWER','CURRENT (PL4)'))]
+        for c2 in psu_yn_cols:
+            s2 = df[c2].dropna()
+            pct = float((s2 >= 1.0).mean()) * 100
+            if pct > 1.0:
+                w(f"  {c2.replace(' [Yes/No]','')[:50]:50s} ")
+                wl(f"{pct:.1f}% active", 'warn')
+                _psu_score += 1
+
+        w(f"\n  PSU failure score: ")
+        score_tag = 'crit' if _psu_score >= 4 else ('warn' if _psu_score >= 2 else 'ok')
+        wl(f"{_psu_score}/10  ({'CRITICAL' if _psu_score >= 4 else 'WARNING' if _psu_score >= 2 else 'CLEAR'})", score_tag)
+        if not any([v12c, v5c, v33c]):
+            wl("  No voltage rail columns found — PSU analysis unavailable.", 'muted')
 
         # -- SYSTEM ---------------------------------------------------------
         chipset_t      = self._col('Chipset [°C]') or self._col('Motherboard [°C]')
@@ -2013,7 +2183,32 @@ class TelemetryApp:
         val("+5V range V",          f"{self.sig_v5_lo} – {self.sig_v5_hi}", "s")
         val("+3.3V range V",        f"{self.sig_v33_lo} – {self.sig_v33_hi}", "s")
 
-        # -- TEMPERATURE LIMITS ---------------------------------------------
+        section("SENSOR ALIASES  (user-confirmed)")
+        aliases = self.analyzer.aliases
+        if aliases:
+            for k, v in sorted(aliases.items()):
+                entries = v if isinstance(v, list) else [v]
+                if entries == ['__SKIP__'] or entries == ['__skip__']:
+                    w(f"  {k:20s} = ")
+                    wl("skipped by user", 'muted')
+                else:
+                    active = next((c for c in entries
+                                   if c != '__SKIP__' and c in df.columns), None)
+                    total  = sum(1 for c in entries if c != '__SKIP__')
+                    w(f"  {k:20s}  [{total} alias(es)]  active → ")
+                    if active:
+                        wl(active, 'ok')
+                    else:
+                        wl("none match current CSV", 'warn')
+                    for c in entries:
+                        if c == '__SKIP__': continue
+                        tag = 'ok' if c in df.columns else 'muted'
+                        sym = '✓' if c in df.columns else '○'
+                        wl(f"               [{sym}] {c}", tag)
+        else:
+            wl("  No aliases set yet.", 'muted')
+
+
         section("TEMPERATURE LIMITS  (active values)")
         for k, v in sorted(self.temp_limits.items()):
             default = self._default_temp_limits.get(k)
@@ -2184,21 +2379,31 @@ class TelemetryApp:
 
         # -- SENSOR MAPPING -----------------------------------------------------------
 
+        def _a(key):
+            """Return first valid user-confirmed alias column for key, else None.
+            Supports multiple aliases per key (list) so different CSVs all resolve."""
+            entry = self.analyzer.aliases.get(key)
+            if not entry:
+                return None
+            candidates = entry if isinstance(entry, list) else [entry]
+            return next((c for c in candidates
+                         if c and c != '__SKIP__' and c in df.columns), None)
+
         # -- CPU Metrics ---------------------------------------------------------------
 
-        cpu_temp      = self._col('TCTL') or self._col('TDIE') or self._col('PROZESSOR', 'TEMPERATUR') or self._col('TEMPERATUR') or self._col('CPU')
+        cpu_temp      = _a('cpu_temp') or self._col('TCTL') or self._col('TDIE') or self._col('PROZESSOR', 'TEMPERATUR') or self._col('TEMPERATUR') or self._col('CPU')
        #cpu_hotspot   = self._col('HOT', 'SPOT') or self._col('GPU', 'HOT')
         cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col('CLOCK')
-       #eff_clock     = self._col('CPU', 'EFF') or self._col('EFFIZIENZ') or self._col('EFFECTIVE')
-        cpu_usage_col = self._col('CPU', 'AUSLASTUNG') or self._col('CPU', 'USAGE') or self._col('CPU', 'UTIL') or self._col('CPU', 'LOAD') or self._col('PROZESSOR') or self._col('TOTAL', 'CPU')
-        cpu_power     = self._col('CPU-Gesamt-Leistungsaufnahme') or self._col('CPU', 'PACKAGE') or self._col('CPU', 'PPT') or self._col('CPU', 'POWER') or self._col('CPU Package Power')
+       #eff_clock     = self._col('CPU', 'EFF') or self._col('EFFIZIENZ') or self._col('EFFECTIVE')\
+        cpu_usage_col = _a('cpu_usage') or self._col('CPU', 'AUSLASTUNG') or self._col('CPU', 'USAGE') or self._col('CPU', 'UTIL') or self._col('CPU', 'LOAD') or self._col('PROZESSOR') or self._col('TOTAL', 'CPU')
+        cpu_power     = _a('cpu_power') or self._col('CPU-Gesamt-Leistungsaufnahme') or self._col('CPU', 'PACKAGE') or self._col('CPU', 'PPT') or self._col('CPU', 'POWER') or self._col('CPU Package Power')
         throttle      = self._col('THROTTLE') or self._col('PROCHOT')
         cpu_utility   = self._col('CPU USAGE') or self._col('CPU UTILIZATION') or self._col('CPU AUSLASTUNG') or self._col('TOTAL CPU USAGE')
 
         # GPU Metrics (Fixing the 45.8°C CPU mixup)
-        gpu_hotspot   = self._col_excl(('GPU', 'HOT'), excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
-        gpu_usage_col = self._col('GPU', 'USAGE') or self._col('GPU', 'LOAD') or self._col('GPU', 'AUSLASTUNG') or self._col('GPU USAGE')
-        gpu_clock     = self._col('GPU', 'CLOCK') or self._col('GPU', 'FREQUENCY') or self._col('GPU', 'TAKT')
+        gpu_hotspot   = _a('gpu_temp') or self._col_excl(('GPU', 'HOT'), excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
+        gpu_usage_col = _a('gpu_usage') or self._col('GPU', 'USAGE') or self._col('GPU', 'LOAD') or self._col('GPU', 'AUSLASTUNG') or self._col('GPU USAGE')
+        gpu_clock     = _a('gpu_clock') or self._col('GPU', 'CLOCK') or self._col('GPU', 'FREQUENCY') or self._col('GPU', 'TAKT')
         gpu_throttle  = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
         gpu_power     = self._col('GPU', 'POWER') or self._col('BOARD', 'POWER') or self._col('TOTAL', 'BOARD') or self._col('TGP') or self._col('TBP') or self._col('ASIC') or self._col('NVVDD') or self._col('PCIe') or self._col('LEISTUNG') or self._col('EINGANGSLEISTUNG') or self._col('POWER')
         gpu_clk_col   = self._col('GPU Clock [MHz]')
@@ -2223,7 +2428,7 @@ class TelemetryApp:
         system_interrupts = self._col('System Interrupts') or self._col('DPC Latency')
         
         # Timing & Clocks
-        ft_col        = self._col('Frametime [ms]') or self._col('GPU Frametime') or self._col('Frame Time')
+        ft_col        = _a('frame_time') or self._col('Frametime [ms]') or self._col('GPU Frametime') or self._col('Frame Time')
         gpu_busy_ms   = self._col('GPU Busy (avg) [ms]')
         gpu_wait_ms   = self._col('GPU Wait (avg) [ms]')
         gpu_eff_clock = self._col('GPU Effective Clock [MHz]')
@@ -2231,7 +2436,7 @@ class TelemetryApp:
         uclk_col = next((c for c in df.columns if 'UCLK' in c), None)
         mclk_col = self._col('MCLK') or self._col('MEMORY CLOCK') or self._col('DRAM CLOCK') or None
 
-        # Sensor Debug ---------------------------------------------------------------
+        # -- Sensor Debug ---------------------------------------------------------------
 
         def mx(col): return df[col].max() if col and col in df.columns else 0
         def avg(col): return df[col].mean() if col and col in df.columns else 0
@@ -2747,8 +2952,100 @@ class TelemetryApp:
                     f"Low-voltage rail {r_name} is out of spec. ADVICE: This can cause random USB disconnects or drive errors. Check PSU health.",
                     [f"Detected Range: {df[col].min():.2f}V - {df[col].max():.2f}V",
                      f"Spec: {low}V - {high}V"])
-        
-        # 17. MICRO-STUTTERING (FRAMETIME JITTER)
+
+        # 16b. PSU HARDWARE FAILURE INDICATORS
+
+        _psu_evidence = []
+        _psu_severity_score = 0   # more signals = higher confidence
+
+        # Signal A: +12V rail sag
+        v12_col = self._col('+12V')
+        if v12_col:
+            v12s = df[v12_col].dropna()
+            sag_mask = v12s < self.sig_v12_lo
+            sag_pct  = float(sag_mask.mean()) * 100
+            if sag_pct > 5.0:
+                _psu_evidence.append(f"+12V sagging below {self.sig_v12_lo}V in {sag_pct:.1f}% of samples (min {v12s.min():.2f}V)")
+                _psu_severity_score += 2 if v12s.min() < 11.2 else 1
+
+        # Signal B: +5V rail out of spec
+        v5_col = self._col('+5V')
+        if v5_col:
+            v5s = df[v5_col].dropna()
+            if v5s.min() < self.sig_v5_lo or v5s.max() > self.sig_v5_hi:
+                _psu_evidence.append(f"+5V rail out of spec: {v5s.min():.2f}V – {v5s.max():.2f}V (spec {self.sig_v5_lo}–{self.sig_v5_hi}V)")
+                _psu_severity_score += 1
+
+        # Signal C: +3.3V rail out of spec
+        v33_col = _a('rail_33v') or self._col('+3.3V')
+        if v33_col:
+            v33s = df[v33_col].dropna()
+            if v33s.min() < self.sig_v33_lo or v33s.max() > self.sig_v33_hi:
+                _psu_evidence.append(f"+3.3V rail out of spec: {v33s.min():.2f}V – {v33s.max():.2f}V (spec {self.sig_v33_lo}–{self.sig_v33_hi}V)")
+                _psu_severity_score += 1
+
+        # Signal D: Yes/No PSU-specific throttle flags triggered
+        _psu_yn_triggers = []
+        for c in df.columns:
+            cu = c.upper()
+            if 'YES/NO' not in cu:
+                continue
+            if not any(k in cu for k in ('POWER SUPPLY', 'HARDWARE LIMIT',
+                                          'AVG. POWER (PL1)', 'BURST POWER (PL2)',
+                                          'CURRENT (PL4)', 'THROTTL')):
+                continue
+            s = df[c].dropna()
+            if s.empty or s.max() < 1.0:
+                continue
+            pct = float((s >= 1.0).mean()) * 100
+            if pct > 1.0:
+                _psu_yn_triggers.append(f"{c.replace(' [Yes/No]', '')} active {pct:.1f}% of session")
+        if _psu_yn_triggers:
+            _psu_evidence.extend(_psu_yn_triggers[:4])
+            _psu_severity_score += min(len(_psu_yn_triggers), 2)
+
+        # Signal E: cross-rail correlation — multiple rails sagging simultaneously
+
+        rails_sagging = sum([
+            1 for col, lo in [(v12_col, self.sig_v12_lo),
+                               (v5_col, self.sig_v5_lo),
+                               (v33_col, self.sig_v33_lo)]
+            if col and df[col].dropna().min() < lo
+        ])
+        if rails_sagging >= 2:
+            _psu_evidence.append(f"{rails_sagging} rails simultaneously below spec — strong indicator of PSU output stage degradation")
+            _psu_severity_score += 2
+
+        # Signal F: high rail voltage ripple (std dev > 0.15V indicates cap degradation)
+        for lbl, col in [('+12V', v12_col), ('+5V', v5_col), ('+3.3V', v33_col)]:
+            if col:
+                ripple = df[col].dropna().std()
+                if ripple > 0.15:
+                    _psu_evidence.append(f"{lbl} rail ripple/noise: σ={ripple:.3f}V (>0.15V suggests capacitor wear)")
+                    _psu_severity_score += 1
+
+        # Signal G: GPU TDR + 12V sag co-occurrence
+        # A TDR immediately after a voltage drop is strong evidence of PSU failure
+        if v12_col and gpu_usage_col and gpu_clock:
+            sag_now  = df[v12_col] < self.sig_v12_lo
+            low_gpu  = df[gpu_usage_col] < 5
+            clk_dead = (df[gpu_clock].rolling(3).std() < 1.0) & (df[gpu_clock] > 0)
+            co_occur = (sag_now & low_gpu & clk_dead).sum()
+            if co_occur >= 3:
+                _psu_evidence.append(f"+12V sag coincides with GPU stall in {co_occur} samples — likely PSU-induced GPU crash")
+                _psu_severity_score += 2
+
+        if _psu_severity_score >= 2 and _psu_evidence:
+            sev = "CRITICAL" if _psu_severity_score >= 4 else "WARNING"
+            add("PSU Hardware Failure Indicators", sev,
+                "Multiple independent signals suggest PSU output degradation or failure. "
+                "Rail sag, voltage ripple, and power limit throttling are consistent with "
+                "an aging or undersized power supply. "
+                "ADVICE: Test with a known-good PSU, check all power cable connections, "
+                "and consider replacement if symptoms persist.",
+                _psu_evidence)
+
+
         
         ft_col = self._col('FRAME TIME') or self._col('FRAMETIME')
         if ft_col:
@@ -3234,6 +3531,320 @@ class TelemetryApp:
                     )
         
         return hits
+
+    def _open_alias_manager(self):
+        """Open the sensor alias manager — view, delete individual aliases, or clear all."""
+        is_dark = self.is_dark
+        bg   = "#121212" if is_dark else "#f8f9fa"
+        bg2  = "#1e1e1e" if is_dark else "#ffffff"
+        bg3  = "#2a2a2a" if is_dark else "#e9ecef"
+        fg   = "#e0e0e0" if is_dark else "#212529"
+        acc  = "#1f6aa5"
+        muted = "#666" if is_dark else "#999"
+
+        _KEY_LABELS = {
+            "cpu_temp":   "CPU Temperature",
+            "gpu_temp":   "GPU Temperature / Hotspot",
+            "cpu_power":  "CPU Package Power",
+            "gpu_usage":  "GPU Core Usage",
+            "gpu_clock":  "GPU Core Clock",
+            "cpu_usage":  "Total CPU Usage",
+            "frame_time": "Frame Time (PresentMon)",
+            "rail_33v":   "+3.3V Rail Voltage",
+        }
+
+        aliases = dict(self.analyzer.aliases)  # working copy
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Manage Sensor Aliases")
+        dialog.geometry("620x500")
+        dialog.minsize(500, 350)
+        dialog.grab_set()
+        dialog.configure(bg=bg)
+        self.root.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - 310
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 250
+        dialog.geometry(f"620x500+{x}+{y}")
+
+        outer = tk.Frame(dialog, bg=acc, padx=2, pady=2)
+        outer.pack(fill=tk.BOTH, expand=True)
+        inner = tk.Frame(outer, bg=bg, padx=14, pady=12)
+        inner.pack(fill=tk.BOTH, expand=True)
+
+        tk.Label(inner, text="⚙  Sensor Alias Manager",
+                 font=('Segoe UI', 12, 'bold'), bg=bg, fg=acc).pack(anchor='w')
+        tk.Label(inner,
+                 text="Click ✕ next to any alias to remove it. Changes apply immediately.",
+                 font=('Segoe UI', 9), bg=bg, fg=muted).pack(anchor='w', pady=(2, 10))
+
+        list_outer = tk.Frame(inner, bg=bg2, bd=1, relief='flat')
+        list_outer.pack(fill=tk.BOTH, expand=True)
+        canvas = tk.Canvas(list_outer, bg=bg2, highlightthickness=0)
+        sb = ttk.Scrollbar(list_outer, orient='vertical', command=canvas.yview)
+        body = tk.Frame(canvas, bg=bg2)
+        win_id = canvas.create_window((0, 0), window=body, anchor='nw')
+        body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(win_id, width=e.width))
+        canvas.configure(yscrollcommand=sb.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        sb.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>",
+            lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
+        canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
+
+        row_widgets = {}  # key -> list of row frames (one per alias entry)
+
+        def _rebuild():
+            """Redraw the alias list from current `aliases` dict."""
+            for w in body.winfo_children():
+                w.destroy()
+            row_widgets.clear()
+
+            has_any = False
+            for key, label in _KEY_LABELS.items():
+                entry = aliases.get(key)
+                if not entry:
+                    continue
+                entries = entry if isinstance(entry, list) else [entry]
+                real = [e for e in entries if e != '__SKIP__']
+                if not real:
+                    continue
+                has_any = True
+
+                # Section header
+                hdr = tk.Frame(body, bg=bg3)
+                hdr.pack(fill=tk.X, pady=(8, 0), padx=6)
+                tk.Label(hdr, text=label, font=('Segoe UI', 9, 'bold'),
+                         bg=bg3, fg=acc, padx=8, pady=4).pack(side=tk.LEFT)
+
+                for alias_val in real:
+                    in_csv = alias_val in self.df.columns
+                    row = tk.Frame(body, bg=bg2)
+                    row.pack(fill=tk.X, padx=6, pady=1)
+
+                    status_col = "#4ec94e" if in_csv else muted
+                    status_sym = "✓" if in_csv else "○"
+                    tk.Label(row, text=status_sym, fg=status_col, bg=bg2,
+                             font=('Segoe UI', 9), width=2).pack(side=tk.LEFT, padx=(8, 4))
+                    tk.Label(row, text=alias_val, fg=fg, bg=bg2,
+                             font=('Segoe UI', 9), anchor='w').pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+                    # Capture loop variables
+                    def _make_delete(k, v):
+                        def _delete():
+                            entry2 = aliases.get(k, [])
+                            lst = entry2 if isinstance(entry2, list) else [entry2]
+                            lst = [x for x in lst if x != v]
+                            if lst:
+                                aliases[k] = lst
+                            else:
+                                del aliases[k]
+                            _rebuild()
+                        return _delete
+
+                    tk.Button(row, text="✕", fg="#ff5555", bg=bg2,
+                              activebackground=bg2, activeforeground="#ff3333",
+                              relief='flat', cursor='hand2', font=('Segoe UI', 9, 'bold'),
+                              command=_make_delete(key, alias_val),
+                              padx=6).pack(side=tk.RIGHT, padx=4)
+
+            if not has_any:
+                tk.Label(body, text="No aliases saved yet.",
+                         font=('Segoe UI', 10), bg=bg2, fg=muted,
+                         pady=20).pack()
+
+        _rebuild()
+
+        # Bottom buttons
+        btn_f = tk.Frame(inner, bg=bg)
+        btn_f.pack(fill=tk.X, pady=(10, 0))
+
+        def _save_and_close():
+            self.analyzer.save_aliases(aliases)
+            self.analyzer.aliases = aliases
+            self.show_toast("Aliases saved")
+            dialog.destroy()
+
+        def _clear_all():
+            if messagebox.askyesno("Clear All Aliases",
+                                   "Remove all saved sensor aliases?\n"
+                                   "You will be prompted again on next CSV load.",
+                                   parent=dialog):
+                aliases.clear()
+                _rebuild()
+
+        ttk.Button(btn_f, text="💾 Save & Close", command=_save_and_close,
+                   style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 4))
+        ttk.Button(btn_f, text="🗑 Clear All",
+                   command=_clear_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 4))
+        ttk.Button(btn_f, text="Cancel",
+                   command=dialog.destroy).pack(side=tk.LEFT, expand=True, fill=tk.X)
+
+    def _prompt_sensor_aliases(self):
+        """For each critical sensor that couldn't be auto-resolved, ask the user
+        once to pick the right column. Saves the answer to disk permanently."""
+
+        # fallback _col() result, and candidate filter keywords
+        _CRITICAL = [
+            ("cpu_temp",      "CPU Temperature",
+             self._col('TCTL') or self._col('TDIE') or self._col('CPU'),
+             lambda c: any(k in c.upper() for k in
+                           ['TEMP','°C','TDIE','TCTL','TJMAX','PACKAGE','CORE','THERMAL'])),
+            ("gpu_temp",      "GPU Temperature / Hotspot",
+             self._col_excl(('GPU','HOT'), excl=('CPU','LIMIT')) or
+             self._col_excl(('GPU','TEMP'), excl=('CPU',)),
+             lambda c: any(k in c.upper() for k in
+                           ['GPU','TEMP','HOT','°C','JUNCTION','EDGE'])),
+            ("cpu_power",     "CPU Package Power",
+             self._col('CPU','PACKAGE') or self._col('CPU','PPT') or self._col('CPU','POWER'),
+             lambda c: any(k in c.upper() for k in
+                           ['CPU','POWER','WATT','[W]','PPT','PACKAGE'])),
+            ("gpu_usage",     "GPU Core Usage / Load",
+             self._col('GPU','USAGE') or self._col('GPU','LOAD'),
+             lambda c: any(k in c.upper() for k in
+                           ['GPU','USAGE','LOAD','[%]','AUSLASTUNG','CORE LOAD'])),
+            ("gpu_clock",     "GPU Core Clock",
+             self._col('GPU','CLOCK') or self._col('GPU','FREQUENCY'),
+             lambda c: any(k in c.upper() for k in
+                           ['GPU','CLOCK','FREQ','[MHZ]','TAKT'])),
+            ("cpu_usage",     "Total CPU Usage",
+             self._col('TOTAL','CPU') or self._col('CPU','USAGE') or self._col('CPU','LOAD'),
+             lambda c: any(k in c.upper() for k in
+                           ['CPU','USAGE','LOAD','TOTAL','[%]','AUSLASTUNG'])),
+            ("frame_time",    "Frame Time (PresentMon)",
+             self._col('Frame Time') or self._col('Frametime'),
+             lambda c: any(k in c.upper() for k in
+                           ['FRAME','TIME','[MS]','PRESENT','FPS'])),
+            ("rail_33v",      "+3.3V Rail Voltage",
+             self._col('+3.3V') or self._col('3V3') or self._col('3.3V'),
+             lambda c: any(k in c.upper() for k in
+                           ['3.3', '3V3', 'VCC3', 'VCCIO', 'VDDA', 'AVDD',
+                            'VSB', 'VDD (SWA)', 'VDDQ', 'VPP'])),
+        ]
+
+        aliases = self.analyzer.aliases
+        changed = False
+        df_cols = list(self.df.columns)
+
+        for key, label, auto_result, filt in _CRITICAL:
+            # Check if any existing alias for this key already works in current CSV
+            entry = aliases.get(key)
+            if entry:
+                existing = entry if isinstance(entry, list) else [entry]
+                if '__SKIP__' in existing:
+                    continue  
+                if any(c in self.df.columns for c in existing):
+                    continue  
+
+            # Skip if auto-detect already found it
+            if auto_result:
+                continue
+
+            # Build candidate list — exclude any already confirmed aliases
+            already_known = set(entry if isinstance(entry, list) else ([entry] if entry else []))
+            candidates = [c for c in df_cols
+                          if filt(c) and c != self.analyzer.time_col
+                          and c not in already_known]
+            if not candidates:
+                continue  # nothing to offer — skip silently
+
+            # Show picker dialog
+            chosen = self._sensor_picker_dialog(label, candidates)
+            if chosen:
+                # Append to existing list — preserves all previous aliases
+                existing_list = aliases.get(key, [])
+                if isinstance(existing_list, str):
+                    existing_list = [existing_list]
+                if chosen not in existing_list:
+                    existing_list.append(chosen)
+                aliases[key] = existing_list
+                changed = True
+            elif chosen is False:
+                # User said "none of these" for this CSV — only skip if no aliases yet
+                if key not in aliases:
+                    aliases[key] = ['__SKIP__']
+                    changed = True
+
+        if changed:
+            self.analyzer.save_aliases(aliases)
+            self.analyzer.aliases = aliases
+
+    def _sensor_picker_dialog(self, sensor_label: str, candidates: list) -> str | None | bool:
+        """Show a dialog asking the user to pick the correct column for a sensor.
+        Returns the chosen column name, None if dismissed, or False if 'None of these'."""
+        is_dark = self.is_dark
+        bg   = "#121212" if is_dark else "#f8f9fa"
+        bg2  = "#1e1e1e" if is_dark else "#ffffff"
+        fg   = "#e0e0e0" if is_dark else "#212529"
+        acc  = "#1f6aa5"
+
+        result = [None]
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Sensor Setup")
+        dialog.resizable(False, False)
+        dialog.grab_set()
+        dialog.configure(bg=bg)
+        dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
+
+        self.root.update_idletasks()
+        pw, ph = 520, min(80 + len(candidates) * 28 + 80, 500)
+        rx = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
+        ry = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
+        dialog.geometry(f"{pw}x{ph}+{rx}+{ry}")
+
+        outer = tk.Frame(dialog, bg=acc, padx=2, pady=2)
+        outer.pack(fill=tk.BOTH, expand=True)
+        inner = tk.Frame(outer, bg=bg, padx=20, pady=16)
+        inner.pack(fill=tk.BOTH, expand=True)
+
+        tk.Label(inner,
+                 text=f"⚙  Could not auto-detect:  {sensor_label}",
+                 font=('Segoe UI', 11, 'bold'), bg=bg, fg=acc).pack(anchor='w')
+        tk.Label(inner,
+                 text="Which of these columns is it? Your answer is saved permanently.",
+                 font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w', pady=(4, 10))
+
+        list_frame = tk.Frame(inner, bg=bg2, bd=1, relief='flat')
+        list_frame.pack(fill=tk.BOTH, expand=True)
+        canvas = tk.Canvas(list_frame, bg=bg2, highlightthickness=0,
+                           height=min(len(candidates) * 28, 320))
+        sb = ttk.Scrollbar(list_frame, orient='vertical', command=canvas.yview)
+        radio_frame = tk.Frame(canvas, bg=bg2)
+        canvas.create_window((0, 0), window=radio_frame, anchor='nw')
+        radio_frame.bind("<Configure>", lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")))
+        canvas.configure(yscrollcommand=sb.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        if len(candidates) > 11:
+            sb.pack(side=tk.RIGHT, fill=tk.Y)
+
+        var = tk.StringVar(value="")
+        for c in candidates:
+            tk.Radiobutton(radio_frame, text=c, variable=var, value=c,
+                           bg=bg2, fg=fg, activebackground=bg2, activeforeground=fg,
+                           selectcolor=acc, font=('Segoe UI', 9),
+                           anchor='w').pack(fill=tk.X, padx=8, pady=2)
+
+        btn_f = tk.Frame(inner, bg=bg)
+        btn_f.pack(fill=tk.X, pady=(12, 0))
+
+        def _confirm():
+            if var.get():
+                result[0] = var.get()
+                dialog.destroy()
+
+        def _none():
+            result[0] = False
+            dialog.destroy()
+
+        ttk.Button(btn_f, text="✓ Use Selected", command=_confirm,
+                   style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 4))
+        ttk.Button(btn_f, text="None of these",
+                   command=_none).pack(side=tk.LEFT, expand=True, fill=tk.X)
+
+        dialog.wait_window()
+        return result[0]
 
     def _open_hardware_info(self):
         """Parse and display detected hardware device names from the loaded CSV."""
@@ -4129,6 +4740,16 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                  "VCC3", "VCC 3", "VCCIO")
                         ),
 
+
+                        "PSU Hardware Failure Indicators": (
+                            _any("+12V [V]", "+12V VOLTAGE", "12V RAIL", "ATX 12V", "EPS 12V") |
+                            _any("+5V [V]", "+5V VOLTAGE", "5V RAIL", "ATX 5V") |
+                            _any("+3.3V [V]", "+3.3V VOLTAGE", "3.3V RAIL", "3V3") |
+                            _any("POWER SUPPLY", "HARDWARE LIMIT", "SOFTWARE LIMIT",
+                                 "AVG. POWER (PL1)", "BURST POWER (PL2)", "CURRENT (PL4)",
+                                 "THROTTL", "PERFORMANCE LIMIT") |
+                            _cols("GPU", "USAGE") | _cols("GPU", "CLOCK")
+                        ),
                         # -- FANS / COOLING --------------------------------------------
                         "Fan Stall Detected": (
                             _any("FAN", "RPM", "PUMP", "COOLER",
@@ -4345,7 +4966,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 for r in results:
 
                     is_crit = r['severity'] == 'CRITICAL'
-                    is_info = r.get('severity') == 'INFO'  # 🔥 ONLY ADDITION
+                    is_info = r.get('severity') == 'INFO'
 
                     card_bg   = "#2a0a0a" if (is_dark and is_crit) else \
                                 "#1a2a1a" if (is_dark and not is_crit) else \
@@ -4353,7 +4974,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
                     sev_color = "#e74c3c" if is_crit else "#f39c12"
 
-                    # 🔥 ONLY ADDITION (safe)
                     if is_info:
                         sev_color = "#3498db"
 
@@ -4894,6 +5514,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
+        self.root.after(300, self._prompt_sensor_aliases)
         if self.debug_mode:
             self._open_debug_window()
 
