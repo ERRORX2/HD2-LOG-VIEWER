@@ -41,7 +41,7 @@ _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
 GROUPS_FILE         = "groups.json"
 SENSOR_ALIASES_FILE = "sensor_aliases.json"
-CURRENT_VERSION = "1.4.7"  # Bump 
+CURRENT_VERSION = "1.4.8"  # Bump 
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 
@@ -237,7 +237,7 @@ class TelemetryAnalyzer:
             return None
         candidates = entry if isinstance(entry, list) else [entry]
         for c in candidates:
-            if c and c != '__SKIP__' and c in self.df.columns:
+            if c and c in self.df.columns:
                 return c
         return None
 
@@ -272,7 +272,7 @@ class TelemetryAnalyzer:
             if col == self.time_col:
                 continue  # Keep time column as-is
             if '[Yes/No]' in col or '[yes/no]' in col.lower():
-                continue
+                continue  
             try:
                 s = self.df[col].astype(str).str.replace(',', '.', regex=False)
                 cleaned = s.str.replace(r'[^\d\.\-eE]', '', regex=True)
@@ -305,25 +305,7 @@ class TelemetryAnalyzer:
         self.aliases = self.load_aliases()
 
     def extract_hardware_names(self) -> dict:
-        """
-        Extract unique hardware device names from a HWiNFO64 CSV.
-
-        HWiNFO64 appends a hardware-label row somewhere in the file (often row 2,
-        but may also appear at the very end). Each cell in that row contains the
-        source device for its column, e.g.:
-            "CPU [#0]: Intel Core i7-13620H"
-            "dGPU [#1]: NVIDIA GeForce RTX 4070 Laptop"
-            "S.M.A.R.T.: WD PC SN560 ..."
-            "System: ASUS TUF Gaming F15 ..."
-            "Network: Intel Wi-Fi 6 AX201 160MHz - Wi-Fi"
-            "Battery: AS3GWAF3KC GA50358"
-            "PresentMon [AsusMyASUS.exe]"
-
-        Strategy: read ALL rows of the raw file, find any row where a significant
-        fraction of non-empty cells match the HWiNFO device-label pattern, then
-        collect unique device names from that row.
-        """
-        # Known HWiNFO type-tag prefixes
+        # -- Known HWiNFO type-tag prefixes ---------------------------------
         _KNOWN_TAGS = re.compile(
             r'^(CPU|iGPU|dGPU|GPU|DDR\d*\s*DIMM|S\.M\.A\.R\.T\.|Drive|'
             r'Network|Battery|System|PresentMon|Memory Timings|'
@@ -558,7 +540,18 @@ class TelemetryApp:
         self.cursor_lines = []
         self.cursor_text = None
         self.filter_active = False
-        self.debug_mode    = False   # toggled with Ctrl+F8 — these are the fallback values
+        self.debug_mode    = False
+        self._sig_hits        = []         
+        self._sig_running     = False
+        self._sig_dirty       = True
+        self._sig_badge_var   = None
+        self._sig_badge_lbl   = None
+        self._badge_crit_lbl  = None
+        self._badge_warn_lbl  = None
+        self._badge_info_lbl  = None
+        self._badge_ok_lbl    = None
+        self._sig_watcher_id  = None
+
         self._default_temp_limits = {
             'HOTSPOT': 95.0, 'HOT SPOT': 95.0,
             'GPU': 88.0,
@@ -686,7 +679,7 @@ class TelemetryApp:
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
-        self.root.after(300, self._prompt_sensor_aliases) 
+        self.root.after(300, self._prompt_sensor_aliases)  # after UI settles
 
         # Silent startup update check
         check_for_updates(
@@ -699,6 +692,8 @@ class TelemetryApp:
         )
 
     def _on_close(self):
+        if self._sig_watcher_id:
+            self.root.after_cancel(self._sig_watcher_id)
         plt.close('all')
         self.root.quit()
         self.root.destroy()
@@ -1028,6 +1023,7 @@ class TelemetryApp:
                 else:
                     self._filter_sensors()
                 self.update_plot()
+                self._mark_sig_dirty()
                 status_var.set("✔ Saved")
                 status_lbl.config(fg="#2ecc71")
 
@@ -1565,21 +1561,25 @@ class TelemetryApp:
                 return series.max() >= 1.0
 
             _WARN_THRESH = (
-                'THERMAL THROTTL',      
-                'PACKAGE/RING THERMAL',    
+                # -- Per-core / package throttling --
+                'THERMAL THROTTL',
+                'PACKAGE/RING THERMAL',
                 'POWER LIMIT EXCEEDED',
+
+                # -- Intel IA (CPU core) limit reasons --
                 'IA: PROCHOT',
                 'IA: THERMAL EVENT',
                 'IA: RESIDENCY STATE REGULATION',
                 'IA: RUNNING AVERAGE THERMAL LIMIT',
                 'IA: VR THERMAL ALERT',
                 'IA: VR TDC',
-                'IA: PACKAGE-LEVEL RAPL',
+                'IA: PACKAGE-LEVEL RAPL',   # covers PL1 and PL2 PL3
                 'IA: MAX TURBO LIMIT',
                 'IA: TURBO ATTENUATION',
                 'IA: THERMAL VELOCITY BOOST',
                 'IA LIMIT REASONS',
 
+                # -- Intel GT (iGPU) limit reasons --
                 'GT: PROCHOT',
                 'GT: THERMAL EVENT',
                 'GT: DDR RAPL',
@@ -1587,13 +1587,14 @@ class TelemetryApp:
                 'GT: RUNNING AVERAGE THERMAL LIMIT',
                 'GT: VR THERMAL ALERT',
                 'GT: VR TDC',
-                'GT: MAX VR VOLTAGE',
+                'GT: MAX VR VOLTAGE',       # "GT: Max VR Voltage  ICCmax  PL4"
                 'GT: DOMAIN-LEVEL PBM',
                 'GT: PACKAGE-LEVEL RAPL',
                 'GT: INEFFICIENT OPERATION',
                 'GT: FUSES LIMIT',
                 'GT LIMIT REASONS',
 
+                # -- Intel Ring/LLC limit reasons --
                 'RING: PROCHOT',
                 'RING: THERMAL EVENT',
                 'RING: DDR RAPL',
@@ -1602,9 +1603,10 @@ class TelemetryApp:
                 'RING: VR THERMAL ALERT',
                 'RING: VR TDC',
                 'RING: MAX VR VOLTAGE',
-                'RING: PACKAGE-LEVEL RAPL',
+                'RING: PACKAGE-LEVEL RAPL', # RING PL1 / PL2 PL3
                 'RING LIMIT REASONS',
 
+                # -- GPU NVIDIA performance limiters --
                 'PERFORMANCE LIMIT - POWER',
                 'PERFORMANCE LIMIT - THERMAL',
                 'PERFORMANCE LIMIT - RELIABILITY VOLTAGE',
@@ -1613,17 +1615,20 @@ class TelemetryApp:
                 'PERFORMANCE LIMIT - SLI',
                 'GPU PERFORMANCE LIMITERS',
 
-                'AVG. POWER (PL1)',
-                'BURST POWER (PL2)',
-                'CURRENT (PL4)',
+                # -- GPU NVIDIA throttle reasons --
+                'AVG. POWER (PL1)',         # Avg. Power (PL1)
+                'BURST POWER (PL2)',        # Burst Power (PL2)
+                'CURRENT (PL4)',            # Current (PL4)
                 'THERMAL',
                 'POWER SUPPLY',
                 'SOFTWARE LIMIT',
                 'HARDWARE LIMIT',
                 'GPU THROTTLE REASONS',
 
+                # -- Drive warnings --
                 'DRIVE WARNING', 'DRIVE WARN',
 
+                # -- AMD --
                 'PPT LIMIT', 'TDC LIMIT', 'EDC LIMIT',
                 'SOC THROTTLE', 'GFX THROTTLE',
                 'STAPM LIMIT', 'SLOW PPT', 'FAST PPT',
@@ -2067,21 +2072,44 @@ class TelemetryApp:
 
         # -- PSU RAILS ------------------------------------------------------
         section("PSU RAIL COLUMNS")
-        for r in ['+12V', '+5V', '+3.3V']:
-            c = self._col(r)
-            col(r, c)
+
+        _RAIL_EXCL = ['[W]', '[A]', 'POWER', 'CURRENT', 'WATT', 'VID', 'OFFSET',
+                      'LIMIT', 'PPT', 'TDP', 'PCIE', 'INPUT', 'GPU', 'HPWR', 'VDDQ', 'FBVDD']
+
+        def _find_rail(keywords, excl=_RAIL_EXCL):
+            for c in df.columns:
+                cu = c.upper()
+                if '[V]' not in cu:
+                    continue
+                if any(e in cu for e in excl):
+                    continue
+                if any(k.upper() in cu for k in keywords):
+                    return c
+            return None
+
+        rail_map = {
+            '+12V':  _find_rail(['12V', '12 V', 'ATX 12', 'EPS 12']),
+            '+5V':   _find_rail(['5V', '5 V', 'ATX 5', '5VSB', 'AVCC'],
+                                excl=_RAIL_EXCL + ['12V', '3.3', '3V3']),
+            '+3.3V': _safe_alias('rail_33v',
+                                 _find_rail(['3.3V', '3V3', '3.3 V', 'VCC3', 'VCCIO',
+                                             'VDDA', 'AVDD', 'VDD (SWA)', 'VDDQ', 'VPP'],
+                                            excl=['[W]','[A]','POWER','CURRENT','GPU','12V','5V'])),
+        }
+
+        for r_name, c in rail_map.items():
+            col(r_name, c)
             if c and c in df.columns:
                 s = df[c].dropna()
-                val(f"  {r} min",   s.min())
-                val(f"  {r} max",   s.max())
-                val(f"  {r} mean",  s.mean())
-                val(f"  {r} σ (ripple)", s.std(), ".4f")
+                val(f"  {r_name} min",         s.min())
+                val(f"  {r_name} max",         s.max())
+                val(f"  {r_name} mean",        s.mean())
+                val(f"  {r_name} σ (ripple)",  s.std(), ".4f")
 
         section("PSU FAILURE ANALYSIS")
         _psu_score = 0
-        _psu_notes = []
 
-        v12c = self._col('+12V')
+        v12c = rail_map['+12V']
         if v12c:
             s12 = df[v12c].dropna()
             sag_pct = float((s12 < self.sig_v12_lo).mean()) * 100
@@ -2100,16 +2128,15 @@ class TelemetryApp:
             if entry:
                 candidates = entry if isinstance(entry, list) else [entry]
                 for c in candidates:
-                    if c and c != '__SKIP__' and c in df.columns:
+                    if c and c in df.columns:
                         return c
             for c in fallbacks:
                 if c and c in df.columns:
                     return c
             return None
 
-        v5c  = _safe_alias('rail_5v',  self._col('+5V'),  self._col('5V'))
-        v33c = _safe_alias('rail_33v', self._col('+3.3V'), self._col('3.3V'),
-                           self._col('3V3'), self._col('VCC3'))
+        v5c  = rail_map['+5V']
+        v33c = rail_map['+3.3V']
 
         if v5c:
             s5 = df[v5c].dropna()
@@ -2188,23 +2215,17 @@ class TelemetryApp:
         if aliases:
             for k, v in sorted(aliases.items()):
                 entries = v if isinstance(v, list) else [v]
-                if entries == ['__SKIP__'] or entries == ['__skip__']:
-                    w(f"  {k:20s} = ")
-                    wl("skipped by user", 'muted')
+                active = next((c for c in entries if c in df.columns), None)
+                total  = len(entries)
+                w(f"  {k:20s}  [{total} alias(es)]  active → ")
+                if active:
+                    wl(active, 'ok')
                 else:
-                    active = next((c for c in entries
-                                   if c != '__SKIP__' and c in df.columns), None)
-                    total  = sum(1 for c in entries if c != '__SKIP__')
-                    w(f"  {k:20s}  [{total} alias(es)]  active → ")
-                    if active:
-                        wl(active, 'ok')
-                    else:
-                        wl("none match current CSV", 'warn')
-                    for c in entries:
-                        if c == '__SKIP__': continue
-                        tag = 'ok' if c in df.columns else 'muted'
-                        sym = '✓' if c in df.columns else '○'
-                        wl(f"               [{sym}] {c}", tag)
+                    wl("none match current CSV", 'warn')
+                for c in entries:
+                    tag = 'ok' if c in df.columns else 'muted'
+                    sym = '✓' if c in df.columns else '○'
+                    wl(f"               [{sym}] {c}", tag)
         else:
             wl("  No aliases set yet.", 'muted')
 
@@ -2362,6 +2383,62 @@ class TelemetryApp:
         """Legacy stub — debug output now goes to the in-app window via _open_debug_window()."""
         self._open_debug_window()
 
+    def _start_sig_watcher(self):
+        """Start the background signature evaluation loop.
+        Runs signatures in a thread whenever _sig_dirty is True,
+        then updates the live badge on the main thread."""
+        import threading
+
+        def _worker():
+            try:
+                hits = self._run_signatures()
+            except Exception:
+                hits = []
+            def _done():
+                self._sig_hits    = hits
+                self._sig_running = False
+                self._update_sig_badge()
+            self.root.after(0, _done)
+
+        def _tick():
+            if self._sig_dirty and not self._sig_running:
+                self._sig_dirty   = False
+                self._sig_running = True
+                threading.Thread(target=_worker, daemon=True).start()
+            # Schedule next check in 3 seconds
+            self._sig_watcher_id = self.root.after(3000, _tick)
+
+        # Cancel any existing watcher before starting
+        if self._sig_watcher_id:
+            self.root.after_cancel(self._sig_watcher_id)
+        _tick()
+
+    def _update_sig_badge(self):
+        """Update the per-severity badge labels from completed signature results."""
+        def _safe(lbl, text):
+            if lbl and lbl.winfo_exists():
+                lbl.config(text=text)
+
+        hits  = self._sig_hits
+        crits = sum(1 for h in hits if h.get('severity') == 'CRITICAL')
+        warns = sum(1 for h in hits if h.get('severity') == 'WARNING')
+        infos = sum(1 for h in hits if h.get('severity') == 'INFO')
+
+        if not hits:
+            _safe(self._badge_crit_lbl, "")
+            _safe(self._badge_warn_lbl, "")
+            _safe(self._badge_info_lbl, "")
+            _safe(self._badge_ok_lbl,   "✅ Clear")
+        else:
+            _safe(self._badge_crit_lbl, f"🔴 {crits}" if crits else "")
+            _safe(self._badge_warn_lbl, f"🟡 {warns}" if warns else "")
+            _safe(self._badge_info_lbl, f"🔵 {infos}" if infos else "")
+            _safe(self._badge_ok_lbl,   "")
+
+    def _mark_sig_dirty(self):
+        """Call whenever something changes that requires a signature re-run."""
+        self._sig_dirty = True
+
     def _run_signatures(self) -> list:
         hits = []
         df = self.df
@@ -2387,7 +2464,7 @@ class TelemetryApp:
                 return None
             candidates = entry if isinstance(entry, list) else [entry]
             return next((c for c in candidates
-                         if c and c != '__SKIP__' and c in df.columns), None)
+                         if c and c in df.columns), None)
 
         # -- CPU Metrics ---------------------------------------------------------------
 
@@ -2405,7 +2482,7 @@ class TelemetryApp:
         gpu_usage_col = _a('gpu_usage') or self._col('GPU', 'USAGE') or self._col('GPU', 'LOAD') or self._col('GPU', 'AUSLASTUNG') or self._col('GPU USAGE')
         gpu_clock     = _a('gpu_clock') or self._col('GPU', 'CLOCK') or self._col('GPU', 'FREQUENCY') or self._col('GPU', 'TAKT')
         gpu_throttle  = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
-        gpu_power     = self._col('GPU', 'POWER') or self._col('BOARD', 'POWER') or self._col('TOTAL', 'BOARD') or self._col('TGP') or self._col('TBP') or self._col('ASIC') or self._col('NVVDD') or self._col('PCIe') or self._col('LEISTUNG') or self._col('EINGANGSLEISTUNG') or self._col('POWER')
+        gpu_power     = _a('gpu_power') or self._col('GPU', 'POWER') or self._col('BOARD', 'POWER') or self._col('TOTAL', 'BOARD') or self._col('TGP') or self._col('TBP') or self._col('ASIC') or self._col('NVVDD') or self._col('PCIe') or self._col('LEISTUNG') or self._col('EINGANGSLEISTUNG') or self._col('POWER')
         gpu_clk_col   = self._col('GPU Clock [MHz]')
 
         # GPU Electrical & Power Limits
@@ -2422,19 +2499,19 @@ class TelemetryApp:
 
         # System & Performance
         is_laptop     = any(k in "".join(self.df.columns).upper() for k in ['BATTERY', 'CHARGE', 'AC ADAPTER', 'DISCHARGE', 'MOBILE', 'LAPTOP'])
-        chipset_t     = self._col('Chipset [°C]') or self._col('Motherboard [°C]')
+        chipset_t     = _a('chipset_temp') or self._col('Chipset [°C]') or self._col('Motherboard [°C]') or self._col('PCH') or self._col('SMU')
         usb_v_col     = self._col('USB VCC') or self._col('USB Voltage')
-        pcie_errors   = self._col('PCI Express Error Counters (avg)')
-        system_interrupts = self._col('System Interrupts') or self._col('DPC Latency')
-        
+        pcie_errors   = _a('pcie_errors') or self._col('PCI Express Error Counters (avg)')
+        system_interrupts = _a('sys_interrupts') or self._col('System Interrupts') or self._col('DPC Latency')
+
         # Timing & Clocks
         ft_col        = _a('frame_time') or self._col('Frametime [ms]') or self._col('GPU Frametime') or self._col('Frame Time')
-        gpu_busy_ms   = self._col('GPU Busy (avg) [ms]')
-        gpu_wait_ms   = self._col('GPU Wait (avg) [ms]')
+        gpu_busy_ms   = _a('gpu_busy') or self._col('GPU Busy (avg) [ms]') or self._col('GPU Busy')
+        gpu_wait_ms   = _a('gpu_wait') or self._col('GPU Wait (avg) [ms]') or self._col('GPU Wait')
         gpu_eff_clock = self._col('GPU Effective Clock [MHz]')
-        fclk_col = self._col('FCLK') or None
-        uclk_col = next((c for c in df.columns if 'UCLK' in c), None)
-        mclk_col = self._col('MCLK') or self._col('MEMORY CLOCK') or self._col('DRAM CLOCK') or None
+        fclk_col = _a('fclk') or self._col('FCLK') or None
+        uclk_col = _a('uclk') or next((c for c in df.columns if 'UCLK' in c), None)
+        mclk_col = _a('mclk') or self._col('MCLK') or self._col('MEMORY CLOCK') or self._col('DRAM CLOCK') or None
 
         # -- Sensor Debug ---------------------------------------------------------------
 
@@ -2499,17 +2576,16 @@ class TelemetryApp:
                 add("GPU Thermal Warning", "WARNING", msg, evidence)
             
         # 3. PSU +12V RAIL STABILITY
-        v12 = self._col('+12V')
-        if v12:
-            v_min = df[v12].min()
-            # ATX Spec is 11.4V to 12.6V. 
-            # Anything below 11.2V usually causes GPU shutoffs.
-            if v_min < self.sig_v12_lo:
-                severity = "CRITICAL" if v_min < 11.2 else "WARNING"
-                add("PSU +12V Rail Sag", severity,
-                    "The 12V rail (GPU/CPU power) is sagging below safe limits. This causes system-wide instability or 'black screen' crashes under load. "
-                    "ADVICE: Check that PCIe and EPS power cables are fully seated. If the sag persists, the PSU is likely underpowered or failing.",
-                    [f"Min Voltage: {v_min:.2f}V", f"Safety Limit: {self.sig_v12_lo}V"])
+        if not is_laptop:
+            v12 = self._col('+12V')
+            if v12:
+                v_min = df[v12].min()
+                if v_min < self.sig_v12_lo:
+                    severity = "CRITICAL" if v_min < 11.2 else "WARNING"
+                    add("PSU +12V Rail Sag", severity,
+                        "The 12V rail (GPU/CPU power) is sagging below safe limits. This causes system-wide instability or 'black screen' crashes under load. "
+                        "ADVICE: Check that PCIe and EPS power cables are fully seated. If the sag persists, the PSU is likely underpowered or failing.",
+                        [f"Min Voltage: {v_min:.2f}V", f"Safety Limit: {self.sig_v12_lo}V"])
         
         # 4. GPU DRIVER TDR / CRASH
         
@@ -2942,111 +3018,112 @@ class TelemetryApp:
                         ]
                     )
 
-        # 16. PSU +5V / +3.3V RAIL STABILITY
-        
-        for r_name, low, high in [('+5V', self.sig_v5_lo, self.sig_v5_hi),
-                                   ('+3.3V', self.sig_v33_lo, self.sig_v33_hi)]:
-            col = self._col(r_name)
-            if col and (df[col].min() < low or df[col].max() > high):
-                add(f"PSU {r_name} Rail Unstable", "WARNING", 
-                    f"Low-voltage rail {r_name} is out of spec. ADVICE: This can cause random USB disconnects or drive errors. Check PSU health.",
-                    [f"Detected Range: {df[col].min():.2f}V - {df[col].max():.2f}V",
-                     f"Spec: {low}V - {high}V"])
-
-        # 16b. PSU HARDWARE FAILURE INDICATORS
-
-        _psu_evidence = []
-        _psu_severity_score = 0   # more signals = higher confidence
-
-        # Signal A: +12V rail sag
-        v12_col = self._col('+12V')
-        if v12_col:
-            v12s = df[v12_col].dropna()
-            sag_mask = v12s < self.sig_v12_lo
-            sag_pct  = float(sag_mask.mean()) * 100
-            if sag_pct > 5.0:
-                _psu_evidence.append(f"+12V sagging below {self.sig_v12_lo}V in {sag_pct:.1f}% of samples (min {v12s.min():.2f}V)")
-                _psu_severity_score += 2 if v12s.min() < 11.2 else 1
-
-        # Signal B: +5V rail out of spec
-        v5_col = self._col('+5V')
-        if v5_col:
-            v5s = df[v5_col].dropna()
-            if v5s.min() < self.sig_v5_lo or v5s.max() > self.sig_v5_hi:
-                _psu_evidence.append(f"+5V rail out of spec: {v5s.min():.2f}V – {v5s.max():.2f}V (spec {self.sig_v5_lo}–{self.sig_v5_hi}V)")
-                _psu_severity_score += 1
-
-        # Signal C: +3.3V rail out of spec
-        v33_col = _a('rail_33v') or self._col('+3.3V')
-        if v33_col:
-            v33s = df[v33_col].dropna()
-            if v33s.min() < self.sig_v33_lo or v33s.max() > self.sig_v33_hi:
-                _psu_evidence.append(f"+3.3V rail out of spec: {v33s.min():.2f}V – {v33s.max():.2f}V (spec {self.sig_v33_lo}–{self.sig_v33_hi}V)")
-                _psu_severity_score += 1
-
-        # Signal D: Yes/No PSU-specific throttle flags triggered
-        _psu_yn_triggers = []
-        for c in df.columns:
-            cu = c.upper()
-            if 'YES/NO' not in cu:
-                continue
-            if not any(k in cu for k in ('POWER SUPPLY', 'HARDWARE LIMIT',
-                                          'AVG. POWER (PL1)', 'BURST POWER (PL2)',
-                                          'CURRENT (PL4)', 'THROTTL')):
-                continue
-            s = df[c].dropna()
-            if s.empty or s.max() < 1.0:
-                continue
-            pct = float((s >= 1.0).mean()) * 100
-            if pct > 1.0:
-                _psu_yn_triggers.append(f"{c.replace(' [Yes/No]', '')} active {pct:.1f}% of session")
-        if _psu_yn_triggers:
-            _psu_evidence.extend(_psu_yn_triggers[:4])
-            _psu_severity_score += min(len(_psu_yn_triggers), 2)
-
-        # Signal E: cross-rail correlation — multiple rails sagging simultaneously
-
-        rails_sagging = sum([
-            1 for col, lo in [(v12_col, self.sig_v12_lo),
-                               (v5_col, self.sig_v5_lo),
-                               (v33_col, self.sig_v33_lo)]
-            if col and df[col].dropna().min() < lo
-        ])
-        if rails_sagging >= 2:
-            _psu_evidence.append(f"{rails_sagging} rails simultaneously below spec — strong indicator of PSU output stage degradation")
-            _psu_severity_score += 2
-
-        # Signal F: high rail voltage ripple (std dev > 0.15V indicates cap degradation)
-        for lbl, col in [('+12V', v12_col), ('+5V', v5_col), ('+3.3V', v33_col)]:
-            if col:
-                ripple = df[col].dropna().std()
-                if ripple > 0.15:
-                    _psu_evidence.append(f"{lbl} rail ripple/noise: σ={ripple:.3f}V (>0.15V suggests capacitor wear)")
+        # 16 & 16b. PSU SIGNATURES
+        if not is_laptop:
+            # 16. PSU +5V / +3.3V RAIL STABILITY
+            
+            for r_name, low, high in [('+5V', self.sig_v5_lo, self.sig_v5_hi),
+                                       ('+3.3V', self.sig_v33_lo, self.sig_v33_hi)]:
+                col = self._col(r_name)
+                if col and (df[col].min() < low or df[col].max() > high):
+                    add(f"PSU {r_name} Rail Unstable", "WARNING", 
+                        f"Low-voltage rail {r_name} is out of spec. ADVICE: This can cause random USB disconnects or drive errors. Check PSU health.",
+                        [f"Detected Range: {df[col].min():.2f}V - {df[col].max():.2f}V",
+                         f"Spec: {low}V - {high}V"])
+    
+            # 16b. PSU HARDWARE FAILURE INDICATORS
+    
+            _psu_evidence = []
+            _psu_severity_score = 0   # more signals = higher confidence
+    
+            # Signal A: +12V rail sag 
+            v12_col = self._col('+12V')
+            if v12_col:
+                v12s = df[v12_col].dropna()
+                sag_mask = v12s < self.sig_v12_lo
+                sag_pct  = float(sag_mask.mean()) * 100
+                if sag_pct > 5.0:
+                    _psu_evidence.append(f"+12V sagging below {self.sig_v12_lo}V in {sag_pct:.1f}% of samples (min {v12s.min():.2f}V)")
+                    _psu_severity_score += 2 if v12s.min() < 11.2 else 1
+    
+            # Signal B: +5V rail out of spec
+            v5_col = self._col('+5V')
+            if v5_col:
+                v5s = df[v5_col].dropna()
+                if v5s.min() < self.sig_v5_lo or v5s.max() > self.sig_v5_hi:
+                    _psu_evidence.append(f"+5V rail out of spec: {v5s.min():.2f}V – {v5s.max():.2f}V (spec {self.sig_v5_lo}–{self.sig_v5_hi}V)")
                     _psu_severity_score += 1
+    
+            # Signal C: +3.3V rail out of spec
+            v33_col = _a('rail_33v') or self._col('+3.3V')
+            if v33_col:
+                v33s = df[v33_col].dropna()
+                if v33s.min() < self.sig_v33_lo or v33s.max() > self.sig_v33_hi:
+                    _psu_evidence.append(f"+3.3V rail out of spec: {v33s.min():.2f}V – {v33s.max():.2f}V (spec {self.sig_v33_lo}–{self.sig_v33_hi}V)")
+                    _psu_severity_score += 1
+    
+            # Signal D: Yes/No PSU-specific throttle flags triggered
+            _psu_yn_triggers = []
+            for c in df.columns:
+                cu = c.upper()
+                if 'YES/NO' not in cu:
+                    continue
+                if not any(k in cu for k in ('POWER SUPPLY', 'HARDWARE LIMIT',
+                                              'AVG. POWER (PL1)', 'BURST POWER (PL2)',
+                                              'CURRENT (PL4)', 'THROTTL')):
+                    continue
+                s = df[c].dropna()
+                if s.empty or s.max() < 1.0:
+                    continue
+                pct = float((s >= 1.0).mean()) * 100
+                if pct > 1.0:
+                    _psu_yn_triggers.append(f"{c.replace(' [Yes/No]', '')} active {pct:.1f}% of session")
+            if _psu_yn_triggers:
+                _psu_evidence.extend(_psu_yn_triggers[:4])
+                _psu_severity_score += min(len(_psu_yn_triggers), 2)
+    
+            # Signal E: cross-rail correlation — multiple rails sagging simultaneously
 
-        # Signal G: GPU TDR + 12V sag co-occurrence
-        # A TDR immediately after a voltage drop is strong evidence of PSU failure
-        if v12_col and gpu_usage_col and gpu_clock:
-            sag_now  = df[v12_col] < self.sig_v12_lo
-            low_gpu  = df[gpu_usage_col] < 5
-            clk_dead = (df[gpu_clock].rolling(3).std() < 1.0) & (df[gpu_clock] > 0)
-            co_occur = (sag_now & low_gpu & clk_dead).sum()
-            if co_occur >= 3:
-                _psu_evidence.append(f"+12V sag coincides with GPU stall in {co_occur} samples — likely PSU-induced GPU crash")
+            rails_sagging = sum([
+                1 for col, lo in [(v12_col, self.sig_v12_lo),
+                                   (v5_col, self.sig_v5_lo),
+                                   (v33_col, self.sig_v33_lo)]
+                if col and df[col].dropna().min() < lo
+            ])
+            if rails_sagging >= 2:
+                _psu_evidence.append(f"{rails_sagging} rails simultaneously below spec — strong indicator of PSU output stage degradation")
                 _psu_severity_score += 2
+    
+            # Signal F: high rail voltage ripple (std dev > 0.15V indicates cap degradation)
+            for lbl, col in [('+12V', v12_col), ('+5V', v5_col), ('+3.3V', v33_col)]:
+                if col:
+                    ripple = df[col].dropna().std()
+                    if ripple > 0.15:
+                        _psu_evidence.append(f"{lbl} rail ripple/noise: σ={ripple:.3f}V (>0.15V suggests capacitor wear)")
+                        _psu_severity_score += 1
+    
+            # Signal G: GPU TDR + 12V sag co-occurrence
+            # A TDR immediately after a voltage drop is strong evidence of PSU failure
+            if v12_col and gpu_usage_col and gpu_clock:
+                sag_now  = df[v12_col] < self.sig_v12_lo
+                low_gpu  = df[gpu_usage_col] < 5
+                clk_dead = (df[gpu_clock].rolling(3).std() < 1.0) & (df[gpu_clock] > 0)
+                co_occur = (sag_now & low_gpu & clk_dead).sum()
+                if co_occur >= 3:
+                    _psu_evidence.append(f"+12V sag coincides with GPU stall in {co_occur} samples — likely PSU-induced GPU crash")
+                    _psu_severity_score += 2
+    
+            if _psu_severity_score >= 2 and _psu_evidence:
+                sev = "CRITICAL" if _psu_severity_score >= 4 else "WARNING"
+                add("PSU Hardware Failure Indicators", sev,
+                    "Multiple independent signals suggest PSU output degradation or failure. "
+                    "Rail sag, voltage ripple, and power limit throttling are consistent with "
+                    "an aging or undersized power supply. "
+                    "ADVICE: Test with a known-good PSU, check all power cable connections, "
+                    "and consider replacement if symptoms persist.",
+                    _psu_evidence)
+    
 
-        if _psu_severity_score >= 2 and _psu_evidence:
-            sev = "CRITICAL" if _psu_severity_score >= 4 else "WARNING"
-            add("PSU Hardware Failure Indicators", sev,
-                "Multiple independent signals suggest PSU output degradation or failure. "
-                "Rail sag, voltage ripple, and power limit throttling are consistent with "
-                "an aging or undersized power supply. "
-                "ADVICE: Test with a known-good PSU, check all power cable connections, "
-                "and consider replacement if symptoms persist.",
-                _psu_evidence)
-
-
-        
         ft_col = self._col('FRAME TIME') or self._col('FRAMETIME')
         if ft_col:
             ft_series = df[ft_col].ffill().dropna()
@@ -3543,14 +3620,23 @@ class TelemetryApp:
         muted = "#666" if is_dark else "#999"
 
         _KEY_LABELS = {
-            "cpu_temp":   "CPU Temperature",
-            "gpu_temp":   "GPU Temperature / Hotspot",
-            "cpu_power":  "CPU Package Power",
-            "gpu_usage":  "GPU Core Usage",
-            "gpu_clock":  "GPU Core Clock",
-            "cpu_usage":  "Total CPU Usage",
-            "frame_time": "Frame Time (PresentMon)",
-            "rail_33v":   "+3.3V Rail Voltage",
+            "cpu_temp":    "CPU Temperature",
+            "gpu_temp":    "GPU Temperature / Hotspot",
+            "cpu_power":   "CPU Package Power",
+            "gpu_power":   "GPU Total Power",
+            "gpu_usage":   "GPU Core Usage / Load",
+            "gpu_clock":   "GPU Core Clock",
+            "cpu_usage":   "Total CPU Usage",
+            "frame_time":  "Frame Time (PresentMon)",
+            "rail_33v":    "+3.3V Rail Voltage",
+            "fclk":        "Fabric Clock (FCLK) — AMD Ryzen",
+            "uclk":        "Unified Memory Clock (UCLK) — AMD Ryzen",
+            "mclk":        "Memory Clock (MCLK)",
+            "gpu_busy":    "GPU Busy Time (PresentMon)",
+            "gpu_wait":    "GPU Wait Time (PresentMon)",
+            "chipset_temp":"Chipset Temperature",
+            "pcie_errors": "PCIe Error Counters",
+            "sys_interrupts": "System Interrupts / DPC Latency",
         }
 
         aliases = dict(self.analyzer.aliases)  # working copy
@@ -3606,7 +3692,7 @@ class TelemetryApp:
                 if not entry:
                     continue
                 entries = entry if isinstance(entry, list) else [entry]
-                real = [e for e in entries if e != '__SKIP__']
+                real = [e for e in entries]
                 if not real:
                     continue
                 has_any = True
@@ -3684,55 +3770,144 @@ class TelemetryApp:
         """For each critical sensor that couldn't be auto-resolved, ask the user
         once to pick the right column. Saves the answer to disk permanently."""
 
-        # fallback _col() result, and candidate filter keywords
+        # Critical Sensors
         _CRITICAL = [
             ("cpu_temp",      "CPU Temperature",
+             "Used for thermal throttling, clock stretching, and VRM overheating detection.\n"
+             "Look for a column showing °C values in the 30–105°C range at idle/load.\n"
+             "Common names: Tdie, Tctl, CPU Package, Core Temperatures (avg)",
              self._col('TCTL') or self._col('TDIE') or self._col('CPU'),
              lambda c: any(k in c.upper() for k in
-                           ['TEMP','°C','TDIE','TCTL','TJMAX','PACKAGE','CORE','THERMAL'])),
+                           ['TEMP','°C','TDIE','TCTL','TJMAX','PACKAGE','CORE','THERMAL'])
+             and '[W]' not in c and '[%]' not in c and '[MHZ]' not in c.upper()),
             ("gpu_temp",      "GPU Temperature / Hotspot",
+             "Used for GPU overheating and hotspot detection.\n"
+             "Look for a column showing °C values, ideally the hotspot/junction reading.\n"
+             "Common names: GPU Temperature, GPU Hot Spot, GPU Memory Junction Temperature",
              self._col_excl(('GPU','HOT'), excl=('CPU','LIMIT')) or
              self._col_excl(('GPU','TEMP'), excl=('CPU',)),
              lambda c: any(k in c.upper() for k in
-                           ['GPU','TEMP','HOT','°C','JUNCTION','EDGE'])),
+                           ['GPU','TEMP','HOT','°C','JUNCTION','EDGE','HOTSPOT'])
+             and '[W]' not in c and '[%]' not in c and '[MHZ]' not in c.upper()),
             ("cpu_power",     "CPU Package Power",
+             "Used for CPU power limit and throttling detection.\n"
+             "Look for total CPU power draw in Watts (not per-core).\n"
+             "Common names: CPU Package Power, CPU PPT, IA Cores Power",
              self._col('CPU','PACKAGE') or self._col('CPU','PPT') or self._col('CPU','POWER'),
-             lambda c: any(k in c.upper() for k in
-                           ['CPU','POWER','WATT','[W]','PPT','PACKAGE'])),
+             lambda c: any(k in c.upper() for k in ['CPU','PPT','PACKAGE'])
+             and any(k in c.upper() for k in ['[W]','POWER','WATT'])),
+            ("gpu_power",     "GPU Total Power",
+             "Used for GPU power limit saturation and PSU failure detection.\n"
+             "Look for total GPU board power in Watts.\n"
+             "Common names: GPU Power, GPU Board Power, TGP",
+             self._col('GPU','POWER') or self._col('TGP') or self._col('TBP'),
+             lambda c: 'GPU' in c.upper()
+             and any(k in c.upper() for k in ['[W]','POWER','WATT','TGP','TBP'])
+             and 'LIMIT' not in c.upper() and '[%]' not in c),
             ("gpu_usage",     "GPU Core Usage / Load",
+             "Used for GPU bottleneck, TDR, and priority conflict detection.\n"
+             "Look for GPU core utilisation as a percentage (not memory or video).\n"
+             "Common names: GPU Core Load, GPU Usage, GPU D3D Usage",
              self._col('GPU','USAGE') or self._col('GPU','LOAD'),
-             lambda c: any(k in c.upper() for k in
-                           ['GPU','USAGE','LOAD','[%]','AUSLASTUNG','CORE LOAD'])),
+             lambda c: any(k in c.upper() for k in ['GPU','AUSLASTUNG'])
+             and any(k in c.upper() for k in ['USAGE','LOAD','[%]'])
+             and 'MEMORY' not in c.upper()),
             ("gpu_clock",     "GPU Core Clock",
+             "Used for TDR detection, clock cap, and power limit oscillation.\n"
+             "Look for the GPU core/shader clock speed in MHz.\n"
+             "Common names: GPU Clock, GPU Core Clock, GPU Effective Clock",
              self._col('GPU','CLOCK') or self._col('GPU','FREQUENCY'),
-             lambda c: any(k in c.upper() for k in
-                           ['GPU','CLOCK','FREQ','[MHZ]','TAKT'])),
+             lambda c: any(k in c.upper() for k in ['GPU','GRAFIK'])
+             and any(k in c.upper() for k in ['CLOCK','FREQ','[MHZ]','TAKT'])
+             and 'MEMORY' not in c.upper() and 'VIDEO' not in c.upper()),
             ("cpu_usage",     "Total CPU Usage",
+             "Used for CPU bottleneck and background process interference detection.\n"
+             "Look for overall CPU utilisation as a percentage across all cores.\n"
+             "Common names: Total CPU Usage, CPU Load, Max CPU/Thread Usage",
              self._col('TOTAL','CPU') or self._col('CPU','USAGE') or self._col('CPU','LOAD'),
-             lambda c: any(k in c.upper() for k in
-                           ['CPU','USAGE','LOAD','TOTAL','[%]','AUSLASTUNG'])),
+             lambda c: any(k in c.upper() for k in ['CPU','PROZESSOR'])
+             and any(k in c.upper() for k in ['USAGE','LOAD','TOTAL','[%]','AUSLASTUNG'])
+             and '[W]' not in c and '[MHZ]' not in c.upper() and '°C' not in c),
             ("frame_time",    "Frame Time (PresentMon)",
+             "Used for stutter, GPU engine wait, and priority conflict detection.\n"
+             "Look for per-frame render time in milliseconds from PresentMon.\n"
+             "Common names: Frame Time Presented (avg), Frametime [ms]",
              self._col('Frame Time') or self._col('Frametime'),
-             lambda c: any(k in c.upper() for k in
-                           ['FRAME','TIME','[MS]','PRESENT','FPS'])),
+             lambda c: any(k in c.upper() for k in ['FRAME','FRAMETIME'])
+             and any(k in c.upper() for k in ['TIME','[MS]','PRESENTED'])),
             ("rail_33v",      "+3.3V Rail Voltage",
+             "Used for PSU rail stability and hardware failure detection.\n"
+             "Look for a voltage column reading ~3.3V at idle.\n"
+             "Common names: +3.3V, 3.3V, 3V3, VCCIO, VDD (SWA)",
              self._col('+3.3V') or self._col('3V3') or self._col('3.3V'),
              lambda c: any(k in c.upper() for k in
                            ['3.3', '3V3', 'VCC3', 'VCCIO', 'VDDA', 'AVDD',
-                            'VSB', 'VDD (SWA)', 'VDDQ', 'VPP'])),
+                            'VSB', 'VDD (SWA)', 'VDDQ', 'VPP'])
+             and '[W]' not in c and '[%]' not in c),
+            ("fclk",          "Fabric Clock (FCLK) — AMD Ryzen",
+             "Used for Ryzen fabric desync detection.\n"
+             "Look for the Infinity Fabric clock speed in MHz (AMD systems only).\n"
+             "Common names: FCLK [MHz]",
+             self._col('FCLK'),
+             lambda c: 'FCLK' in c.upper() and '[MHZ]' in c.upper()),
+            ("uclk",          "Unified Memory Clock (UCLK) — AMD Ryzen",
+             "Used alongside FCLK for Ryzen fabric desync detection.\n"
+             "Look for the unified memory controller clock in MHz (AMD systems only).\n"
+             "Common names: UCLK [MHz]",
+             next((c for c in self.df.columns if 'UCLK' in c), None),
+             lambda c: 'UCLK' in c.upper() and '[MHZ]' in c.upper()),
+            ("mclk",          "Memory Clock (MCLK)",
+             "Used for memory desync detection on AMD Ryzen systems.\n"
+             "Look for the DRAM/memory clock speed in MHz.\n"
+             "Common names: Memory Clock [MHz], MCLK [MHz], DRAM Clock",
+             self._col('MCLK') or self._col('MEMORY CLOCK') or self._col('DRAM CLOCK'),
+             lambda c: any(k in c.upper() for k in ['MCLK','MEMORY CLOCK','DRAM CLOCK'])
+             and '[MHZ]' in c.upper()),
+            ("gpu_busy",      "GPU Busy Time (PresentMon)",
+             "Used for GPU engine wait bottleneck detection.\n"
+             "Look for time in milliseconds the GPU spent actively rendering.\n"
+             "Common names: GPU Busy (avg) [ms]",
+             self._col('GPU Busy (avg) [ms]') or self._col('GPU Busy'),
+             lambda c: 'GPU' in c.upper() and 'BUSY' in c.upper()),
+            ("gpu_wait",      "GPU Wait Time (PresentMon)",
+             "Used for GPU engine wait bottleneck detection.\n"
+             "Look for time in milliseconds the GPU spent waiting (stalled).\n"
+             "Common names: GPU Wait (avg) [ms]",
+             self._col('GPU Wait (avg) [ms]') or self._col('GPU Wait'),
+             lambda c: 'GPU' in c.upper() and 'WAIT' in c.upper()),
+            ("chipset_temp",  "Chipset / PCH Temperature",
+             "Used for chipset thermal throttling detection.\n"
+             "Look for the motherboard chipset or PCH temperature in °C.\n"
+             "Common names: PCH Temperature, Chipset [°C], Motherboard [°C]",
+             self._col('Chipset [°C]') or self._col('Motherboard [°C]') or self._col('PCH'),
+             lambda c: any(k in c.upper() for k in
+                           ['PCH','CHIPSET','MOTHERBOARD','NB TEMP','SMU'])
+             and ('°C' in c or 'TEMP' in c.upper())),
+            ("pcie_errors",   "PCIe Error Counters",
+             "Used for PCIe bus signal instability and WHEA error detection.\n"
+             "Look for a column counting PCIe errors (usually 0 on healthy systems).\n"
+             "Common names: PCI Express Error Counters (avg), Receiver Errors",
+             self._col('PCI Express Error Counters (avg)'),
+             lambda c: any(k in c.upper() for k in
+                           ['PCIE','PCI EXPRESS','RECEIVER ERROR','REPLAY','BAD TLP'])),
+            ("sys_interrupts","System Interrupts / DPC Latency",
+             "Used for kernel driver latency detection.\n"
+             "Look for system interrupt count or DPC latency in ms.\n"
+             "Common names: System Interrupts, DPC Latency",
+             self._col('System Interrupts') or self._col('DPC Latency'),
+             lambda c: any(k in c.upper() for k in
+                           ['SYSTEM INTERRUPT','DPC','ISR','LATENCY'])),
         ]
 
         aliases = self.analyzer.aliases
         changed = False
         df_cols = list(self.df.columns)
 
-        for key, label, auto_result, filt in _CRITICAL:
+        for key, label, desc, auto_result, filt in _CRITICAL:
             # Check if any existing alias for this key already works in current CSV
             entry = aliases.get(key)
             if entry:
                 existing = entry if isinstance(entry, list) else [entry]
-                if '__SKIP__' in existing:
-                    continue  
                 if any(c in self.df.columns for c in existing):
                     continue  
 
@@ -3749,32 +3924,29 @@ class TelemetryApp:
                 continue  # nothing to offer — skip silently
 
             # Show picker dialog
-            chosen = self._sensor_picker_dialog(label, candidates)
+            chosen = self._sensor_picker_dialog(label, candidates, desc)
             if chosen:
                 # Append to existing list — preserves all previous aliases
-                existing_list = aliases.get(key, [])
-                if isinstance(existing_list, str):
-                    existing_list = [existing_list]
+                existing_list = aliases.get(key, [])\
+                    if isinstance(aliases.get(key), list) else \
+                    ([aliases[key]] if key in aliases else [])
                 if chosen not in existing_list:
                     existing_list.append(chosen)
                 aliases[key] = existing_list
                 changed = True
-            elif chosen is False:
-                # User said "none of these" for this CSV — only skip if no aliases yet
-                if key not in aliases:
-                    aliases[key] = ['__SKIP__']
-                    changed = True
 
         if changed:
             self.analyzer.save_aliases(aliases)
             self.analyzer.aliases = aliases
 
-    def _sensor_picker_dialog(self, sensor_label: str, candidates: list) -> str | None | bool:
+    def _sensor_picker_dialog(self, sensor_label: str, candidates: list,
+                               description: str = "") -> str | None | bool:
         """Show a dialog asking the user to pick the correct column for a sensor.
         Returns the chosen column name, None if dismissed, or False if 'None of these'."""
         is_dark = self.is_dark
         bg   = "#121212" if is_dark else "#f8f9fa"
         bg2  = "#1e1e1e" if is_dark else "#ffffff"
+        bg3  = "#1a2a3a" if is_dark else "#e8f4fd"
         fg   = "#e0e0e0" if is_dark else "#212529"
         acc  = "#1f6aa5"
 
@@ -3788,7 +3960,7 @@ class TelemetryApp:
         dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
 
         self.root.update_idletasks()
-        pw, ph = 520, min(80 + len(candidates) * 28 + 80, 500)
+        pw, ph = 560, min(160 + len(candidates) * 28 + 80, 560)
         rx = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
         ry = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
         dialog.geometry(f"{pw}x{ph}+{rx}+{ry}")
@@ -3803,8 +3975,24 @@ class TelemetryApp:
                  font=('Segoe UI', 11, 'bold'), bg=bg, fg=acc).pack(anchor='w')
         tk.Label(inner,
                  text="Which of these columns is it? Your answer is saved permanently.",
-                 font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w', pady=(4, 10))
+                 font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w', pady=(2, 8))
 
+        # Description box
+        if description:
+            desc_frame = tk.Frame(inner, bg=bg3, padx=10, pady=8,
+                                  highlightthickness=1,
+                                  highlightbackground="#2a4a6a" if is_dark else "#b8d4ea")
+            desc_frame.pack(fill=tk.X, pady=(0, 10))
+            tk.Label(desc_frame, text="ℹ  What to look for:",
+                     font=('Segoe UI', 8, 'bold'), bg=bg3,
+                     fg="#4f8ef7", anchor='w').pack(anchor='w')
+            tk.Label(desc_frame, text=description,
+                     font=('Segoe UI', 8), bg=bg3,
+                     fg="#a0c4e8" if is_dark else "#2a4a6a",
+                     justify='left', anchor='w',
+                     wraplength=pw - 60).pack(anchor='w', pady=(4, 0))
+
+        # Scrollable list of radio buttons
         list_frame = tk.Frame(inner, bg=bg2, bd=1, relief='flat')
         list_frame.pack(fill=tk.BOTH, expand=True)
         canvas = tk.Canvas(list_frame, bg=bg2, highlightthickness=0,
@@ -3826,6 +4014,7 @@ class TelemetryApp:
                            selectcolor=acc, font=('Segoe UI', 9),
                            anchor='w').pack(fill=tk.X, padx=8, pady=2)
 
+        # Buttons
         btn_f = tk.Frame(inner, bg=bg)
         btn_f.pack(fill=tk.X, pady=(12, 0))
 
@@ -4481,12 +4670,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
 
     def _open_diagnosis(self):
-        """Run signature analysis and display results in a themed dialog."""
-        self.show_toast("Analyzing signatures...")
-
-        def _run():
-            results = self._run_signatures()
-            self.root.after(0, lambda: _show(results))
+        """Display signature analysis results. Uses cached results from the
+        background watcher if fresh, otherwise runs a quick re-evaluation."""
 
         def _show(results):
             is_dark = self.is_dark
@@ -5033,7 +5218,22 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
             ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=10)
 
-        threading.Thread(target=_run, daemon=True).start()
+        # Use cached results if available and not dirty, otherwise re-run once
+        if self._sig_hits and not self._sig_dirty:
+            _show(self._sig_hits)
+        else:
+            self.show_toast("Analyzing signatures…")
+            import threading
+            def _run():
+                results = self._run_signatures()
+                def _done():
+                    self._sig_hits    = results
+                    self._sig_dirty   = False
+                    self._sig_running = False
+                    self._update_sig_badge()
+                    _show(results)
+                self.root.after(0, _done)
+            threading.Thread(target=_run, daemon=True).start()
 
     def _setup_ui(self):
         flag = " [DEBUG]" if self.debug_mode else ""
@@ -5133,9 +5333,39 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         self.filter_btn = ttk.Button(search_f, text="🚨 Detect Out-of-Spec Issues", style="Issue.TButton", command=self._toggle_filter)
         self.filter_btn.pack(fill=tk.X, pady=(0, 4))
-        ttk.Button(search_f, text="🔬 Diagnose Hardware Signatures", command=self._open_diagnosis, style="Action.TButton").pack(fill=tk.X, pady=(0, 4))
+
+        # Diagnose button + live badge row
+        _bg = "#121212" if self.is_dark else "#f8f9fa"
+        diag_row = tk.Frame(search_f, bg=_bg)
+        diag_row.pack(fill=tk.X, pady=(0, 4))
+        ttk.Button(diag_row, text="🔬 Diagnose Hardware Signatures",
+                   command=self._open_diagnosis,
+                   style="Action.TButton").pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self._sig_badge_var = tk.StringVar(value="⏳")
+        self._sig_badge_lbl = None   # replaced by per-severity labels below
+
+        # Per-severity badge labels
+        self._badge_crit_lbl = tk.Label(diag_row, text="", font=('Segoe UI', 8, 'bold'),
+                                         bg=_bg, fg="#ff4d4d", padx=3)
+        self._badge_warn_lbl = tk.Label(diag_row, text="", font=('Segoe UI', 8, 'bold'),
+                                         bg=_bg, fg="#f59e0b", padx=3)
+        self._badge_info_lbl = tk.Label(diag_row, text="", font=('Segoe UI', 8, 'bold'),
+                                         bg=_bg, fg="#38bdf8", padx=3)
+        self._badge_ok_lbl   = tk.Label(diag_row, text="⏳", font=('Segoe UI', 8),
+                                         bg=_bg, fg="#888", padx=3)
+
+        self._badge_ok_lbl.pack(side=tk.RIGHT)
+        self._badge_info_lbl.pack(side=tk.RIGHT)
+        self._badge_warn_lbl.pack(side=tk.RIGHT)
+        self._badge_crit_lbl.pack(side=tk.RIGHT)
+
         ttk.Button(search_f, text="🖥 View Detected Hardware", command=self._open_hardware_info).pack(fill=tk.X, pady=(0, 4))
         ttk.Button(search_f, text="⚙ Edit Detection Limits", command=self._open_limits_editor).pack(fill=tk.X, pady=(0, 8))
+
+        # Start background watcher — marks dirty so first run fires immediately
+        self._sig_dirty = True
+        self._start_sig_watcher()
 
         search_top = ttk.Frame(search_f)
         search_top.pack(fill=tk.X, pady=(0, 5))
@@ -5511,10 +5741,13 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             if col not in new_cols:
                 var.set(False)
         self.filter_active = False
+        self._sig_hits     = []
+        self._sig_dirty    = True
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
         self.root.after(300, self._prompt_sensor_aliases)
+        # Re-open debug window with fresh data if debug mode was active
         if self.debug_mode:
             self._open_debug_window()
 

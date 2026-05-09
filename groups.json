@@ -125,7 +125,7 @@
                 "vcore_droop_max": 0.3,
                 "clock_instability": 0.35,
                 "throttle_threshold": 0.9,
-                "sig_cpu_thermal_pct": 0.95,
+                "sig_cpu_thermal_pct": 0.85,
                 "sig_cpu_thermal_samples": 10,
                 "sig_fan_stall_rpm": 100.0,
                 "sig_fan_min_spinning": 200.0,
@@ -152,6 +152,7 @@
                 "sig_v33_lo": 3.14,
                 "sig_v33_hi": 3.47
             }
-        }
+        },
+        "disabled_sigs": []
     }
 }
