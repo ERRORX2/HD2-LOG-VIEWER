@@ -69,14 +69,14 @@ jobs:
       - if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          pyinstaller --clean --noconfirm --onefile --noconsole --noupx --name "HD2_LOG_VIEWER" --add-data "groups.json;." HD2_LOG_VIEWER.pyw
+          pyinstaller --clean --noconfirm --onefile --noconsole --noupx --icon="assets\icon.ico" --name "HD2_LOG_VIEWER" --add-data "groups.json;." HD2_LOG_VIEWER.pyw
           Copy-Item "dist\HD2_LOG_VIEWER.exe" "artifact\${{ matrix.artifact_binary }}" -Force
           Copy-Item "groups.json" "artifact\" -Force
 
       - if: runner.os == 'Linux'
         shell: bash
         run: |
-          pyinstaller --clean --noconfirm --onefile --name "HD2_LOG_VIEWER" --add-data "groups.json:." HD2_LOG_VIEWER.pyw
+          pyinstaller --clean --noconfirm --onefile --icon="assets/icon.ico" --name "HD2_LOG_VIEWER" --add-data "groups.json:." HD2_LOG_VIEWER.pyw
           cp "dist/HD2_LOG_VIEWER" "artifact/${{ matrix.artifact_binary }}"
           cp "groups.json" "artifact/groups.json"
           chmod +x "artifact/${{ matrix.artifact_binary }}"
@@ -88,12 +88,17 @@ jobs:
           mkdir -p AppDir/usr/share/applications
           cp artifact/HD2_LOG_VIEWER_linux AppDir/usr/bin/HD2_LOG_VIEWER
           chmod +x AppDir/usr/bin/HD2_LOG_VIEWER
+          
+          # Copy the icon from assets for the AppImage
+          cp assets/icon.png AppDir/hd2.png
+          
           cat > AppDir/AppRun << 'EOF'
-          #!/bin/bash
+          #!/bin/bash          
           HERE="$(dirname "$(readlink -f "$0")")"
           exec "$HERE/usr/bin/HD2_LOG_VIEWER"
           EOF
           chmod +x AppDir/AppRun
+          
           cat > AppDir/HD2_LOG_VIEWER.desktop << 'EOF'
           [Desktop Entry]
           Name=HD2 LOG VIEWER
