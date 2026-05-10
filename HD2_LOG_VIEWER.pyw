@@ -20,7 +20,6 @@ import urllib.error
 import webbrowser
 import re
 
-
 _EXCLUDE_RAW = frozenset([
     '[MB]', '[GB]', '[A]', 'PWM', '(STATIC)',
     'THERMAL LIMIT', 'POWER LIMIT', 'TDC LIMIT', 'PPT LIMIT', 'EDC LIMIT',
@@ -41,9 +40,8 @@ _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
 GROUPS_FILE         = "groups.json"
 SENSOR_ALIASES_FILE = "sensor_aliases.json"
-CURRENT_VERSION = "1.4.8"  # Bump 
+CURRENT_VERSION = "1.4.9"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
-
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
                 ignored_version: str = "", updates_disabled: bool = False, time_mode: bool = False,
@@ -90,7 +88,6 @@ def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, 
     except:
         return {}, False, False, False, "", False, False, {}, False, []
 
-
 def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: bool = False,
                       on_ignore=None, on_disable=None, silent: bool = True):
     """
@@ -116,7 +113,6 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
                     root.after(0, lambda: _toast("✅ You're on the latest version!"))
                 return
 
-            # A newer version exists — check if we should suppress
             if silent:
                 if updates_disabled:
                     return
@@ -143,7 +139,6 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
         dialog.grab_set()
         dialog.attributes("-topmost", True)
 
-        # Pull theme from app reference
         try:
             is_dark = root._app_ref.is_dark
         except Exception:
@@ -194,20 +189,17 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
 
     threading.Thread(target=_check, daemon=True).start()
 
-
 class TelemetryAnalyzer:
-    # Candidate column names to check for time data, in priority order
     TIME_COLUMN_CANDIDATES = ['time', 'date', 'timestamp', 'elapsed', 'clock', '#']
-    # Common time formats to attempt parsing
     TIME_FORMATS = ['%H:%M:%S', '%H:%M:%S.%f', '%Y-%m-%d %H:%M:%S',
                     '%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S', '%H:%M']
 
     def __init__(self, file_path: str):
         self.path = Path(file_path)
         self.df: pd.DataFrame = pd.DataFrame()
-        self.time_col: str = ""           # Name of detected time column, "" if none
-        self.time_series = None           # Parsed datetime/timedelta Series, None if unavailable
-        self.aliases: dict = {}           # canonical_key -> actual column name (user-confirmed)
+        self.time_col: str = ""
+        self.time_series = None
+        self.aliases: dict = {}
 
     @staticmethod
     def load_aliases() -> dict:
@@ -265,14 +257,13 @@ class TelemetryAnalyzer:
             raise ValueError("File Load Failed")
         self.df.columns = [str(c).strip().replace('\ufeff', '') for c in self.df.columns]
 
-        # Detect time column BEFORE numeric conversion so raw strings are still intact
         self._detect_time_column()
 
         for col in self.df.columns:
             if col == self.time_col:
-                continue  # Keep time column as-is
+                continue
             if '[Yes/No]' in col or '[yes/no]' in col.lower():
-                continue  
+                continue
             try:
                 s = self.df[col].astype(str).str.replace(',', '.', regex=False)
                 cleaned = s.str.replace(r'[^\d\.\-eE]', '', regex=True)
@@ -298,14 +289,30 @@ class TelemetryAnalyzer:
                           '1.0': 1.0, '0.0': 0.0, 'true': 1.0, 'false': 0.0})
                 )
 
-        # Keep time_series in sync with df after row trimming
         if self.time_series is not None:
             self.time_series = self.time_series.iloc[:len(self.df)].reset_index(drop=True)
         self.df = self.df.reset_index(drop=True)
         self.aliases = self.load_aliases()
 
     def extract_hardware_names(self) -> dict:
-        # -- Known HWiNFO type-tag prefixes ---------------------------------
+        """
+        Extract unique hardware device names from a HWiNFO64 CSV.
+
+        HWiNFO64 appends a hardware-label row somewhere in the file (often row 2,
+        but may also appear at the very end). Each cell in that row contains the
+        source device for its column, e.g.:
+            "CPU [#0]: Intel Core i7-13620H"
+            "dGPU [#1]: NVIDIA GeForce RTX 4070 Laptop"
+            "S.M.A.R.T.: WD PC SN560 ..."
+            "System: ASUS TUF Gaming F15 ..."
+            "Network: Intel Wi-Fi 6 AX201 160MHz - Wi-Fi"
+            "Battery: AS3GWAF3KC GA50358"
+            "PresentMon [AsusMyASUS.exe]"
+
+        Strategy: read ALL rows of the raw file, find any row where a significant
+        fraction of non-empty cells match the HWiNFO device-label pattern, then
+        collect unique device names from that row.
+        """
         _KNOWN_TAGS = re.compile(
             r'^(CPU|iGPU|dGPU|GPU|DDR\d*\s*DIMM|S\.M\.A\.R\.T\.|Drive|'
             r'Network|Battery|System|PresentMon|Memory Timings|'
@@ -318,27 +325,20 @@ class TelemetryAnalyzer:
             c = cell.strip()
             if not c:
                 return False
-            # Must start with a known HWiNFO type tag
             if not _KNOWN_TAGS.match(c):
                 return False
-            # Reject cells that look like numeric sensor readings
-            # e.g. "12.34", "0", "Yes", "No", "100.0"
             if re.match(r'^-?\d+(\.\d+)?$', c):
                 return False
             if c.upper() in ('YES', 'NO', 'N/A', 'OK', 'FAIL', 'WARNING'):
                 return False
-            # Reject if it ends with a unit bracket — that's a column header, not a device label
-            # e.g. "CPU Package [°C]" — the real label rows have no unit suffixes
             if re.search(r'\[(°C|MHz|W|V|%|RPM|MB|GB|A|ms|FPS|x|T|GT/s)\]\s*$', c, re.IGNORECASE):
                 return False
-            # Must contain at least one letter after the tag separator
             if ': ' in c:
                 _, device_part = c.split(': ', 1)
                 if not re.search(r'[A-Za-z]', device_part):
                     return False
             return True
 
-        # Read raw rows (all encodings to be safe)
         all_rows = []
         for enc in ('utf-8-sig', 'latin-1', 'cp1252'):
             try:
@@ -352,8 +352,6 @@ class TelemetryAnalyzer:
         if not all_rows:
             return {}
 
-        # -- Find the label row(s) -------------------------------------------
-        # Score each row by the fraction of non-empty cells that are label cells.
         best_row = []
         best_score = 0.0
 
@@ -367,14 +365,11 @@ class TelemetryAnalyzer:
                 best_score = score
                 best_row = row
 
-        # Require at least 10% of non-empty cells to match AND at least 3 absolute hits
-        # before we trust the row — prevents a stray sensor name triggering a false positive
         if best_score < 0.25 or not best_row:
             return {}
         if sum(1 for c in best_row if _is_label_cell(c)) < 3:
             return {}
 
-        # -- Category rules (matched against the TYPE TAG, first match wins) -
         _TYPE_CATEGORY = [
             (['IGPU'],                                      'iGPU (Integrated Graphics)'),
             (['DGPU', 'GPU'],                               'GPU'),
@@ -403,7 +398,7 @@ class TelemetryAnalyzer:
             """Remove trailing parenthesised serial/slot info."""
             return re.sub(r'\s*\([^)]*\)\s*$', '', s).strip()
 
-        seen: dict = {}  # device_name -> category
+        seen: dict = {}
 
         for cell in best_row:
             cell = cell.strip().strip('\ufeff')
@@ -412,10 +407,6 @@ class TelemetryAnalyzer:
 
             if ': ' in cell:
                 type_tag, device_part = cell.split(': ', 1)
-                # Strip sub-type suffixes like ": DTS", ": Enhanced", ": C-State Residency"
-                # These appear when HWiNFO groups sensors under a sub-category.
-                # The real device name is everything up to the SECOND ": " if the remainder
-                # looks like a sub-label (no spaces before it, or known suffix patterns).
                 _SUBLABEL = re.compile(
                     r':\s*(DTS|Enhanced|C-State Residency|Performance Limit Reasons|'
                     r'Clocks?|Temperatures?|Voltages?|Powers?|Fan\s*Speeds?|'
@@ -423,8 +414,6 @@ class TelemetryAnalyzer:
                     re.IGNORECASE
                 )
                 device_part = _SUBLABEL.sub('', device_part).strip()
-                # Also strip the "Brand: Model" GPU sub-label e.g. "AMD Radeon RX 6700 XT: Sapphire RX 6700 XT"
-                # Keep the longer/more specific of the two sides
                 if ': ' in device_part:
                     left, right = device_part.split(': ', 1)
                     device_name = _clean_parens(left if len(left) >= len(right) else right)
@@ -441,8 +430,6 @@ class TelemetryAnalyzer:
 
             cat = _categorize(type_tag)
 
-            # Deduplication: if we already have a name that is a prefix of this one
-            # (or vice versa), keep the longer/more specific one.
             existing = [k for k in seen if cat == seen[k]]
             dominated = None
             for ex in existing:
@@ -453,12 +440,11 @@ class TelemetryAnalyzer:
                 if len(device_name) > len(dominated):
                     del seen[dominated]
                 else:
-                    continue  # existing is already more specific
+                    continue
 
             if device_name not in seen:
                 seen[device_name] = cat
 
-        # -- Build ordered result --------------------------------------------
         _CAT_ORDER = [
             'System / Motherboard', 'CPU', 'iGPU (Integrated Graphics)', 'GPU',
             'Memory (RAM)', 'Memory Timings', 'Storage', 'Chipset',
@@ -483,7 +469,6 @@ class TelemetryAnalyzer:
         """Find the best time column and parse it into self.time_series."""
         cols_lower = {c.lower().strip(): c for c in self.df.columns}
 
-        # Find the first candidate column that exists
         found_col = None
         for candidate in self.TIME_COLUMN_CANDIDATES:
             if candidate in cols_lower:
@@ -495,20 +480,17 @@ class TelemetryAnalyzer:
 
         raw = self.df[found_col].astype(str).str.strip()
 
-        # Try each known format
         for fmt in self.TIME_FORMATS:
             try:
                 parsed = pd.to_datetime(raw, format=fmt, errors='coerce')
-                if parsed.notna().sum() > len(parsed) * 0.8:  # 80%+ parsed successfully
+                if parsed.notna().sum() > len(parsed) * 0.8:
                     self.time_col = found_col
-                    # Convert to elapsed timedelta from first valid entry
                     first = parsed.dropna().iloc[0]
                     self.time_series = parsed - first
                     return
             except Exception:
                 continue
 
-        # Last resort: try pandas auto-inference
         try:
             parsed = pd.to_datetime(raw, errors='coerce')
             if parsed.notna().sum() > len(parsed) * 0.8:
@@ -517,7 +499,6 @@ class TelemetryAnalyzer:
                 self.time_series = parsed - first
         except Exception:
             pass
-
 
 class TelemetryApp:
     def __init__(self, root: tk.Tk, analyzer: TelemetryAnalyzer):
@@ -541,7 +522,8 @@ class TelemetryApp:
         self.cursor_text = None
         self.filter_active = False
         self.debug_mode    = False
-        self._sig_hits        = []         
+
+        self._sig_hits        = []
         self._sig_running     = False
         self._sig_dirty       = True
         self._sig_badge_var   = None
@@ -551,7 +533,6 @@ class TelemetryApp:
         self._badge_info_lbl  = None
         self._badge_ok_lbl    = None
         self._sig_watcher_id  = None
-
         self._default_temp_limits = {
             'HOTSPOT': 95.0, 'HOT SPOT': 95.0,
             'GPU': 88.0,
@@ -564,8 +545,8 @@ class TelemetryApp:
             'SOCKET': 95.0,
             'COOLANT': 45.0, 'LIQUID': 45.0, 'WATER': 45.0,
             'SSD': 65.0, 'NVME': 65.0, 'HDD': 55.0,
-            'DRIVE': 70.0,          # generic HWinfo "Drive Temperature" columns
-            'TEMPERATURE': 70.0,    # bare "Temperature [°C]" fallback
+            'DRIVE': 70.0,
+            'TEMPERATURE': 70.0,
             'CHIPSET': 90.0, 'PCH': 90.0,
             'MOSFET': 110.0, 'CHOKE': 110.0,
         }
@@ -586,41 +567,38 @@ class TelemetryApp:
             'frametime_max_ms': 100.0,
             'fps_min': 10.0,
             'coolant_max': 45.0,
-            # Out-of-spec detection
-            'memory_load_max': 95.0,       # Physical/GPU memory load %
-            'drive_spare_min': 10.0,       # Available spare % floor
-            'drive_life_min': 10.0,        # Remaining life % floor
-            'vcore_droop_max': 0.3,        # Max Vcore swing (V)
-            'clock_instability': 0.35,     # std/mean ratio threshold
-            'throttle_threshold': 0.9,     # throttling flag sensitivity (0–1)
-            # Signature-specific thresholds (used by _run_signatures)
-            'sig_cpu_thermal_pct': 0.85,   # fraction of temp limit to trigger CPU thermal signature
-            'sig_cpu_thermal_samples': 10, # consecutive samples required
-            'sig_fan_stall_rpm': 100.0,    # RPM below which fan is considered stalled
-            'sig_fan_min_spinning': 200.0, # min peak RPM for fan to be considered "has spun"
-            'sig_fan_hot_cpu_c': 70.0,     # CPU temp above which a stalled fan is flagged
-            'sig_fan_hot_gpu_c': 65.0,     # GPU temp above which a stalled fan is flagged
-            'sig_drive_temp_max': 70.0,    # drive temp threshold for storage overheating signature
-            'sig_vrm_temp_max': 105.0,     # VRM temp threshold for VRM overheating signature
-            'sig_ram_exhaust_pct': 95.0,   # physical memory % for RAM exhaustion signature
-            'sig_vram_overflow_pct': 98.0, # VRAM usage % for VRAM overflow signature
-            'sig_cpu_bn_gpu_pct': 60.0,    # GPU usage below this → possible CPU bottleneck
-            'sig_cpu_bn_cpu_pct': 85.0,    # CPU usage above this → possible CPU bottleneck
-            'sig_cpu_bn_samples': 10,      # rolling window for bottleneck detection
-            'sig_stutter_mult': 3.0,       # frametime spike = median * this multiplier
-            'sig_stutter_min_hits': 5,     # minimum stutter events to flag
-            'sig_tdr_clock_frac': 0.5,     # GPU clock fraction for TDR detection
-            'sig_ppt_sat_pct': 0.98,       # fraction of PPT limit to consider saturated
-            'sig_ppt_sat_samples': 15,     # sustained samples for PPT saturation
-            'sig_clock_stretch_mhz': 500.0,# requested-vs-effective clock gap to flag stretching
-            'sig_disk_busy_pct': 99.9,     # disk busy % threshold for congestion signature
-            'sig_disk_busy_samples': 3,    # rolling window for disk congestion
-            'sig_v12_lo': 11.4,            # +12V lower spec limit for signature
+            'memory_load_max': 95.0,
+            'drive_spare_min': 10.0,
+            'drive_life_min': 10.0,
+            'vcore_droop_max': 0.3,
+            'clock_instability': 0.35,
+            'throttle_threshold': 0.9,
+            'sig_cpu_thermal_pct': 0.85,
+            'sig_cpu_thermal_samples': 10,
+            'sig_fan_stall_rpm': 100.0,
+            'sig_fan_min_spinning': 200.0,
+            'sig_fan_hot_cpu_c': 70.0,
+            'sig_fan_hot_gpu_c': 65.0,
+            'sig_drive_temp_max': 70.0,
+            'sig_vrm_temp_max': 105.0,
+            'sig_ram_exhaust_pct': 95.0,
+            'sig_vram_overflow_pct': 98.0,
+            'sig_cpu_bn_gpu_pct': 60.0,
+            'sig_cpu_bn_cpu_pct': 85.0,
+            'sig_cpu_bn_samples': 10,
+            'sig_stutter_mult': 3.0,
+            'sig_stutter_min_hits': 5,
+            'sig_tdr_clock_frac': 0.5,
+            'sig_ppt_sat_pct': 0.98,
+            'sig_ppt_sat_samples': 15,
+            'sig_clock_stretch_mhz': 500.0,
+            'sig_disk_busy_pct': 99.9,
+            'sig_disk_busy_samples': 3,
+            'sig_v12_lo': 11.4,
             'sig_v5_lo': 4.75,  'sig_v5_hi': 5.25,
             'sig_v33_lo': 3.14, 'sig_v33_hi': 3.47,
         }
 
-        # Apply saved overrides on top of defaults
         self.temp_limits  = {**self._default_temp_limits,
                              **saved_thresholds.get('temp_limits', {})}
         self.volt_rails   = {k: tuple(v) for k, v in
@@ -644,7 +622,6 @@ class TelemetryApp:
         self.vcore_droop_max  = misc['vcore_droop_max']
         self.clock_instability = misc['clock_instability']
         self.throttle_threshold = misc['throttle_threshold']
-        # Signature-specific thresholds
         self.sig_cpu_thermal_pct    = misc['sig_cpu_thermal_pct']
         self.sig_cpu_thermal_samples = int(misc['sig_cpu_thermal_samples'])
         self.sig_fan_stall_rpm      = misc['sig_fan_stall_rpm']
@@ -672,16 +649,14 @@ class TelemetryApp:
         self.sig_v33_lo             = misc['sig_v33_lo']
         self.sig_v33_hi             = misc['sig_v33_hi']
 
-        # Expose app reference so check_for_updates can call show_toast
         self.root._app_ref = self
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
-        self.root.after(300, self._prompt_sensor_aliases)  # after UI settles
+        self.root.after(300, self._prompt_sensor_aliases)
 
-        # Silent startup update check
         check_for_updates(
             self.root,
             ignored_version=self.ignored_version,
@@ -718,7 +693,6 @@ class TelemetryApp:
         y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 340
         dialog.geometry(f"560x680+{x}+{y}")
 
-        # Scrollable body
         outer = tk.Frame(dialog, bg=bg)
         outer.pack(fill=tk.BOTH, expand=True, padx=10, pady=(10, 0))
         canvas = tk.Canvas(outer, bg=bg, highlightthickness=0)
@@ -734,7 +708,7 @@ class TelemetryApp:
             lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
         canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
 
-        entries = {}  # key -> StringVar
+        entries = {}
 
         def section(text):
             tk.Label(body, text=text, bg=bg, fg=accent,
@@ -775,7 +749,6 @@ class TelemetryApp:
                 tk.Label(f, text=unit, bg=bg, fg="#888",
                          font=('Segoe UI', 8)).pack(side=tk.LEFT)
 
-        # -- Temperature limits ------------------------------------------------
         section("Temperature Limits (°C)")
         temp_display = [
             ("GPU Core",              "GPU"),
@@ -797,50 +770,41 @@ class TelemetryApp:
             if key in self.temp_limits:
                 row(label, f"temp_{key}", self.temp_limits[key], "°C")
 
-        # -- Voltage rails -----------------------------------------------------
         section("Voltage Rails — Safe Range (V)")
         range_row("+12V Rail",   "rail_12v_lo",   "rail_12v_hi",   *self.volt_rails['+12V'],  "V")
         range_row("+5V Rail",    "rail_5v_lo",    "rail_5v_hi",    *self.volt_rails['+5V'],   "V")
         range_row("+3.3V Rail",  "rail_33v_lo",   "rail_33v_hi",   *self.volt_rails['+3.3V'], "V")
 
-        # -- Component voltages ------------------------------------------------
         section("Component Voltages")
         range_row("CPU Vcore",   "cpu_volt_lo", "cpu_volt_hi", *self.cpu_volt_range,  "V")
         range_row("DRAM Voltage","dram_volt_lo","dram_volt_hi",*self.dram_volt_range, "V")
         row("GPU Core Voltage max", "gpu_volt_max", self.gpu_volt_max, "V")
 
-        # -- Power limits ------------------------------------------------------
         section("Power Draw Limits (W)")
         row("CPU max power",    "cpu_power_max",   self.cpu_power_max,   "W")
         row("GPU max power",    "gpu_power_max",   self.gpu_power_max,   "W")
         row("Total system max", "total_power_max", self.total_power_max, "W")
 
-        # -- Frame / latency ---------------------------------------------------
         section("Frame Timing & Latency")
         row("Frame time spike (1% high)", "frametime_max_ms", self.frametime_max_ms, "ms")
         row("Min FPS (0.1% low)",         "fps_min",          self.fps_min,          "FPS")
         row("Latency max",                "latency_max_ms",   self.latency_max_ms,   "ms")
 
-        # -- Misc --------------------------------------------------------------
         section("Miscellaneous")
         row("Fan stall threshold",          "fan_min_rpm",        self.fan_min_rpm,        "RPM")
 
-        # -- Drive health ------------------------------------------------------
         section("Drive Health")
         row("Available spare min",          "drive_spare_min",    self.drive_spare_min,    "%")
         row("Remaining life min",           "drive_life_min",     self.drive_life_min,     "%")
 
-        # -- Memory ------------------------------------------------------------
         section("Memory Load")
         row("RAM / VRAM load max",          "memory_load_max",    self.memory_load_max,    "%")
 
-        # -- Stability ---------------------------------------------------------
         section("Stability Detection")
         row("Throttle sensitivity (0–1)",   "throttle_threshold", self.throttle_threshold, "")
         row("Vcore max droop",              "vcore_droop_max",    self.vcore_droop_max,    "V")
         row("Clock instability ratio",      "clock_instability",  self.clock_instability,  "std/mean")
 
-        # -- Hardware Signature Thresholds -------------------------------------
         section("Hardware Signature Thresholds")
         row("CPU thermal trigger (% of limit)",  "sig_cpu_thermal_pct",    self.sig_cpu_thermal_pct,    "0–1")
         row("CPU thermal sustained samples",     "sig_cpu_thermal_samples",self.sig_cpu_thermal_samples,"")
@@ -869,14 +833,12 @@ class TelemetryApp:
         range_row("+5V range",   "sig_v5_lo",   "sig_v5_hi",   self.sig_v5_lo,  self.sig_v5_hi,  "V")
         range_row("+3.3V range", "sig_v33_lo",  "sig_v33_hi",  self.sig_v33_lo, self.sig_v33_hi, "V")
 
-        # -- Signature Enable / Disable ----------------------------------------
         section("Signature Enable / Disable")
         tk.Label(body, text="Uncheck a signature to exclude it from detection and reports.",
                  bg=bg, fg="#888", font=('Segoe UI', 8), wraplength=480,
                  justify='left').pack(anchor='w', padx=8, pady=(2, 6))
 
         _ALL_SIGNATURES = [
-            # name                              default severity hint
             ("CPU Thermal Throttling",          "CRITICAL/WARNING"),
             ("CPU Power Limit Reached",         "WARNING"),
             ("CPU Bottleneck",                  "WARNING"),
@@ -903,7 +865,7 @@ class TelemetryApp:
 
         _SEV_COLORS = {"CRITICAL": "#ff4d4d", "WARNING": "#f59e0b",
                        "INFO": "#38bdf8", "CRITICAL/WARNING": "#ff8c42"}
-        sig_vars = {}   # name -> BooleanVar
+        sig_vars = {}
         for sig_name, sev_hint in _ALL_SIGNATURES:
             enabled = sig_name not in self.disabled_sigs
             var = tk.BooleanVar(value=enabled)
@@ -922,7 +884,6 @@ class TelemetryApp:
             tk.Label(row_f, text=sev_hint, bg=bg, fg=sev_color,
                      font=('Segoe UI', 8), anchor='w').pack(side=tk.LEFT, padx=(6, 0))
 
-        # Buttons 
         btn_f = tk.Frame(dialog, bg=bg)
         btn_f.pack(fill=tk.X, padx=10, pady=10)
 
@@ -934,7 +895,6 @@ class TelemetryApp:
         def _try_apply(show_toast=False, close=False):
             """Parse all fields and apply if all valid. Called on every keystroke."""
             try:
-                # Temperatures
                 for label, key in temp_display:
                     if f"temp_{key}" in entries:
                         val = float(entries[f"temp_{key}"].get())
@@ -949,7 +909,6 @@ class TelemetryApp:
                         if key == 'CHIPSET':  self.temp_limits['PCH']  = val
                         if key == 'MOSFET':   self.temp_limits['CHOKE'] = val
 
-                # Volt rails
                 self.volt_rails['+12V']  = (float(entries['rail_12v_lo'].get()),
                                              float(entries['rail_12v_hi'].get()))
                 self.volt_rails['+5V']   = (float(entries['rail_5v_lo'].get()),
@@ -957,24 +916,20 @@ class TelemetryApp:
                 self.volt_rails['+3.3V'] = (float(entries['rail_33v_lo'].get()),
                                              float(entries['rail_33v_hi'].get()))
 
-                # Component voltages
                 self.cpu_volt_range  = (float(entries['cpu_volt_lo'].get()),
                                         float(entries['cpu_volt_hi'].get()))
                 self.dram_volt_range = (float(entries['dram_volt_lo'].get()),
                                         float(entries['dram_volt_hi'].get()))
                 self.gpu_volt_max    = float(entries['gpu_volt_max'].get())
 
-                # Power
                 self.cpu_power_max   = float(entries['cpu_power_max'].get())
                 self.gpu_power_max   = float(entries['gpu_power_max'].get())
                 self.total_power_max = float(entries['total_power_max'].get())
 
-                # Frame / latency
                 self.frametime_max_ms = float(entries['frametime_max_ms'].get())
                 self.fps_min          = float(entries['fps_min'].get())
                 self.latency_max_ms   = float(entries['latency_max_ms'].get())
 
-                # Misc
                 self.fan_min_rpm      = float(entries['fan_min_rpm'].get())
                 self.drive_spare_min  = float(entries['drive_spare_min'].get())
                 self.drive_life_min   = float(entries['drive_life_min'].get())
@@ -983,7 +938,6 @@ class TelemetryApp:
                 self.vcore_droop_max  = float(entries['vcore_droop_max'].get())
                 self.clock_instability = float(entries['clock_instability'].get())
 
-                # Signature thresholds
                 self.sig_cpu_thermal_pct     = float(entries['sig_cpu_thermal_pct'].get())
                 self.sig_cpu_thermal_samples = int(float(entries['sig_cpu_thermal_samples'].get()))
                 self.sig_fan_stall_rpm       = float(entries['sig_fan_stall_rpm'].get())
@@ -1011,10 +965,8 @@ class TelemetryApp:
                 self.sig_v33_lo              = float(entries['sig_v33_lo'].get())
                 self.sig_v33_hi              = float(entries['sig_v33_hi'].get())
 
-                # Apply signature enable/disable toggles
                 self.disabled_sigs = {name for name, var in sig_vars.items() if not var.get()}
 
-                # All parsed OK — save and update
                 self._save_config()
                 self._build_checklist()
                 self._apply_theme_colors()
@@ -1033,16 +985,8 @@ class TelemetryApp:
                     dialog.destroy()
 
             except ValueError:
-                # Field mid-edit — silently ignore, just flag status
                 status_var.set("⚠ Invalid value — fix before closing")
                 status_lbl.config(fg="#e74c3c")
-
-        # Bind live save to every entry var — depracted due to performance issues when rapidly changing values. Now only applied on button click.
-        #def _on_trace(*_):
-         #   _try_apply()
-
-        #for var in entries.values():
-         #   var.trace_add("write", _on_trace)
 
         def _apply():
             _try_apply(show_toast=True, close=True)
@@ -1096,7 +1040,6 @@ class TelemetryApp:
                 self.sig_v33_lo              = misc['sig_v33_lo']
                 self.sig_v33_hi              = misc['sig_v33_hi']
                 self.disabled_sigs           = set()
-                # Reset checkboxes in dialog
                 for name, var in sig_vars.items():
                     var.set(True)
                 self._save_config()
@@ -1146,7 +1089,6 @@ class TelemetryApp:
             'vcore_droop_max':  self.vcore_droop_max,
             'clock_instability': self.clock_instability,
             'throttle_threshold': self.throttle_threshold,
-            # Signature thresholds
             'sig_cpu_thermal_pct':    self.sig_cpu_thermal_pct,
             'sig_cpu_thermal_samples': self.sig_cpu_thermal_samples,
             'sig_fan_stall_rpm':      self.sig_fan_stall_rpm,
@@ -1253,14 +1195,13 @@ class TelemetryApp:
         import matplotlib.colors as mcolors
         import matplotlib.cm as mcm
 
-        # Green covers 0.0–0.60 (safe zone), yellow 0.60–0.85 (warning), dark red 0.85–1.0 (critical)
         band_colors = [
-            (0.00, '#1a7a3a'),   # deep green — safe
-            (0.55, '#2ecc71'),   # bright green — still safe
-            (0.60, '#f1c40f'),   # yellow — warning starts here
-            (0.80, '#e67e22'),   # orange — approaching limit
-            (0.85, '#922b21'),   # dark red — at limit
-            (1.00, '#641e16'),   # very dark red — over limit
+            (0.00, '#1a7a3a'),
+            (0.55, '#2ecc71'),
+            (0.60, '#f1c40f'),
+            (0.80, '#e67e22'),
+            (0.85, '#922b21'),
+            (1.00, '#641e16'),
         ]
         cmap_discrete = mcolors.LinearSegmentedColormap.from_list(
             'threshold_map',
@@ -1272,7 +1213,6 @@ class TelemetryApp:
             raw  = col.upper()
             name = raw.replace(" ", "")
 
-            # Temperature
             if any(x in name for x in ['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL']):
                 matched_limit = None
                 matched_len   = 0
@@ -1283,25 +1223,21 @@ class TelemetryApp:
                         matched_len   = len(key_norm)
                 return matched_limit if matched_limit is not None else 90.0
 
-            # Percentage load
             if '[%]' in raw and any(x in raw for x in ['USAGE', 'LOAD']):
                 return 95.0
 
-            # Power
             if '[W]' in raw and 'LIMIT' not in raw and 'STATIC' not in raw:
                 if 'CPU' in raw: return self.cpu_power_max
                 if 'GPU' in raw: return self.gpu_power_max
                 if 'TOTAL' in raw: return self.total_power_max
 
-            # Frame time
             if any(x in raw for x in ['FRAME TIME', 'FRAMETIME']):
                 return self.frametime_max_ms
 
-            # Latency
             if any(x in raw for x in ['LATENCY', 'GPU BUSY', 'CPU BUSY']):
                 return self.latency_max_ms
 
-            return None  # No known limit — fall back to relative
+            return None
 
         def _normalize_row(col: str, data: np.ndarray) -> np.ndarray:
             """
@@ -1314,45 +1250,36 @@ class TelemetryApp:
             raw   = col.upper()
 
             if limit is not None and limit > 0:
-                # Scale: 0 at 0, 0.85 at limit, 1.0 at limit * 1.15 (15% over)
-                # This puts the yellow band from 75%–100% of limit,
-                # and dark red kicks in at the limit itself
-                warn_start = limit * 0.75   # yellow starts here
-                # Piecewise: below warn_start → 0..0.60, warn_start..limit → 0.60..0.85, above limit → 0.85..1.0
+                warn_start = limit * 0.75
                 result = np.where(
                     data <= warn_start,
-                    0.60 * (data / warn_start),                         # green zone
+                    0.60 * (data / warn_start),
                     np.where(
                         data <= limit,
-                        0.60 + 0.25 * ((data - warn_start) / (limit - warn_start)),  # yellow zone
-                        np.clip(0.85 + 0.15 * ((data - limit) / (limit * 0.15)), 0.85, 1.0)  # red zone
+                        0.60 + 0.25 * ((data - warn_start) / (limit - warn_start)),
+                        np.clip(0.85 + 0.15 * ((data - limit) / (limit * 0.15)), 0.85, 1.0)
                     )
                 )
                 return np.clip(result, 0.0, 1.0)
 
-            # Voltage rails — green within tolerance, yellow approaching limits, red outside
             for rail, (lo, hi) in self.volt_rails.items():
                 if rail in raw and not any(x in raw for x in ['GPU PCIE', 'PCIE', '12VHPWR', 'INPUT']):
                     centre   = (lo + hi) / 2
                     half_tol = (hi - lo) / 2
-                    # Distance from centre, normalized: 0=perfect, 1=at limit edge
                     dist = np.abs(data - centre) / half_tol
-                    return np.clip(dist * 0.85, 0.0, 1.0)  # red only if out of spec
+                    return np.clip(dist * 0.85, 0.0, 1.0)
 
-            # Fan RPM — inverted: low is bad (stall = red)
             if 'RPM' in raw or 'FAN SPEED' in raw:
                 mx = data.max()
                 if mx > 0:
                     inv = 1.0 - np.clip(data / mx, 0.0, 1.0)
-                    return inv * 0.85   # cap at yellow unless stalled
+                    return inv * 0.85
                 return np.zeros_like(data)
 
-            # FPS — inverted: low FPS = red, use fps_min as the danger floor
             if 'FPS' in raw or 'FRAMERATE' in raw:
-                safe_fps = self.fps_min * 6   # e.g. 60 if fps_min=10
+                safe_fps = self.fps_min * 6
                 return np.clip(1.0 - (data / max(safe_fps, 1.0)), 0.0, 0.95)
 
-            # Fallback: relative per-sensor, capped at 0.85 (never full red)
             mn, mx = data.min(), data.max()
             if mx > mn:
                 return np.clip((data - mn) / (mx - mn) * 0.85, 0.0, 0.85)
@@ -1366,14 +1293,13 @@ class TelemetryApp:
             data = self.df[col].ffill().fillna(0).values.astype(float)
             raw_data_map[col] = data
             matrix.append(_normalize_row(col, data))
-            # Strip unit brackets for cleaner labels
             short = col
             for bracket in ['[°C]', '[%]', '[MHz]', '[W]', '[V]', '[RPM]',
                             '[ms]', '[FPS]', '[A]', '[MB]', '[GB]']:
                 short = short.replace(bracket, '').strip()
             labels.append(short[:45])
 
-        matrix = np.array(matrix)  # (n_sensors, n_samples)
+        matrix = np.array(matrix)
 
         x_vals, ts, use_time = self._get_x_axis()
 
@@ -1385,16 +1311,13 @@ class TelemetryApp:
                   vmin=0, vmax=1, extent=extent,
                   interpolation='nearest', origin='upper')
 
-        # Separator lines between rows — makes individual sensors easy to track
         for i in range(1, len(sel)):
             ax.axhline(i - 0.5, color=grid_color, lw=1.0)
 
-        # Y axis labels
         ax.set_yticks(range(len(labels)))
         ax.set_yticklabels(labels, color=text_color, fontsize=7)
         ax.tick_params(axis='y', length=0)
 
-        # X axis
         ax.tick_params(axis='x', colors=text_color, labelsize=8)
         if use_time:
             import matplotlib.ticker as ticker
@@ -1402,7 +1325,6 @@ class TelemetryApp:
                 lambda v, _: self._format_elapsed(v)))
             ax.tick_params(axis='x', labelrotation=30)
 
-        # Colorbar with meaningful labels
         sm = plt.cm.ScalarMappable(cmap=cmap_discrete,
                                    norm=mcolors.Normalize(vmin=0, vmax=1))
         sm.set_array([])
@@ -1425,7 +1347,6 @@ class TelemetryApp:
             pass
         self.canvas_widget.draw_idle()
 
-        # Store for mouse hover
         self._heatmap_matrix_raw = raw_data_map
         self._heatmap_sel        = sel
         self._heatmap_x_vals     = x_vals
@@ -1440,7 +1361,6 @@ class TelemetryApp:
         """Returns (x_values, x_labels, use_time) for plotting and tooltip use."""
         if self.time_mode and self.analyzer.time_series is not None:
             ts = self.analyzer.time_series
-            # Guard: if lengths still differ for any reason, fall back to index
             if len(ts) != len(self.df):
                 return self.df.index.values, None, False
             x_vals = ts.dt.total_seconds().values
@@ -1517,11 +1437,9 @@ class TelemetryApp:
         if series.empty:
             return False
 
-        # -- Exclusions --------------------------------------------------------
         if any(x in raw for x in _EXCLUDE_RAW) or any(x in name for x in _EXCLUDE_NAME):
             return False
 
-        # -- Frame timing / FPS ------------------------------------------------
         if 'FRAME TIME' in raw or 'FRAMETIME' in raw:
             if '1% HIGH' in raw and '0.1%' not in raw:
                 return series.max() > self.frametime_max_ms
@@ -1539,11 +1457,9 @@ class TelemetryApp:
         if '[MS]' in raw:
             return False
 
-        # -- Throttling --------------------------------------------------------
         if any(x in raw for x in _THROTTLE_KW):
             return series.max() >= self.throttle_threshold
 
-        # -- Yes/No binary flags -----------------------------------------------
         if 'YES/NO' in raw:
             _ALWAYS_CRIT = (
                 'DRIVE FAILURE', 'DRIVE FAIL',
@@ -1561,25 +1477,22 @@ class TelemetryApp:
                 return series.max() >= 1.0
 
             _WARN_THRESH = (
-                # -- Per-core / package throttling --
                 'THERMAL THROTTL',
                 'PACKAGE/RING THERMAL',
                 'POWER LIMIT EXCEEDED',
 
-                # -- Intel IA (CPU core) limit reasons --
                 'IA: PROCHOT',
                 'IA: THERMAL EVENT',
                 'IA: RESIDENCY STATE REGULATION',
                 'IA: RUNNING AVERAGE THERMAL LIMIT',
                 'IA: VR THERMAL ALERT',
                 'IA: VR TDC',
-                'IA: PACKAGE-LEVEL RAPL',   # covers PL1 and PL2 PL3
+                'IA: PACKAGE-LEVEL RAPL',
                 'IA: MAX TURBO LIMIT',
                 'IA: TURBO ATTENUATION',
                 'IA: THERMAL VELOCITY BOOST',
                 'IA LIMIT REASONS',
 
-                # -- Intel GT (iGPU) limit reasons --
                 'GT: PROCHOT',
                 'GT: THERMAL EVENT',
                 'GT: DDR RAPL',
@@ -1587,14 +1500,13 @@ class TelemetryApp:
                 'GT: RUNNING AVERAGE THERMAL LIMIT',
                 'GT: VR THERMAL ALERT',
                 'GT: VR TDC',
-                'GT: MAX VR VOLTAGE',       # "GT: Max VR Voltage  ICCmax  PL4"
+                'GT: MAX VR VOLTAGE',
                 'GT: DOMAIN-LEVEL PBM',
                 'GT: PACKAGE-LEVEL RAPL',
                 'GT: INEFFICIENT OPERATION',
                 'GT: FUSES LIMIT',
                 'GT LIMIT REASONS',
 
-                # -- Intel Ring/LLC limit reasons --
                 'RING: PROCHOT',
                 'RING: THERMAL EVENT',
                 'RING: DDR RAPL',
@@ -1603,10 +1515,9 @@ class TelemetryApp:
                 'RING: VR THERMAL ALERT',
                 'RING: VR TDC',
                 'RING: MAX VR VOLTAGE',
-                'RING: PACKAGE-LEVEL RAPL', # RING PL1 / PL2 PL3
+                'RING: PACKAGE-LEVEL RAPL',
                 'RING LIMIT REASONS',
 
-                # -- GPU NVIDIA performance limiters --
                 'PERFORMANCE LIMIT - POWER',
                 'PERFORMANCE LIMIT - THERMAL',
                 'PERFORMANCE LIMIT - RELIABILITY VOLTAGE',
@@ -1615,42 +1526,35 @@ class TelemetryApp:
                 'PERFORMANCE LIMIT - SLI',
                 'GPU PERFORMANCE LIMITERS',
 
-                # -- GPU NVIDIA throttle reasons --
-                'AVG. POWER (PL1)',         # Avg. Power (PL1)
-                'BURST POWER (PL2)',        # Burst Power (PL2)
-                'CURRENT (PL4)',            # Current (PL4)
+                'AVG. POWER (PL1)',
+                'BURST POWER (PL2)',
+                'CURRENT (PL4)',
                 'THERMAL',
                 'POWER SUPPLY',
                 'SOFTWARE LIMIT',
                 'HARDWARE LIMIT',
                 'GPU THROTTLE REASONS',
 
-                # -- Drive warnings --
                 'DRIVE WARNING', 'DRIVE WARN',
 
-                # -- AMD --
                 'PPT LIMIT', 'TDC LIMIT', 'EDC LIMIT',
                 'SOC THROTTLE', 'GFX THROTTLE',
                 'STAPM LIMIT', 'SLOW PPT', 'FAST PPT',
             )
             if any(k in raw for k in _WARN_THRESH):
-                # Require >1% of samples to be active to filter single-sample noise
                 return series.max() >= 1.0 and (series >= 1.0).mean() > 0.01
 
             return False
 
-        # -- Total Errors ------------------------------------------------------
         if 'TOTAL ERRORS' in raw:
             return series.max() > 0
 
-        # -- Drive health ------------------------------------------------------
         if 'AVAILABLE SPARE' in raw and '[%]' in raw:
             return series.min() < self.drive_spare_min
 
         if any(x in raw for x in _SMART_KW):
             return series.min() < self.drive_life_min
 
-        # -- [%] columns -------------------------------------------------------
         if '[%]' in raw:
             if 'LIMIT' in raw:
                 return False
@@ -1659,15 +1563,12 @@ class TelemetryApp:
             if 'DECODE' in raw or 'ENCODE' in raw or 'VIDEO' in raw or 'MEDIA' in raw:
                 return False
 
-        # -- WHEA / hardware errors --------------------------------------------
         if any(x in raw for x in _WHEA_KW):
             return series.max() > 0
 
-        # -- Drive / memory errors ---------------------------------------------
         if any(x in raw for x in _ERROR_KW):
             return series.max() > 0
 
-        # -- Power draw --------------------------------------------------------
         if '[W]' in raw and 'STATIC' not in raw and 'LIMIT' not in raw and 'PPT' not in raw:
             if 'CPU' in raw and self._sustained(col, self.cpu_power_max, n_samples=5):
                 return True
@@ -1676,7 +1577,6 @@ class TelemetryApp:
             if 'TOTAL' in raw and self._sustained(col, self.total_power_max, n_samples=5):
                 return True
 
-        # -- CPU PPT saturation ------------------------------------------------
         if 'CPU PPT' in raw and '[W]' in raw and 'LIMIT' not in raw:
             ppt_limit_col = next(
                 (c for c in self.df.columns if 'PPT' in c.upper() and 'LIMIT' in c.upper()
@@ -1686,7 +1586,6 @@ class TelemetryApp:
                 if limit_val > 0 and series.mean() >= limit_val * 0.98:
                     return True
 
-        # -- Voltage rails (+12V, +5V, +3.3V) --------------------------------
         for rail, (low, high) in self.volt_rails.items():
             if rail in raw:
                 if any(x in raw for x in _RAIL_SKIP):
@@ -1696,9 +1595,6 @@ class TelemetryApp:
                     continue
                 return series.min() < low or series.max() > high
 
-
-        # -- CPU Vcore ---------------------------------------------------------
-        # Only actual Vcore sensors — NOT per-core VID (handled separately below)
         if 'VCORE' in raw or 'CPU CORE VOLTAGE' in raw:
             lo, hi = self.cpu_volt_range
             out_of_range = series.min() < lo or series.max() > hi
@@ -1706,16 +1602,10 @@ class TelemetryApp:
             if out_of_range or drooping:
                 return True
 
-        # -- Per-core / aggregate VID ------------------------------------------
-        # VID swing across cores is normal power management — do NOT apply droop.
-        # Only flag if outside absolute safe voltage range.
         if 'VID' in raw and 'GPU' not in raw and 'VIDEO' not in raw:
             lo, hi = self.cpu_volt_range
             return series.min() < lo or series.max() > hi
 
-        # -- DRAM voltage ------------------------------------------------------
-        # Exclude GPU auxiliary rails (VDDCI_MEM, VDDIO, VDDCI etc.) —
-        # these are GPU-side rails that run at lower voltages than system DRAM
         if ('DRAM VOLTAGE' in raw or 'DIMM VOLTAGE' in raw or 'MEMORY VOLTAGE' in raw
                 or 'VDIMM' in raw or 'VDDQ' in raw):
             if 'GPU' in raw:
@@ -1723,21 +1613,15 @@ class TelemetryApp:
             lo, hi = self.dram_volt_range
             return series.min() < lo or series.max() > hi
 
-        # -- GPU core voltage -------------------------------------------------
         if 'GPU CORE VOLTAGE' in raw and 'GFX' not in raw and 'VDDCR' not in raw:
             return series.max() > self.gpu_volt_max
 
-        # -- Clock instability -------------------------------------------------
         if 'CPU CLOCK' in raw or 'GPU CLOCK' in raw or 'CORE CLOCK' in raw:
             if 'EFFECTIVE' not in raw and 'REQUESTED' not in raw \
                     and 'CORE #' not in raw and 'LIMIT' not in raw:
                 if series.mean() > 100 and (series.std() / series.mean()) > self.clock_instability:
                     return True
 
-        # -- Fan speeds -------------------------------------------------------
-        # GPU fans use zero-RPM idle curves — going to 0 at idle is expected.
-        # For GPU fans only flag if the fan never spun while GPU was very hot.
-        # For all other fans flag if they were spinning then stalled.
         if 'RPM' in raw or 'FAN SPEED' in raw:
             if 'GPU' in raw:
                 gpu_temp_col = self._col('GPU', 'TEMP') or self._col('HOTSPOT')
@@ -1749,7 +1633,6 @@ class TelemetryApp:
                 if series.max() > self.fan_min_rpm and series.min() < self.fan_min_rpm:
                     return True
 
-        # -- Temperatures -----------------------------------------------------
         if any(x in name for x in _TEMP_TRIGGERS):
             matched_limit = None
             matched_len   = 0
@@ -1758,8 +1641,6 @@ class TelemetryApp:
                 if key_norm in name and len(key_norm) > matched_len:
                     matched_limit = limit
                     matched_len   = len(key_norm)
-            # 'TEMPERATURE' is a very short generic key — if a more specific
-            # category keyword is also present, use its limit instead
             if matched_limit is not None and matched_len == len('TEMPERATURE'):
                 for specific in ('CORE', 'GPU', 'HOTSPOT', 'TDIE', 'TCTL', 'CCD',
                                  'SSD', 'NVME', 'HDD', 'VRM', 'CHIPSET', 'SOCKET'):
@@ -1768,13 +1649,11 @@ class TelemetryApp:
                         break
             return self._sustained(col, matched_limit if matched_limit is not None else 90.0, n_samples=3)
 
-        # -- Physical memory load ----------------------------------------------
         if 'PHYSICAL MEMORY' in raw and 'LOAD' in raw:
             return series.max() >= self.memory_load_max
 
         return False
 
-    # -- Sustained spike helper ------------------------------------------------
     def _sustained(self, col: str, threshold: float, n_samples: int = 5,
                    above: bool = True) -> bool:
         """Return True only if the column exceeds threshold for at least
@@ -1828,7 +1707,6 @@ class TelemetryApp:
         if self.debug_mode:
             self._open_debug_window()
         else:
-            # Close the window if it's open
             if hasattr(self, '_debug_win') and self._debug_win and self._debug_win.winfo_exists():
                 self._debug_win.destroy()
             self.show_toast("Debug mode OFF")
@@ -1845,7 +1723,6 @@ class TelemetryApp:
         fg_sec  = "#4f8ef7"
         fg_val  = "#f0c060"
 
-        # If window already exists just refresh it
         if hasattr(self, '_debug_win') and self._debug_win and self._debug_win.winfo_exists():
             win = self._debug_win
             txt = self._debug_txt
@@ -1866,7 +1743,6 @@ class TelemetryApp:
                 win.destroy()
             win.protocol("WM_DELETE_WINDOW", _on_debug_close)
 
-            # Toolbar
             tb = tk.Frame(win, bg="#111" if is_dark else "#dee2e6", pady=4, padx=8)
             tb.pack(fill=tk.X)
             tk.Label(tb, text="🐛  Debug Dump", font=('Segoe UI', 10, 'bold'),
@@ -1879,7 +1755,6 @@ class TelemetryApp:
             )).pack(side=tk.RIGHT, padx=2)
             ttk.Button(tb, text="✕ Close", command=_on_debug_close).pack(side=tk.RIGHT, padx=2)
 
-            # Text area
             frame = tk.Frame(win, bg=bg)
             frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
             txt = tk.Text(frame, bg=bg2, fg=fg, font=('Cascadia Code', 9) if is_dark else ('Consolas', 9),
@@ -1893,7 +1768,6 @@ class TelemetryApp:
             txt.pack(fill=tk.BOTH, expand=True)
             self._debug_txt = txt
 
-            # Colour tags
             txt.tag_config('header',  foreground='#a78bfa', font=('Consolas', 9, 'bold'))
             txt.tag_config('section', foreground=fg_sec,    font=('Consolas', 9, 'bold'))
             txt.tag_config('ok',      foreground=fg_ok)
@@ -1904,7 +1778,6 @@ class TelemetryApp:
             txt.tag_config('info',    foreground='#38bdf8')
             txt.tag_config('muted',   foreground='#555' if is_dark else '#999')
 
-        # -- Build the dump into the text widget ----------------------------
         df   = self.df
         MISS = "<not found>"
         SEP  = "-" * 72
@@ -1943,7 +1816,6 @@ class TelemetryApp:
         wl(f"  Disabled: {sorted(self.disabled_sigs) or 'none'}", 'header')
         wl('═' * 72, 'header')
 
-        # -- CPU ------------------------------------------------------------
         cpu_temp      = self._col('TCTL') or self._col('TDIE') or self._col('CPU')
         cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col('CLOCK')
         cpu_usage_col = self._col('CPU', 'USAGE') or self._col('CPU', 'UTIL') or self._col('CPU', 'LOAD') or self._col('TOTAL', 'CPU')
@@ -1977,7 +1849,6 @@ class TelemetryApp:
         wl(f"  Requested clock cols ({len(req_cols)}): {req_cols[:5] or MISS}")
         wl(f"  Effective clock cols ({len(eff_cols)}): {eff_cols[:5] or MISS}")
 
-        # -- GPU ------------------------------------------------------------
         gpu_hotspot       = self._col_excl(('GPU', 'HOT'),  excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
         gpu_usage_col     = self._col('GPU', 'USAGE') or self._col('GPU', 'LOAD')
         gpu_clock         = self._col('GPU', 'CLOCK') or self._col('GPU', 'FREQUENCY')
@@ -2021,7 +1892,6 @@ class TelemetryApp:
             tdr_ev = (low_u & stall).rolling(5).sum() >= 3
             val("TDR candidate samples", int(tdr_ev.sum()), "d")
 
-        # -- FRAME TIMING ---------------------------------------------------
         ft_col      = self._col('Frametime [ms]') or self._col('Frame Time')
         gpu_busy_ms = self._col('GPU Busy (avg) [ms]')
         gpu_wait_ms = self._col('GPU Wait (avg) [ms]')
@@ -2041,7 +1911,6 @@ class TelemetryApp:
                 val("Max wait ratio",  wr.max())
                 val("Mean wait ratio", wr.mean())
 
-        # -- STORAGE --------------------------------------------------------
         section("STORAGE COLUMNS")
         drive_t = [c for c in df.columns if 'TEMP' in c.upper()
                    and any(k in c.upper() for k in ['DRIVE','NVME','SSD','HDD'])]
@@ -2052,7 +1921,6 @@ class TelemetryApp:
         for c in drive_t:
             val(f"  Max {c[:35]}", mx(c))
 
-        # -- FABRIC / MEMORY -------------------------------------------------
         fclk_col = self._col('FCLK')
         uclk_col = next((c for c in df.columns if 'UCLK' in c), None)
         mclk_col = self._col('MCLK') or self._col('MEMORY CLOCK') or self._col('DRAM CLOCK')
@@ -2070,13 +1938,30 @@ class TelemetryApp:
             val("FCLK/UCLK max delta", delta.max())
             val("Desync fraction",     float((delta > 10).mean()), ".4f")
 
-        # -- PSU RAILS ------------------------------------------------------
         section("PSU RAIL COLUMNS")
 
         _RAIL_EXCL = ['[W]', '[A]', 'POWER', 'CURRENT', 'WATT', 'VID', 'OFFSET',
-                      'LIMIT', 'PPT', 'TDP', 'PCIE', 'INPUT', 'GPU', 'HPWR', 'VDDQ', 'FBVDD']
+                      'LIMIT', 'PPT', 'TDP', 'PCIE', 'INPUT', 'GPU', 'HPWR', 'FBVDD']
 
-        def _find_rail(keywords, excl=_RAIL_EXCL):
+        def _safe_alias(key, *fallbacks):
+            """Return alias or fallback column only if it exists in df.
+            Supports list of aliases — tries each in order."""
+            entry = self.analyzer.aliases.get(key)
+            if entry:
+                candidates = entry if isinstance(entry, list) else [entry]
+                for c in candidates:
+                    if c and c in df.columns:
+                        return c
+            for c in fallbacks:
+                if c and c in df.columns:
+                    return c
+            return None
+
+        def _find_rail(keywords, excl, target_v, tolerance=0.5):
+            """Find best matching voltage column.
+            First tries columns whose mean value is within tolerance of target_v,
+            then falls back to first keyword match regardless of value."""
+            matches = []
             for c in df.columns:
                 cu = c.upper()
                 if '[V]' not in cu:
@@ -2084,17 +1969,35 @@ class TelemetryApp:
                 if any(e in cu for e in excl):
                     continue
                 if any(k.upper() in cu for k in keywords):
-                    return c
-            return None
+                    s = df[c].dropna()
+                    if not s.empty:
+                        mean_v = pd.to_numeric(s, errors='coerce').dropna().mean()
+                        matches.append((c, mean_v))
+
+            if not matches:
+                return None
+            close = [(c, v) for c, v in matches
+                     if not pd.isna(v) and abs(v - target_v) <= tolerance]
+            if close:
+                return min(close, key=lambda x: abs(x[1] - target_v))[0]
+            return matches[0][0]
 
         rail_map = {
-            '+12V':  _find_rail(['12V', '12 V', 'ATX 12', 'EPS 12']),
-            '+5V':   _find_rail(['5V', '5 V', 'ATX 5', '5VSB', 'AVCC'],
-                                excl=_RAIL_EXCL + ['12V', '3.3', '3V3']),
+            '+12V':  _find_rail(
+                ['12V', '12 V', 'ATX 12', 'EPS 12'],
+                excl=_RAIL_EXCL + ['PCIE', 'INPUT'],
+                target_v=12.0, tolerance=1.0),
+            '+5V':   _find_rail(
+                ['+5V', '5V [V', 'ATX 5', '5VSB', 'AVCC'],
+                excl=_RAIL_EXCL + ['12V', '3.3', '3V3'],
+                target_v=5.0, tolerance=0.4),
             '+3.3V': _safe_alias('rail_33v',
-                                 _find_rail(['3.3V', '3V3', '3.3 V', 'VCC3', 'VCCIO',
-                                             'VDDA', 'AVDD', 'VDD (SWA)', 'VDDQ', 'VPP'],
-                                            excl=['[W]','[A]','POWER','CURRENT','GPU','12V','5V'])),
+                _find_rail(
+                    ['+3.3V', '3.3V', '3V3', 'VCC3', 'VCCIO', 'AVCC3',
+                     'AVDD', 'VDD (SWA)', '3VSB', '3.3VSB'],
+                    excl=['[W]', '[A]', 'POWER', 'CURRENT', 'GPU', 'VDDQ TX',
+                          'VDDQ (SWB)', '12V', '+5V', 'VPP'],
+                    target_v=3.3, tolerance=0.4)),
         }
 
         for r_name, c in rail_map.items():
@@ -2121,20 +2024,6 @@ class TelemetryApp:
             if sag_pct > 5:  _psu_score += 2 if s12.min() < 11.2 else 1
             if ripple > 0.15: _psu_score += 1
 
-        def _safe_alias(key, *fallbacks):
-            """Return alias or fallback column only if it exists in df.
-            Supports list of aliases — tries each in order."""
-            entry = self.analyzer.aliases.get(key)
-            if entry:
-                candidates = entry if isinstance(entry, list) else [entry]
-                for c in candidates:
-                    if c and c in df.columns:
-                        return c
-            for c in fallbacks:
-                if c and c in df.columns:
-                    return c
-            return None
-
         v5c  = rail_map['+5V']
         v33c = rail_map['+3.3V']
 
@@ -2160,7 +2049,6 @@ class TelemetryApp:
         wl(str(rails_below), 'crit' if rails_below >= 2 else 'val')
         if rails_below >= 2: _psu_score += 2
 
-        # PSU Yes/No flags
         psu_yn_cols = [c2 for c2 in df.columns if 'YES/NO' in c2.upper()
                        and any(k in c2.upper() for k in
                                ('POWER SUPPLY','HARDWARE LIMIT','AVG. POWER',
@@ -2179,7 +2067,6 @@ class TelemetryApp:
         if not any([v12c, v5c, v33c]):
             wl("  No voltage rail columns found — PSU analysis unavailable.", 'muted')
 
-        # -- SYSTEM ---------------------------------------------------------
         chipset_t      = self._col('Chipset [°C]') or self._col('Motherboard [°C]')
         pcie_errors    = self._col('PCI Express Error Counters (avg)')
         sys_interrupts = self._col('System Interrupts') or self._col('DPC Latency')
@@ -2195,7 +2082,6 @@ class TelemetryApp:
         if pcie_errors and pcie_errors in df.columns:
             val("Max PCIe errors", mx(pcie_errors))
 
-        # -- THRESHOLDS -----------------------------------------------------
         section("ACTIVE THRESHOLDS  (limits editor)")
         val("CPU thermal samples",  self.sig_cpu_thermal_samples, "d")
         val("Fan stall RPM",        self.sig_fan_stall_rpm)
@@ -2229,7 +2115,6 @@ class TelemetryApp:
         else:
             wl("  No aliases set yet.", 'muted')
 
-
         section("TEMPERATURE LIMITS  (active values)")
         for k, v in sorted(self.temp_limits.items()):
             default = self._default_temp_limits.get(k)
@@ -2237,7 +2122,6 @@ class TelemetryApp:
             w(f"       {k:20s} = ")
             wl(f"{v:.1f} °C{modified}", 'val')
 
-        # -- VOLTAGE RAILS --------------------------------------------------
         section("VOLTAGE RAIL LIMITS  (active values)")
         for rail, (lo, hi) in self.volt_rails.items():
             d_lo, d_hi = self._default_volt_rails.get(rail, (lo, hi))
@@ -2245,7 +2129,6 @@ class TelemetryApp:
             w(f"       {rail:10s} = ")
             wl(f"{lo}V – {hi}V{modified}", 'val')
 
-        # -- MISC THRESHOLDS ------------------------------------------------
         section("MISC THRESHOLDS  (active values)")
         misc_display = [
             ("cpu_volt_range",       f"{self.cpu_volt_range[0]}V – {self.cpu_volt_range[1]}V"),
@@ -2276,7 +2159,6 @@ class TelemetryApp:
             w(f"       {name:26s} = ")
             wl(v, 'val')
 
-        # -- FAN & COOLING COLUMNS ------------------------------------------
         section("FAN / COOLING COLUMNS")
         fan_cols = [c for c in df.columns if any(k in c.upper() for k in ['FAN','RPM','PUMP','COOLER'])]
         if fan_cols:
@@ -2287,7 +2169,6 @@ class TelemetryApp:
         else:
             wl(f"  {MISS}", 'miss')
 
-        # -- VRM COLUMNS ----------------------------------------------------
         section("VRM / MOSFET COLUMNS")
         vrm_cols = [c for c in df.columns if any(k in c.upper()
                     for k in ['VRM','MOSFET','CHOKE','PHASE','MOS TEMP'])]
@@ -2298,7 +2179,6 @@ class TelemetryApp:
         else:
             wl(f"  {MISS}", 'miss')
 
-        # -- BATTERY / LAPTOP COLUMNS ---------------------------------------
         section("BATTERY / LAPTOP COLUMNS")
         batt_cols = [c for c in df.columns if any(k in c.upper()
                      for k in ['BATTERY','CHARGE','DISCHARGE','AC ADAPTER','REMAINING CAPACITY'])]
@@ -2309,7 +2189,6 @@ class TelemetryApp:
         else:
             wl("  No battery/laptop columns found — desktop system assumed.", 'muted')
 
-        # -- OUT-OF-SPEC SENSOR SUMMARY -------------------------------------
         section("OUT-OF-SPEC SENSOR SUMMARY")
         oos = [c for c in df.columns if self._is_critical(c)]
         if oos:
@@ -2324,7 +2203,6 @@ class TelemetryApp:
         else:
             wl("  No out-of-spec sensors detected.", 'ok')
 
-        # -- COLUMN COVERAGE SCORE ------------------------------------------
         section("COLUMN COVERAGE SCORE")
         _key_cols = {
             "CPU temp":        cpu_temp,
@@ -2358,7 +2236,6 @@ class TelemetryApp:
             sym = '✓' if c else '✗'
             wl(f"  [{sym}] {name}", tag)
 
-        # -- SIGNATURE HITS -------------------------------------------------
         section("SIGNATURE HIT SUMMARY")
         hits = self._run_signatures()
         if hits:
@@ -2405,10 +2282,8 @@ class TelemetryApp:
                 self._sig_dirty   = False
                 self._sig_running = True
                 threading.Thread(target=_worker, daemon=True).start()
-            # Schedule next check in 3 seconds
             self._sig_watcher_id = self.root.after(3000, _tick)
 
-        # Cancel any existing watcher before starting
         if self._sig_watcher_id:
             self.root.after_cancel(self._sig_watcher_id)
         _tick()
@@ -2454,8 +2329,6 @@ class TelemetryApp:
                 'evidence': clean_ev
             })
 
-        # -- SENSOR MAPPING -----------------------------------------------------------
-
         def _a(key):
             """Return first valid user-confirmed alias column for key, else None.
             Supports multiple aliases per key (list) so different CSVs all resolve."""
@@ -2466,18 +2339,13 @@ class TelemetryApp:
             return next((c for c in candidates
                          if c and c in df.columns), None)
 
-        # -- CPU Metrics ---------------------------------------------------------------
-
         cpu_temp      = _a('cpu_temp') or self._col('TCTL') or self._col('TDIE') or self._col('PROZESSOR', 'TEMPERATUR') or self._col('TEMPERATUR') or self._col('CPU')
-       #cpu_hotspot   = self._col('HOT', 'SPOT') or self._col('GPU', 'HOT')
         cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col('CLOCK')
-       #eff_clock     = self._col('CPU', 'EFF') or self._col('EFFIZIENZ') or self._col('EFFECTIVE')\
         cpu_usage_col = _a('cpu_usage') or self._col('CPU', 'AUSLASTUNG') or self._col('CPU', 'USAGE') or self._col('CPU', 'UTIL') or self._col('CPU', 'LOAD') or self._col('PROZESSOR') or self._col('TOTAL', 'CPU')
         cpu_power     = _a('cpu_power') or self._col('CPU-Gesamt-Leistungsaufnahme') or self._col('CPU', 'PACKAGE') or self._col('CPU', 'PPT') or self._col('CPU', 'POWER') or self._col('CPU Package Power')
         throttle      = self._col('THROTTLE') or self._col('PROCHOT')
         cpu_utility   = self._col('CPU USAGE') or self._col('CPU UTILIZATION') or self._col('CPU AUSLASTUNG') or self._col('TOTAL CPU USAGE')
 
-        # GPU Metrics (Fixing the 45.8°C CPU mixup)
         gpu_hotspot   = _a('gpu_temp') or self._col_excl(('GPU', 'HOT'), excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
         gpu_usage_col = _a('gpu_usage') or self._col('GPU', 'USAGE') or self._col('GPU', 'LOAD') or self._col('GPU', 'AUSLASTUNG') or self._col('GPU USAGE')
         gpu_clock     = _a('gpu_clock') or self._col('GPU', 'CLOCK') or self._col('GPU', 'FREQUENCY') or self._col('GPU', 'TAKT')
@@ -2485,26 +2353,22 @@ class TelemetryApp:
         gpu_power     = _a('gpu_power') or self._col('GPU', 'POWER') or self._col('BOARD', 'POWER') or self._col('TOTAL', 'BOARD') or self._col('TGP') or self._col('TBP') or self._col('ASIC') or self._col('NVVDD') or self._col('PCIe') or self._col('LEISTUNG') or self._col('EINGANGSLEISTUNG') or self._col('POWER')
         gpu_clk_col   = self._col('GPU Clock [MHz]')
 
-        # GPU Electrical & Power Limits
         gpu_12v_input_v = self._col('GPU 12VHPWR Voltage') or self._col('GPU PCIe +12V Input Voltage') or self._col('GPU 12V Input Voltage')
         gpu_12v_input_w = self._col('GPU 12VHPWR Power') or self._col('GPU Power [W]') or self._col('GPU Board Power')
         gpu_pwr_limit   = self._col('Performance Limit - Power [Yes/No]') or self._col('PERFCAP', 'PWR')
 
-        # GPU Memory & Bus
         gpu_mem_usage = self._col('GPU','MEMORY','USAGE') or self._col('GPU','MEMORY','ALLOCATED') or self._col('GPU','MEM','USAGE') or self._col('GPU','MEM','LOAD') or self._col('D3D','MEMORY') or self._col('VRAM','USAGE') or self._col('FRAMEBUFFER') or self._col('ADAPTER','MEMORY')
         vram_junction_temp = self._col('GPU Memory Junction Temperature [°C]')
         gpu_mem_dedicated = self._col('GPU D3D Memory Dedicated')
         gpu_mem_dynamic   = self._col('GPU D3D Memory Dynamic')
         gpu_bus_col       = self._col('GPU Bus Load') or self._col('Bus Load')
 
-        # System & Performance
         is_laptop     = any(k in "".join(self.df.columns).upper() for k in ['BATTERY', 'CHARGE', 'AC ADAPTER', 'DISCHARGE', 'MOBILE', 'LAPTOP'])
         chipset_t     = _a('chipset_temp') or self._col('Chipset [°C]') or self._col('Motherboard [°C]') or self._col('PCH') or self._col('SMU')
         usb_v_col     = self._col('USB VCC') or self._col('USB Voltage')
         pcie_errors   = _a('pcie_errors') or self._col('PCI Express Error Counters (avg)')
         system_interrupts = _a('sys_interrupts') or self._col('System Interrupts') or self._col('DPC Latency')
 
-        # Timing & Clocks
         ft_col        = _a('frame_time') or self._col('Frametime [ms]') or self._col('GPU Frametime') or self._col('Frame Time')
         gpu_busy_ms   = _a('gpu_busy') or self._col('GPU Busy (avg) [ms]') or self._col('GPU Busy')
         gpu_wait_ms   = _a('gpu_wait') or self._col('GPU Wait (avg) [ms]') or self._col('GPU Wait')
@@ -2513,13 +2377,9 @@ class TelemetryApp:
         uclk_col = _a('uclk') or next((c for c in df.columns if 'UCLK' in c), None)
         mclk_col = _a('mclk') or self._col('MCLK') or self._col('MEMORY CLOCK') or self._col('DRAM CLOCK') or None
 
-        # -- Sensor Debug ---------------------------------------------------------------
-
         def mx(col): return df[col].max() if col and col in df.columns else 0
         def avg(col): return df[col].mean() if col and col in df.columns else 0
 
-        # 1. CPU THERMAL THROTTLING
-        
         if cpu_temp:
             limit = self.temp_limits.get('TDIE', 95.0)
             warn_threshold = limit * 0.85
@@ -2539,34 +2399,27 @@ class TelemetryApp:
                      f"Limit: {limit:.0f}°C",
                      f"Throttling Flag: {'Active' if thr_active else 'Inactive'}"])
         
-        # 2. GPU THERMALS (HOTSPOT & DELTA)
         if gpu_hotspot:
             hs_max = mx(gpu_hotspot)
             hs_limit = self.temp_limits.get('HOTSPOT', 95.0)
             
-            # Identify the Edge temperature column
             gpu_edge = self._col_excl(('GPU', 'TEMP'), excl=('HOTSPOT', 'MEMORY', 'CPU'))
             
-            # Calculate Delta (Hotspot - Edge)
             delta_val = 0
             if gpu_edge:
-                # Calculate the maximum difference found in the logs
                 delta_series = self.df[gpu_hotspot] - self.df[gpu_edge]
                 delta_val = delta_series.max()
             
-            # Evidence list: Always included to provide context
             evidence = [
                 f"Hotspot Max: {hs_max:.1f}°C",
                 f"Thermal Delta: {delta_val:.1f}°C"
             ]
 
-            # 2a. CRITICAL: Absolute Temperature Over Limit
             if hs_max >= hs_limit:
                 add("GPU Overheating (Hotspot)", "CRITICAL", 
                     "The GPU Hotspot is at dangerous levels. ADVICE: Immediately increase GPU fan curves in Afterburner and check for obstructed case airflow.",
                     evidence + [f"Hardware Limit: {hs_limit}°C"])
             
-            # 2b. WARNING: High Temperature OR High Delta (Mounting Issue)
             elif hs_max > (hs_limit - 10) or delta_val >= 21.0:
                 if delta_val >= 21.0:
                     msg = "High thermal delta detected. ADVICE: A gap over 21°C suggests poor mounting pressure or 'pump-out' of thermal paste. Consider re-pasting the GPU."
@@ -2575,7 +2428,6 @@ class TelemetryApp:
                 
                 add("GPU Thermal Warning", "WARNING", msg, evidence)
             
-        # 3. PSU +12V RAIL STABILITY
         if not is_laptop:
             v12 = self._col('+12V')
             if v12:
@@ -2586,8 +2438,6 @@ class TelemetryApp:
                         "The 12V rail (GPU/CPU power) is sagging below safe limits. This causes system-wide instability or 'black screen' crashes under load. "
                         "ADVICE: Check that PCIe and EPS power cables are fully seated. If the sag persists, the PSU is likely underpowered or failing.",
                         [f"Min Voltage: {v_min:.2f}V", f"Safety Limit: {self.sig_v12_lo}V"])
-        
-        # 4. GPU DRIVER TDR / CRASH
         
         if gpu_usage_col and gpu_clock:
             low_usage = df[gpu_usage_col] < 5
@@ -2606,20 +2456,17 @@ class TelemetryApp:
                     ]
                 )
         
-        # 5. MULTI-DRIVE OVERHEATING (ATTEMPT TO SCANS ALL DRIVES)
         drive_temps = [c for c in df.columns if 'TEMP' in c.upper() and any(k in c.upper() for k in ['DRIVE', 'NVME', 'SSD'])]
 
         for d_col in drive_temps:
             peak = mx(d_col)
             u_col = d_col.upper()
             
-            # HDD detection.
-            if any(k in u_col for k in ['HDD', 'HARD DRIVE', 'ST']): # 'ST' often starts Seagate HDD names
-                crit_limit = 55.0  # HDDs should never cross 55C
-                warn_limit = 45.0  # Performance/reliability drops at 45C
+            if any(k in u_col for k in ['HDD', 'HARD DRIVE', 'ST']):
+                crit_limit = 55.0
+                warn_limit = 45.0
                 drive_type = "HDD (Mechanical)"
             else:
-                # Default to NVMe/SSD limits
                 crit_limit = self.sig_drive_temp_max  
                 warn_limit = self.sig_drive_temp_max - 10.0 
                 drive_type = "SSD/NVMe"
@@ -2639,15 +2486,11 @@ class TelemetryApp:
                 add("Storage Overheating", "WARNING", desc, 
                     [f"Peak: {peak:.1f}°C", f"Warning: {warn_limit}°C", f"Type: {drive_type}"])
         
-        # 6. HARDWARE ERROR (WHEA)
-        
         whea = self._col('WHEA')
         if whea and mx(whea) > 0:
             add("Hardware (WHEA) Errors", "CRITICAL", 
                 "Windows detected physical hardware errors. ADVICE: This is often caused by unstable RAM (XMP/EXPO) or CPU undervolts. Revert to BIOS defaults.",
                 [f"Total Errors: {int(mx(whea))}"])
-        
-        # 7. CPU POWER LIMIT THROTTLING
         
         ppt_limit = self._col('CPU', 'PPT', 'LIMIT')
         if cpu_power and ppt_limit and self._sustained(cpu_power, mx(ppt_limit)*self.sig_ppt_sat_pct,
@@ -2655,8 +2498,6 @@ class TelemetryApp:
             add("CPU Power Limit Reached", "WARNING", 
                 "CPU performance is being capped by power limits. ADVICE: If temps are safe, you can increase 'PPT' or 'PL1/PL2' limits in BIOS.",
                 [f"Power Sustained at: {avg(cpu_power):.1f}W"])
-        
-        # 8. FAN FAILURE / STALL (THERMAL-AWARE)
         
         for col in df.columns:
             if ('FAN' in col.upper() or 'RPM' in col.upper()) and '[%]' not in col:
@@ -2676,7 +2517,6 @@ class TelemetryApp:
                             ["RPM hit 0 during load samples."])
                         break
         
-        # 9. GPU VRAM OVERFLOW ANALYSIS (EVENT + DURATION BASED)
         df = df.copy()
         if gpu_mem_usage and gpu_mem_dynamic:
 
@@ -2695,20 +2535,18 @@ class TelemetryApp:
 
             overflow_events = event_start.sum()
             df["_overflow_state"] = overflow.astype(int)
-            # assume uniform sampling; if timestamp exists, use it instead
             if "Timestamp" in df.columns:
                 df["Timestamp"] = pd.to_datetime(df["Timestamp"])
                 df["_time_diff"] = df["Timestamp"].diff().dt.total_seconds().fillna(0)
                 time_unit = "seconds"
             else:
-                df["_time_diff"] = 1  # fallback = 1 sample = 1 unit
+                df["_time_diff"] = 1
                 time_unit = "samples"
 
             overflow_time = df["_time_diff"] * df["_overflow_state"]
 
             total_overflow_duration = overflow_time.sum()
 
-            # per-event durations
             event_durations = []
             current = 0
 
@@ -2742,14 +2580,11 @@ class TelemetryApp:
 
             df.drop(columns=["_overflow_state", "_time_diff"], inplace=True, errors="ignore")
         
-        # 10. S.M.A.R.T. & WEAR-LEVELING FAILURE (HIGH-SAFETY TIER)
-        
         fail_cols = [c for c in df.columns if any(k in c.upper() for k in ['DRIVE', 'SSD', 'NVME']) 
                      and any(k in c.upper() for k in ['FAILURE', 'WARNING'])]
         
         life_cols = [c for c in df.columns if 'REMAINING LIFE' in c.upper() or 'DRIVE HEALTH' in c.upper()]
 
-        # 1. Hardware Failure Flags (The "Red Alert")
         for f_col in fail_cols:
             if mx(f_col) >= 1.0:
                 add(
@@ -2763,11 +2598,9 @@ class TelemetryApp:
                     evidence=[f"Status: FAILURE FLAG ACTIVE"]
                 )
 
-        # 2. SSD Lifespan Exhaustion (The "Wear Alert")
         for l_col in life_cols:
             current_life = df[l_col].min()
             
-            # Tier 1: CRITICAL - 5% or less (High Risk of Read-Only/Failure)
             if current_life <= 5.0:
                 add(
                     name="SSD Lifespan Critical",
@@ -2780,7 +2613,6 @@ class TelemetryApp:
                     evidence=[f"Remaining Life: {current_life:.1f}%", "Safety Limit: 5.0%"]
                 )
             
-            # Tier 2: WARNING - 20% or less (Replacement Window)
             elif current_life <= 20.0:
                 add(
                     name="SSD Wear Warning",
@@ -2793,23 +2625,17 @@ class TelemetryApp:
                     evidence=[f"Remaining Life: {current_life:.1f}%", "Warning Threshold: 20.0%"]
                 )
         
-        # 11. SYSTEM RAM EXHAUSTION
-        
         ram_load = self._col('PHYSICAL', 'MEMORY', 'LOAD')
         if ram_load and mx(ram_load) > self.sig_ram_exhaust_pct:
             add("System RAM Exhaustion", "WARNING", 
                 "Physical RAM is nearly full. ADVICE: Close browser tabs, Discord, or other background apps. Consider upgrading to 32GB RAM.", 
                 [f"Max Load: {mx(ram_load):.1f}%", f"Threshold: {self.sig_ram_exhaust_pct}%"])
         
-        # 12. VIRTUAL MEMORY (PAGE FILE) PRESSURE
-        
         v_load = self._col('VIRTUAL', 'MEMORY', 'LOAD') or self._col('PAGE', 'FILE', 'USAGE')
         if v_load and mx(v_load) > 98:
             add("Virtual Memory Limit", "CRITICAL", 
                 "The system 'Commit Limit' is full. ADVICE: Ensure your Windows Page File is set to 'System Managed' and your C: drive is not full.", 
                 [f"Commit Charge: {mx(v_load):.1f}%"])
-        
-        # 13. CPU BOTTLENECK
         
         if gpu_usage_col and cpu_usage_col:
             bn = (df[gpu_usage_col] < self.sig_cpu_bn_gpu_pct) & (df[cpu_usage_col] > self.sig_cpu_bn_cpu_pct)
@@ -2819,21 +2645,17 @@ class TelemetryApp:
                     [f"Avg GPU Usage during spike: {df.loc[bn, gpu_usage_col].mean():.1f}%",
                      f"Thresholds: GPU < {self.sig_cpu_bn_gpu_pct}%, CPU > {self.sig_cpu_bn_cpu_pct}%"])
         
-        # 14. VRM OVERHEATING
-        
         vrm_temp = self._col('VRM') or self._col('MOS')
         if vrm_temp and mx(vrm_temp) > self.sig_vrm_temp_max:
             add("VRM Overheating", "CRITICAL", 
                 "Motherboard power delivery is too hot. ADVICE: Improve case airflow or add a small fan directed at the motherboard heatsinks.", 
                 [f"Max: {mx(vrm_temp):.1f}°C", f"Threshold: {self.sig_vrm_temp_max}°C"])
         
-        # 15. CPU CLOCK STRETCHING (ACTIVE-CORE VALIDATION)
-
         req_cols = [c for c in df.columns if 'Clock (perf #' in c]
         if req_cols:
             n_cores        = len(req_cols)
             per_core_ratios  = []
-            per_core_active  = []   # boolean Series per core, True = core is active
+            per_core_active  = []
 
             for i, req_col in enumerate(req_cols):
                 t0_col = f"Core {i} T0 Effective Clock [MHz]"
@@ -2841,8 +2663,6 @@ class TelemetryApp:
 
                 req = df[req_col].replace(0, np.nan)
 
-                # Only consider samples where the requested clock is meaningful
-                # (above 300 MHz rules out C-state idle samples)
                 valid_req = req > 300
 
                 core_ratios  = []
@@ -2854,13 +2674,9 @@ class TelemetryApp:
                         continue
                     eff = df[eff_col]
 
-                    # Active = effective clock is at least 35% of requested + 100 MHz
-                    # Stricter than the old formula to avoid flagging genuine C-state exits
                     active = valid_req & (eff > (0.35 * req + 100))
 
                     ratio  = (eff / req).where(active)
-                    # Use effective clock as weight so higher-frequency samples
-                    # contribute more — avoids idle samples pulling the ratio down
                     weight = eff.where(active)
 
                     core_ratios.append(ratio)
@@ -2873,14 +2689,10 @@ class TelemetryApp:
                 ratios  = pd.concat(core_ratios,  axis=1)
                 weights = pd.concat(core_weights, axis=1)
 
-                # Use median across T0/T1 threads to be robust against one thread being parked
                 core_ratio  = ratios.median(axis=1)
 
-                # Weight = fraction of threads that are active (0, 0.5, or 1.0)
                 core_weight = ratios.notna().astype(float).mean(axis=1)
 
-                # Require at least 3 of last 5 samples to show core as active
-                # before we trust the ratio — avoids single-sample bursts
                 stable_active = core_active.rolling(5, min_periods=3).sum() >= 3
                 core_ratio  = core_ratio.where(stable_active)
                 core_weight = core_weight.where(stable_active)
@@ -2892,44 +2704,29 @@ class TelemetryApp:
                 all_ratios  = pd.concat(per_core_ratios, axis=1)
                 all_active  = pd.concat(per_core_active, axis=1)
 
-                # Weighted mean ratio across all cores
-                # Weight columns are fraction-active (0–1), aligned with ratio NaN mask
                 weight_mat   = all_ratios.notna().astype(float)
                 weight_total = weight_mat.sum(axis=1).replace(0, np.nan)
                 weighted_sum = (all_ratios.fillna(0) * weight_mat).sum(axis=1)
                 mean_ratio   = (weighted_sum / weight_total).replace([np.inf, -np.inf], np.nan)
 
-                # Per-core worst ratio (useful for evidence reporting)
                 worst_core_ratio = all_ratios.min(axis=1)
 
-                # Core pressure = fraction of cores that are active at each sample
-                # Fix: use actual active flag sum / total cores (not notna which is always True)
                 active_count  = all_active.sum(axis=1)
                 core_pressure = (active_count / n_cores).rolling(5, min_periods=3).mean()
 
-                # System load from total CPU usage if available
                 system_load = df.get(
                     'Total CPU Usage [%]',
                     pd.Series(0.0, index=df.index)
                 ).fillna(0)
 
-                # valid_load: sample is under meaningful load via two signals
                 sys_signal  = np.clip(system_load / 100.0, 0, 1)
                 core_signal = np.clip(core_pressure.fillna(0), 0, 1)
-                # Balanced 60/40 — core pressure is a direct signal, don't underweight it
                 load_score  = 0.6 * sys_signal + 0.4 * core_signal
                 valid_load  = load_score > 0.55
 
-                # Transition filter: suppress detection during rapid load changes
-                # (clock stretching during a load ramp is normal scheduler behavior)
-                # Use a simple rolling std of load as the transition indicator —
-                # more interpretable than the exponential decay that masked real events
                 load_std       = system_load.rolling(5, min_periods=3).std().fillna(0)
-                in_transition  = load_std > 15.0   # >15% std in a 5-sample window = ramp
+                in_transition  = load_std > 15.0
 
-                # Classification thresholds
-                # major: effective clock is severely behind requested under load
-                # minor: moderate deficit — could be thermal, power, or scheduling
                 major = (
                     (mean_ratio < 0.60) &
                     valid_load &
@@ -2942,12 +2739,9 @@ class TelemetryApp:
                     ~in_transition
                 )
 
-                # Persistence filter: require the condition to hold for a sustained
-                # window, not just a few samples — single rolling pass (no double smooth)
                 major_event = major.rolling(8, min_periods=5).mean() > 0.55
                 minor_event = minor.rolling(8, min_periods=5).mean() > 0.50
 
-                # Per-core breakdown for evidence — which cores were worst
                 core_avg_ratios = all_ratios.mean()
                 worst_cores     = core_avg_ratios.nsmallest(3)
 
@@ -2957,7 +2751,6 @@ class TelemetryApp:
                     peak_load = system_load[major_event].max()
                     peak_pressure = core_pressure[major_event].max()
 
-                    # Determine likely cause from other signals
                     cause_hints = []
                     cpu_temp_col = self._col('CPU', 'TEMP') or self._col('TDIE') or self._col('TCTL')
                     if cpu_temp_col:
@@ -3018,10 +2811,7 @@ class TelemetryApp:
                         ]
                     )
 
-        # 16 & 16b. PSU SIGNATURES
         if not is_laptop:
-            # 16. PSU +5V / +3.3V RAIL STABILITY
-            
             for r_name, low, high in [('+5V', self.sig_v5_lo, self.sig_v5_hi),
                                        ('+3.3V', self.sig_v33_lo, self.sig_v33_hi)]:
                 col = self._col(r_name)
@@ -3031,13 +2821,40 @@ class TelemetryApp:
                         [f"Detected Range: {df[col].min():.2f}V - {df[col].max():.2f}V",
                          f"Spec: {low}V - {high}V"])
     
-            # 16b. PSU HARDWARE FAILURE INDICATORS
-    
             _psu_evidence = []
-            _psu_severity_score = 0   # more signals = higher confidence
+            _psu_severity_score = 0
     
-            # Signal A: +12V rail sag 
-            v12_col = self._col('+12V')
+            def _best_rail_col(keywords, excl, target_v, tol=0.5):
+                """Return the voltage column closest in mean value to target_v."""
+                import pandas as _pd
+                matches = []
+                for c in df.columns:
+                    cu = c.upper()
+                    if '[V]' not in cu:
+                        continue
+                    if any(e in cu for e in excl):
+                        continue
+                    if any(k.upper() in cu for k in keywords):
+                        try:
+                            mean_v = _pd.to_numeric(df[c], errors='coerce').dropna().mean()
+                            matches.append((c, mean_v))
+                        except Exception:
+                            pass
+                if not matches:
+                    return None
+                close = [(c, v) for c, v in matches
+                         if not _pd.isna(v) and abs(v - target_v) <= tol]
+                if close:
+                    return min(close, key=lambda x: abs(x[1] - target_v))[0]
+                return matches[0][0]
+
+            _SIG_EXCL_BASE = ['[W]','[A]','POWER','CURRENT','WATT','VID','OFFSET',
+                               'LIMIT','PPT','TDP','GPU','HPWR','FBVDD']
+
+            v12_col = _a('rail_12v') or _best_rail_col(
+                ['12V', '12 V', 'ATX 12', 'EPS 12'],
+                excl=_SIG_EXCL_BASE + ['PCIE','INPUT'],
+                target_v=12.0, tol=1.0)
             if v12_col:
                 v12s = df[v12_col].dropna()
                 sag_mask = v12s < self.sig_v12_lo
@@ -3045,24 +2862,27 @@ class TelemetryApp:
                 if sag_pct > 5.0:
                     _psu_evidence.append(f"+12V sagging below {self.sig_v12_lo}V in {sag_pct:.1f}% of samples (min {v12s.min():.2f}V)")
                     _psu_severity_score += 2 if v12s.min() < 11.2 else 1
-    
-            # Signal B: +5V rail out of spec
-            v5_col = self._col('+5V')
+
+            v5_col = _a('rail_5v') or _best_rail_col(
+                ['+5V', '5V [V', 'ATX 5', '5VSB', 'AVCC'],
+                excl=_SIG_EXCL_BASE + ['12V','3.3','3V3'],
+                target_v=5.0, tol=0.4)
             if v5_col:
                 v5s = df[v5_col].dropna()
                 if v5s.min() < self.sig_v5_lo or v5s.max() > self.sig_v5_hi:
-                    _psu_evidence.append(f"+5V rail out of spec: {v5s.min():.2f}V – {v5s.max():.2f}V (spec {self.sig_v5_lo}–{self.sig_v5_hi}V)")
+                    _psu_evidence.append(f"+5V rail out of spec: {v5s.min():.2f}V \u2013 {v5s.max():.2f}V (spec {self.sig_v5_lo}\u2013{self.sig_v5_hi}V)")
                     _psu_severity_score += 1
-    
-            # Signal C: +3.3V rail out of spec
-            v33_col = _a('rail_33v') or self._col('+3.3V')
+
+            v33_col = _a('rail_33v') or _best_rail_col(
+                ['+3.3V', '3.3V', '3V3', 'VCC3', 'AVCC3', '3VSB', 'VDD (SWA)'],
+                excl=['[W]','[A]','POWER','CURRENT','GPU','VDDQ TX','VDDQ (SWB)','12V','+5V','VPP'],
+                target_v=3.3, tol=0.4)
             if v33_col:
                 v33s = df[v33_col].dropna()
                 if v33s.min() < self.sig_v33_lo or v33s.max() > self.sig_v33_hi:
-                    _psu_evidence.append(f"+3.3V rail out of spec: {v33s.min():.2f}V – {v33s.max():.2f}V (spec {self.sig_v33_lo}–{self.sig_v33_hi}V)")
+                    _psu_evidence.append(f"+3.3V rail out of spec: {v33s.min():.2f}V \u2013 {v33s.max():.2f}V (spec {self.sig_v33_lo}\u2013{self.sig_v33_hi}V)")
                     _psu_severity_score += 1
-    
-            # Signal D: Yes/No PSU-specific throttle flags triggered
+
             _psu_yn_triggers = []
             for c in df.columns:
                 cu = c.upper()
@@ -3082,8 +2902,6 @@ class TelemetryApp:
                 _psu_evidence.extend(_psu_yn_triggers[:4])
                 _psu_severity_score += min(len(_psu_yn_triggers), 2)
     
-            # Signal E: cross-rail correlation — multiple rails sagging simultaneously
-
             rails_sagging = sum([
                 1 for col, lo in [(v12_col, self.sig_v12_lo),
                                    (v5_col, self.sig_v5_lo),
@@ -3094,7 +2912,6 @@ class TelemetryApp:
                 _psu_evidence.append(f"{rails_sagging} rails simultaneously below spec — strong indicator of PSU output stage degradation")
                 _psu_severity_score += 2
     
-            # Signal F: high rail voltage ripple (std dev > 0.15V indicates cap degradation)
             for lbl, col in [('+12V', v12_col), ('+5V', v5_col), ('+3.3V', v33_col)]:
                 if col:
                     ripple = df[col].dropna().std()
@@ -3102,8 +2919,6 @@ class TelemetryApp:
                         _psu_evidence.append(f"{lbl} rail ripple/noise: σ={ripple:.3f}V (>0.15V suggests capacitor wear)")
                         _psu_severity_score += 1
     
-            # Signal G: GPU TDR + 12V sag co-occurrence
-            # A TDR immediately after a voltage drop is strong evidence of PSU failure
             if v12_col and gpu_usage_col and gpu_clock:
                 sag_now  = df[v12_col] < self.sig_v12_lo
                 low_gpu  = df[gpu_usage_col] < 5
@@ -3123,7 +2938,6 @@ class TelemetryApp:
                     "and consider replacement if symptoms persist.",
                     _psu_evidence)
     
-
         ft_col = self._col('FRAME TIME') or self._col('FRAMETIME')
         if ft_col:
             ft_series = df[ft_col].ffill().dropna()
@@ -3135,8 +2949,6 @@ class TelemetryApp:
                     [f"Worst Spike: {stutters.max():.1f}ms",
                      f"Events above {self.sig_stutter_mult}× median: {len(stutters)}"])
         
-        # 18. STORAGE CONGESTION
-        
         disk_busy = self._col('TOTAL', 'ACTIVE', 'TIME') or self._col('DISK', 'BUSY')
         if disk_busy and (df[disk_busy] >= self.sig_disk_busy_pct).rolling(
                 window=self.sig_disk_busy_samples).sum().max() >= self.sig_disk_busy_samples:
@@ -3145,10 +2957,7 @@ class TelemetryApp:
                 ["Persistent 100% disk usage detected.",
                  f"Threshold: {self.sig_disk_busy_pct}% for {self.sig_disk_busy_samples} samples"])
 
-        # 19. PHANTOM THROTTLING (CLOCK CAP)
-
         if cpu_clock and cpu_usage_col:
-            # If the CPU is pegged but the clock is stuck at 'idle' speeds (usually <1.0GHz)
             is_stuck = (df[cpu_clock] < 1000) & (df[cpu_usage_col] > 70)
             
             if is_stuck.rolling(window=5).sum().max() >= 5:
@@ -3164,16 +2973,12 @@ class TelemetryApp:
                     evidence=[f"Clock stuck at: {df.loc[is_stuck, cpu_clock].mean():.0f} MHz"]
                 )
 
-        # 20. GPU POWER & TDP ANALYSIS (UNIVERSAL LAPTOP/DESKTOP)
-
         if gpu_pwr_limit and gpu_power:
             pwr_limit_active = df[gpu_pwr_limit] >= 1.0
             hit_pct = (pwr_limit_active.sum() / len(df)) * 100
             peak_watts = mx(gpu_power)
             avg_watts = avg(gpu_power)
             
-            # Detect "Limp Mode"
-            # GPU is power limiting.
             is_stalled = (avg_watts < 25.0) and (hit_pct > 30.0)
 
             if is_laptop and is_stalled:
@@ -3195,7 +3000,6 @@ class TelemetryApp:
                 )
                 
             elif hit_pct > 25.0:
-                # Standard TDP Ceiling
                 desc = f"The GPU reached its power limit (Peak: {peak_watts:.1f}W)."
                 if is_laptop:
                     desc += " ADVICE: Ensure you are in 'Performance' mode and the original charger is connected."
@@ -3209,18 +3013,13 @@ class TelemetryApp:
                     evidence=[f"Average Load: {avg_watts:.1f}W", f"Limit Duration: {hit_pct:.1f}%"]
                 )
 
-        # 21. PCIe BUS INTERFACE MISMATCH (WIDTH/SPEED)
-
         pcie_width = self._col('GPU', 'PCIE', 'WIDTH')
         pcie_gen   = self._col('GPU', 'PCIE', 'GENERATION') or self._col('GPU', 'BUS', 'GEN')
         
         if pcie_width and pcie_gen:
-            # We look for the maximum reached during the log (when the GPU is active)
             max_width = mx(pcie_width)
             max_gen   = mx(pcie_gen)
             
-            # Logic: Most modern GPUs should be at x16. 
-            # If it's stuck at x4 or x1 even under load, there's a physical/BIOS issue.
             is_choked = (max_width <= 4.0) and (df[gpu_usage_col] > 50).any()
             
             if is_choked:
@@ -3240,13 +3039,7 @@ class TelemetryApp:
                     ]
                 )
 
-        # 22. BACKGROUND PROCESS INTERFERENCE (OS JITTER)
-
-        # We look for high 'Total' CPU usage while the GPU is significantly under-loaded,
-        # or spikes in CPU usage that don't correlate with GPU demand.
         if cpu_usage_col and gpu_usage_col:
-            # Logic: If CPU is working hard (>70%) but GPU is bored (<40%), 
-            # something else is fighting for the processor.
             os_jitter = (df[cpu_usage_col] > 70) & (df[gpu_usage_col] < 40)
             
             if os_jitter.rolling(window=self.sig_cpu_bn_samples).sum().max() >= self.sig_cpu_bn_samples:
@@ -3265,10 +3058,8 @@ class TelemetryApp:
                     ]
                 )
        
-  
         df = df.copy() 
 
-        # 23. GPU PRIORITY & HARDWARE ACCEL CONFLICT
         if ft_col and gpu_usage_col:
             
             rolling_avg_ft = df[ft_col].rolling(window=10, center=True).mean()
@@ -3281,11 +3072,8 @@ class TelemetryApp:
                 stutter_indices = df[is_stuttering].index
                 avg_gpu_load = df.loc[stutter_indices, gpu_usage_col].mean()
                 
-                # Check for the 'Bus Load' fingerprint (Background data movement)
                 bus_activity = df.loc[stutter_indices, gpu_bus_col].max() if gpu_bus_col else 0
                 
-                # BRANCH: Hardware Acceleration Conflict
-
                 if (avg_gpu_load < 92) or (bus_activity > 5.0):
                     usage_gap = 100 - avg_gpu_load
                     add(
@@ -3302,13 +3090,10 @@ class TelemetryApp:
                             "ADVICE: Disable 'Hardware Acceleration' in Discord (Advanced) and your browser."
                         ]
                     )
-        # 24. VRAM SWAPPING (SHARED MEMORY OVERFLOW)
-
         if gpu_mem_dedicated and gpu_mem_dynamic:
 
             vram_used = df[gpu_mem_dedicated]
             spill_mem = df[gpu_mem_dynamic]
-
 
             vram_saturated = vram_used > vram_used.quantile(0.98)
             spill_growth = spill_mem.diff().rolling(3, min_periods=1).mean()
@@ -3344,7 +3129,6 @@ class TelemetryApp:
                         f"PCIe Bus Load (median during event): {avg_bus_load:.1f}%" if gpu_bus_col else "PCIe Bus Load: N/A"
                     ]
                 )
-        # 25. CONNECTOR THERMAL RISK (MELTING/FIRE HAZARD)
         if gpu_12v_input_v and gpu_12v_input_w:
             
             high_load_mask = df[gpu_12v_input_w] > 300
@@ -3353,9 +3137,6 @@ class TelemetryApp:
                 min_v = df.loc[high_load_mask, gpu_12v_input_v].min()
                 max_w = df[gpu_12v_input_w].max()
                 
-                # Thresholds: 
-                # 11.70V: Warning (High Resistance)
-                # 11.50V: CRITICAL (Potential Melting Hazard)
                 if min_v < 11.7:
                     add(
                         name="GPU Power Connector Safety Risk (Melting/Fire)",
@@ -3373,8 +3154,6 @@ class TelemetryApp:
                             "Ensure there is a 'click' and no gap between the plug and the GPU."
                         ]
                     )
-        # 26. VRAM JUNCTION THERMAL THROTTLING
-
         if vram_junction_temp:
             max_vram_temp = df[vram_junction_temp].max()
             if max_vram_temp > 102:
@@ -3387,8 +3166,6 @@ class TelemetryApp:
                     ),
                     evidence=[f"Max VRAM Temp: {max_vram_temp:.1f}°C", "Check: GPU Backplate airflow."]
                 )
-
-        # 27. PCIE LINK INTEGRITY (Silent Errors)
 
         if pcie_errors:
             total_pcie_errors = df[pcie_errors].sum()
@@ -3403,13 +3180,9 @@ class TelemetryApp:
                     evidence=[f"Total PCIe Errors: {total_pcie_errors}", "ADVICE: Reseat GPU or replace Riser."]
                 )
 
-        # 28. GPU WAIT-STATE ANALYSIS (PresentMon Elite)
         if gpu_wait_ms and ft_col:
-            # Calculate the percentage of the frame the GPU spent doing nothing
             df = df.assign(wait_ratio = df[gpu_wait_ms] / df[ft_col])
             
-            # Threshold: If the GPU is waiting for >25% of the total frame time, 
-            # it's an optimization or priority bottleneck.
             is_waiting = df['wait_ratio'] > 0.25
             
             if is_waiting.any():
@@ -3431,28 +3204,18 @@ class TelemetryApp:
                     ]
                 )
 
-                # 29. RYZEN FABRIC DESYNC (AMD ONLY)
-
         if fclk_col and uclk_col and mclk_col:
 
             f_med = df[fclk_col].median()
             u_med = df[uclk_col].median()
             m_med = df[mclk_col].median()
 
-            # -----------------------------
-            # PLATFORM DETECTION
-            # -----------------------------
-            is_ddr5 = m_med > 2400  # simple + reliable
+            is_ddr5 = m_med > 2400
 
-
-            # -----------------------------
-            # DDR5: CHECK UCLK vs MCLK
-            # -----------------------------
             if is_ddr5:
 
                 delta = (df[uclk_col] - df[mclk_col]).abs()
 
-                # filter noise
                 desync_mask = delta > 10
 
                 if desync_mask.mean() > 0.05:
@@ -3476,10 +3239,6 @@ class TelemetryApp:
                         ]
                     )
 
-
-            # -----------------------------
-            # DDR4: CHECK FCLK vs UCLK
-            # -----------------------------
             else:
 
                 delta = (df[fclk_col] - df[uclk_col]).abs()
@@ -3519,16 +3278,11 @@ class TelemetryApp:
                         ]
                     )
 
-        # 30. GPU POWER LIMIT OSCILLATION (SAWTOOTH STUTTER)
-
         if gpu_pwr_limit and gpu_clk_col:
-            # Convert 'Yes/No' to 1/0 if necessary
             limit_active = df[gpu_pwr_limit].apply(lambda x: 1 if x == 'Yes' else 0)
             
-            # Detect how many times it toggled on/off
             toggles = limit_active.diff().abs().sum()
             
-            # If it toggles more than 5 times in a log, it's 'Ping-Ponging'
             if toggles > 5:
                 clk_variance = df[gpu_clk_col].std()
                 add(
@@ -3544,13 +3298,11 @@ class TelemetryApp:
                         "ADVICE: Increase Power Limit in Afterburner or undervolt the GPU."
                     ]
                 )
-        # 31. KERNEL INTERRUPT / DPC LATENCY SPIKES
-
         if cpu_utility:
             
             usage_std = df[cpu_utility].std()
             
-            if usage_std > 15: # High volatility in system response
+            if usage_std > 15:
                 add(
                     name="Kernel Driver Latency (DPC/ISR)",
                     severity="WARNING",
@@ -3564,13 +3316,10 @@ class TelemetryApp:
                     ]
                 )
 
-        # 32. DRIVE I/O CONGESTION / HITCHING
-
         drive_activity = self._col('Total Activity [%]') or self._col('Read Activity [%]')
         drive_warning  = self._col('Drive Warning [Yes/No]')
 
         if drive_activity:
-            # If the drive is pinned at 100% for several samples, it's a bottleneck
             is_pinned = (df[drive_activity] > 98).sum() > 3
             
             if is_pinned or (drive_warning and (df[drive_warning] == 'Yes').any()):
@@ -3582,10 +3331,7 @@ class TelemetryApp:
                               "ADVICE: Check SSD health or move game to a faster drive."],
                 )
 
-        # 33. USB BUS STABILITY & CHIPSET THERMALS
-
         if usb_v_col or chipset_t:
-            # Check for Chipset overheating (common on X570/X670 boards)
             if chipset_t and (df[chipset_t] > 80).any():
                 add(
                     name="Chipset Thermal Throttling",
@@ -3595,10 +3341,9 @@ class TelemetryApp:
                     advice="Ensure GPU isn't blocking chipset airflow."
                 )
                 
-            # Check for USB Voltage Sag
             if usb_v_col:
                 min_usb_v = df[usb_v_col].min()
-                if min_usb_v < 4.75: # Standard USB 5V rail should stay above 4.75V
+                if min_usb_v < 4.75:
                     add(
                         name="USB Rail Voltage Sag",
                         severity="CRITICAL",
@@ -3639,7 +3384,7 @@ class TelemetryApp:
             "sys_interrupts": "System Interrupts / DPC Latency",
         }
 
-        aliases = dict(self.analyzer.aliases)  # working copy
+        aliases = dict(self.analyzer.aliases)
 
         dialog = tk.Toplevel(self.root)
         dialog.title("Manage Sensor Aliases")
@@ -3678,7 +3423,7 @@ class TelemetryApp:
             lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
         canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
 
-        row_widgets = {}  # key -> list of row frames (one per alias entry)
+        row_widgets = {}
 
         def _rebuild():
             """Redraw the alias list from current `aliases` dict."""
@@ -3697,7 +3442,6 @@ class TelemetryApp:
                     continue
                 has_any = True
 
-                # Section header
                 hdr = tk.Frame(body, bg=bg3)
                 hdr.pack(fill=tk.X, pady=(8, 0), padx=6)
                 tk.Label(hdr, text=label, font=('Segoe UI', 9, 'bold'),
@@ -3715,7 +3459,6 @@ class TelemetryApp:
                     tk.Label(row, text=alias_val, fg=fg, bg=bg2,
                              font=('Segoe UI', 9), anchor='w').pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-                    # Capture loop variables
                     def _make_delete(k, v):
                         def _delete():
                             entry2 = aliases.get(k, [])
@@ -3741,7 +3484,6 @@ class TelemetryApp:
 
         _rebuild()
 
-        # Bottom buttons
         btn_f = tk.Frame(inner, bg=bg)
         btn_f.pack(fill=tk.X, pady=(10, 0))
 
@@ -3770,7 +3512,6 @@ class TelemetryApp:
         """For each critical sensor that couldn't be auto-resolved, ask the user
         once to pick the right column. Saves the answer to disk permanently."""
 
-        # Critical Sensors
         _CRITICAL = [
             ("cpu_temp",      "CPU Temperature",
              "Used for thermal throttling, clock stretching, and VRM overheating detection.\n"
@@ -3904,29 +3645,24 @@ class TelemetryApp:
         df_cols = list(self.df.columns)
 
         for key, label, desc, auto_result, filt in _CRITICAL:
-            # Check if any existing alias for this key already works in current CSV
             entry = aliases.get(key)
             if entry:
                 existing = entry if isinstance(entry, list) else [entry]
                 if any(c in self.df.columns for c in existing):
-                    continue  
+                    continue
 
-            # Skip if auto-detect already found it
             if auto_result:
                 continue
 
-            # Build candidate list — exclude any already confirmed aliases
             already_known = set(entry if isinstance(entry, list) else ([entry] if entry else []))
             candidates = [c for c in df_cols
                           if filt(c) and c != self.analyzer.time_col
                           and c not in already_known]
             if not candidates:
-                continue  # nothing to offer — skip silently
+                continue
 
-            # Show picker dialog
             chosen = self._sensor_picker_dialog(label, candidates, desc)
             if chosen:
-                # Append to existing list — preserves all previous aliases
                 existing_list = aliases.get(key, [])\
                     if isinstance(aliases.get(key), list) else \
                     ([aliases[key]] if key in aliases else [])
@@ -3934,7 +3670,6 @@ class TelemetryApp:
                     existing_list.append(chosen)
                 aliases[key] = existing_list
                 changed = True
-
         if changed:
             self.analyzer.save_aliases(aliases)
             self.analyzer.aliases = aliases
@@ -3977,7 +3712,6 @@ class TelemetryApp:
                  text="Which of these columns is it? Your answer is saved permanently.",
                  font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w', pady=(2, 8))
 
-        # Description box
         if description:
             desc_frame = tk.Frame(inner, bg=bg3, padx=10, pady=8,
                                   highlightthickness=1,
@@ -3992,7 +3726,6 @@ class TelemetryApp:
                      justify='left', anchor='w',
                      wraplength=pw - 60).pack(anchor='w', pady=(4, 0))
 
-        # Scrollable list of radio buttons
         list_frame = tk.Frame(inner, bg=bg2, bd=1, relief='flat')
         list_frame.pack(fill=tk.BOTH, expand=True)
         canvas = tk.Canvas(list_frame, bg=bg2, highlightthickness=0,
@@ -4014,7 +3747,6 @@ class TelemetryApp:
                            selectcolor=acc, font=('Segoe UI', 9),
                            anchor='w').pack(fill=tk.X, padx=8, pady=2)
 
-        # Buttons
         btn_f = tk.Frame(inner, bg=bg)
         btn_f.pack(fill=tk.X, pady=(12, 0))
 
@@ -4045,7 +3777,6 @@ class TelemetryApp:
         accent  = "#1f6aa5" if is_dark else "#3498db"
         bg2     = "#1e1e1e" if is_dark else "#ffffff"
 
-        # -- Spinner dialog while extract_hardware_names() runs -------------
         wait_win = tk.Toplevel(self.root)
         wait_win.title("Detecting Hardware")
         wait_win.resizable(False, False)
@@ -4109,7 +3840,6 @@ class TelemetryApp:
                 wait_win.grab_release()
                 wait_win.destroy()
 
-            # -- Main hardware dialog ---------------------------------------
             dialog = tk.Toplevel(self.root)
             dialog.title("Detected Hardware")
             dialog.geometry("560x520")
@@ -4214,7 +3944,6 @@ class TelemetryApp:
         if not f_path:
             return
 
-        # -- Wait dialog (non-blocking, stays alive via mainloop) -----------
         is_dark  = self.is_dark
         bg_dark  = "#121212" if is_dark else "#f8f9fa"
 
@@ -4237,7 +3966,6 @@ class TelemetryApp:
         inner = tk.Frame(outer, bg=bg_dark, padx=20, pady=16)
         inner.pack(fill=tk.BOTH, expand=True)
 
-        # Title row with inline spinner
         title_row = tk.Frame(inner, bg=bg_dark)
         title_row.pack(anchor='w')
         tk.Label(title_row, text="\U0001f4c4  Generating HTML Report",
@@ -4250,7 +3978,6 @@ class TelemetryApp:
         tk.Label(inner, textvariable=status_var,
                  font=('Segoe UI', 9), bg=bg_dark, fg="#888").pack(anchor='w', pady=(6, 0))
 
-        # Progress bar
         bar_frame = tk.Frame(inner, bg=bg_dark)
         bar_frame.pack(fill=tk.X, pady=(8, 0))
         bar_bg = tk.Frame(bar_frame, bg="#2a2a2a" if is_dark else "#dee2e6", height=4, bd=0)
@@ -4258,7 +3985,6 @@ class TelemetryApp:
         bar_fg = tk.Frame(bar_bg, bg="#1f6aa5", height=4, bd=0)
         bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
 
-        # Braille spinner — runs purely on main thread via after(), costs nothing
         _SPIN_FRAMES = [" ⠋", " ⠙", " ⠹", " ⠸", " ⠼", " ⠴", " ⠦", " ⠧", " ⠇", " ⠏"]
         _spin_idx = [0]
         def _tick_spinner():
@@ -4269,7 +3995,6 @@ class TelemetryApp:
             wait_win.after(80, _tick_spinner)
         _tick_spinner()
 
-        # Thread-safe UI updaters via after()
         def _set_status(msg: str, progress: float = None):
             def _do():
                 if not wait_win.winfo_exists():
@@ -4298,11 +4023,10 @@ class TelemetryApp:
                 self.show_toast(f"Report saved: {filename}")
             self.root.after(0, _do)
 
-        # -- All heavy work runs here, off the main thread ------------------
         def _generate():
             try:
                 import matplotlib
-                matplotlib.use('Agg')   # non-interactive PNG-only backend, safe off main thread
+                matplotlib.use('Agg')
                 import matplotlib.pyplot as _plt
                 df   = self.df
                 cols = list(df.columns)
@@ -4310,7 +4034,6 @@ class TelemetryApp:
                 x_vals, ts, use_time = self._get_x_axis()
                 colors_cycle = _plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-                # helpers
                 def _fig_to_b64(fig) -> str:
                     buf = io.BytesIO()
                     fig.savefig(buf, format='png', dpi=150, bbox_inches='tight',
@@ -4353,7 +4076,6 @@ class TelemetryApp:
                     _plt.close(fig)
                     return _chart_html(b64, title)
 
-                # 1. Selected sensors
                 _set_status("Rendering selected sensor chart\u2026", 0.10)
                 charts_selected_html = ""
                 if sel:
@@ -4361,11 +4083,9 @@ class TelemetryApp:
                         sel, "Selected Sensors",
                         figsize=(13, max(3.5, len(sel) * 0.35)))
 
-                # 2. Category charts
                 _set_status("Rendering category charts\u2026", 0.25)
                 cat_charts_html = ""
                 cat_groups: dict = {}
-                # Units that make no sense on a shared chart — skip these columns
                 _SKIP_UNITS = ['[yes/no]', '[t]', '[gb/s]', '[mb/s]', '[gt/s]',
                                '[]', '[gear mode]', '[cdtp level]']
                 _SKIP_NAMES = ['date', 'time', 'timestamp', 'command rate',
@@ -4390,31 +4110,31 @@ class TelemetryApp:
                         chunk, f"Category: {cat_name}",
                         figsize=(13, max(3.5, len(chunk) * 0.28)))
 
-                # 3. PSU rail charts
                 _set_status("Rendering PSU rail charts\u2026", 0.50)
                 psu_charts_html = ""
-                _RAIL_KEYWORDS = {
-                    '+12V':  ['12V', '12 V'],
-                    '+5V':   ['5V', '5 V'],
-                    '+3.3V': ['3.3V', '3.3 V', '3V3'],
+                _RAIL_SPECS = {
+                    '+12V':  (['12V', '12 V'], ['PCIE', 'INPUT'] + ['[W]', '[A]', 'POWER', 'CURRENT', 'WATT', 'VID', 'OFFSET', 'LIMIT', 'PPT', 'TDP', 'GPU', 'HPWR', 'VDDQ', 'FBVDD'], 12.0, 1.0),
+                    '+5V':   (['+5V', '5V [V', 'ATX 5', '5VSB', 'AVCC'], ['12V', '3.3', '3V3', '[W]', '[A]', 'POWER', 'CURRENT', 'WATT', 'VID', 'OFFSET', 'LIMIT', 'PPT', 'TDP', 'GPU', 'HPWR', 'FBVDD'], 5.0, 0.4),
+                    '+3.3V': (['+3.3V', '3.3V', '3V3', 'VCC3', 'AVCC3', '3VSB'], ['VDDQ TX', 'VDDQ (SWB)', '12V', '+5V', 'VPP', '[W]', '[A]', 'POWER', 'CURRENT', 'GPU'], 3.3, 0.4),
                 }
-                _RAIL_EXCL = ['[W]', '[A]', 'POWER', 'CURRENT', 'WATT',
-                              'VID', 'OFFSET', 'LIMIT', 'PPT', 'TDP',
-                              'PCIE', 'INPUT', 'GPU', 'HPWR', 'VDDQ', 'FBVDD']
-                for rail_name, keywords in _RAIL_KEYWORDS.items():
-                    rail_cols = []
+                for rail_name, (keywords, excl, target_v, tol) in _RAIL_SPECS.items():
+                    rail_matches = []
                     for c in cols:
                         if c not in df.columns:
                             continue
                         cu = c.upper()
                         if '[V]' not in cu:
                             continue
-                        if any(ex in cu for ex in _RAIL_EXCL):
+                        if any(ex in cu for ex in excl):
                             continue
                         if any(k.upper() in cu for k in keywords):
-                            rail_cols.append(c)
-                    if not rail_cols:
+                            mean_v = df[c].dropna().mean()
+                            rail_matches.append((c, mean_v))
+                    if not rail_matches:
                         continue
+                    close = [(c, v) for c, v in rail_matches
+                             if not pd.isna(v) and abs(v - target_v) <= tol]
+                    rail_cols = [c for c, _ in (close or rail_matches)]
                     lo, hi = self.volt_rails.get(rail_name, (None, None))
 
                     def _make_rail_chart(rcols, rtitle, rlo, rhi):
@@ -4456,7 +4176,6 @@ class TelemetryApp:
                     psu_charts_html += _make_rail_chart(
                         rail_cols, f"PSU Rail: {rail_name}{spec_str}", lo, hi)
 
-                # 4. Hardware info
                 _set_status("Extracting hardware info\u2026", 0.62)
                 hw = self.analyzer.extract_hardware_names()
                 _CAT_ICONS = {
@@ -4478,7 +4197,6 @@ class TelemetryApp:
                     f'</tr></thead><tbody>{hw_rows}</tbody></table>'
                 ) if hw_rows else '<p class="muted">No hardware names detected in this CSV.</p>'
 
-                # 5. Metadata
                 generated_at    = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 csv_name        = html_mod.escape(str(self.analyzer.path).replace('\\', '/').split('/')[-1])
                 sample_count    = len(df)
@@ -4490,7 +4208,6 @@ class TelemetryApp:
                     avg_iv       = sum(intervals) / len(intervals)
                     sample_rate_str = f"{avg_iv:.2f}s / sample"
 
-                # 6. Per-sensor stats
                 _set_status("Computing sensor statistics\u2026", 0.70)
                 stat_rows = ""
                 for col in sel:
@@ -4513,7 +4230,6 @@ class TelemetryApp:
                     f'</tr></thead><tbody>{stat_rows}</tbody></table>'
                 ) if stat_rows else '<p class="muted">No sensors selected.</p>'
 
-                # 7. Signatures
                 _set_status("Running signature analysis\u2026", 0.80)
                 sigs = self._run_signatures()
                 _SEV_CLASS = {'CRITICAL': 'sev-crit', 'WARNING': 'sev-warn', 'INFO': 'sev-info'}
@@ -4537,7 +4253,6 @@ class TelemetryApp:
                 else:
                     sig_cards = '<p class="muted all-clear">\u2705 No issues detected. All signatures passed.</p>'
 
-                # 8. Out-of-spec sensors
                 oos_rows = ""
                 for col in cols:
                     if self._is_critical(col) and col in df.columns:
@@ -4557,7 +4272,6 @@ class TelemetryApp:
                 warn_count = sum(1 for s in sigs if s.get('severity') == 'WARNING')
                 info_count = sum(1 for s in sigs if s.get('severity') == 'INFO')
 
-                # 9. Assemble & write
                 _set_status("Writing report file\u2026", 0.95)
                 html_out = f"""<!DOCTYPE html>
 <html lang="en">
@@ -4668,7 +4382,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         threading.Thread(target=_generate, daemon=True).start()
 
-
     def _open_diagnosis(self):
         """Display signature analysis results. Uses cached results from the
         background watcher if fresh, otherwise runs a quick re-evaluation."""
@@ -4753,7 +4466,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     (all keywords must appear). Both are case-insensitive substring matches."""
                     m = {
 
-                        # -- CPU ------------------------------------------------------
                         "CPU Thermal Throttling": (
                             _any("TDIE", "TCTL", "TJMAX", "PROCHOT", "THROTTL",
                                  "CPU PACKAGE [", "CPU PACKAGE TEMP", "PACKAGE TEMP",
@@ -4807,17 +4519,13 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                  "T0 EFFECTIVE", "T1 EFFECTIVE")
                         ),
 
-                        # -- GPU ------------------------------------------------------
                         "GPU Thermal Warning": (
                             _any("GPU TEMPERATURE", "GPU TEMP [",
                                  "GPU HOT", "GPU HOTSPOT", "HOT SPOT",
                                  "GPU JUNCTION", "GPU MEMORY JUNCTION",
                                  "GPU THERMAL", "THERMAL LIMIT",
-                                 # AMD variants
                                  "GPU EDGE", "EDGE TEMP", "GPU JUNCTION TEMP",
-                                 # NVIDIA variants
                                  "GPU CORE TEMP", "GPU DIODE",
-                                 # German
                                  "GPU TEMPERATUR")
                         ),
 
@@ -4890,7 +4598,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                  "GPU MEMORY AVAILABLE", "DEDICATED VIDEO MEMORY")
                         ),
 
-                        # -- PSU RAILS -------------------------------------------------
                         "PSU +12V Rail Sag": (
                             _any("+12V [V]", "+12V VOLTAGE", "12V RAIL",
                                  "ATX 12V", "EPS 12V", "12V SUPPLY",
@@ -4925,7 +4632,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                  "VCC3", "VCC 3", "VCCIO")
                         ),
 
-
                         "PSU Hardware Failure Indicators": (
                             _any("+12V [V]", "+12V VOLTAGE", "12V RAIL", "ATX 12V", "EPS 12V") |
                             _any("+5V [V]", "+5V VOLTAGE", "5V RAIL", "ATX 5V") |
@@ -4935,7 +4641,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                  "THROTTL", "PERFORMANCE LIMIT") |
                             _cols("GPU", "USAGE") | _cols("GPU", "CLOCK")
                         ),
-                        # -- FANS / COOLING --------------------------------------------
                         "Fan Stall Detected": (
                             _any("FAN", "RPM", "PUMP", "COOLER",
                                  "FAN SPEED", "FAN RPM", "CPU FAN", "GPU FAN",
@@ -4946,7 +4651,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                             _cols("CPU", "TEMP") | _cols("GPU", "TEMP")
                         ),
 
-                        # -- VRM -------------------------------------------------------
                         "VRM Overheating": (
                             _any("VRM", "MOSFET", "CHOKE", "MOS TEMP",
                                  "PHASE TEMP", "VCORE TEMP",
@@ -4959,7 +4663,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                  "IA VR", "GT VR", "SA VR", "VR TEMP")
                         ),
 
-                        # -- MEMORY ---------------------------------------------------
                         "System RAM Exhaustion": (
                             _any("PHYSICAL MEMORY", "MEMORY USED", "MEMORY LOAD",
                                  "MEMORY AVAILABLE", "RAM LOAD", "RAM USAGE",
@@ -4977,7 +4680,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                  "COMMITTED BYTES", "COMMIT LIMIT")
                         ),
 
-                        # -- STORAGE --------------------------------------------------
                         "Storage Thermal Critical": (
                             _any("DRIVE TEMP", "SSD TEMP", "NVME TEMP", "HDD TEMP",
                                  "DRIVE TEMPERATURE", "DISK TEMP", "DISK TEMPERATURE",
@@ -5040,7 +4742,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                  "ENDURANCE REMAINING")
                         ),
 
-                        # -- FRAME TIMING / PERFORMANCE --------------------------------
                         "Micro-Stuttering Detected": (
                             _any("FRAME TIME", "FRAMETIME", "FPS", "FRAME RATE",
                                  "GPU BUSY", "CPU BUSY", "GPU WAIT", "CPU WAIT",
@@ -5076,7 +4777,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                  "ANIMATION ERROR")
                         ),
 
-                        # -- SYSTEM / HARDWARE -----------------------------------------
                         "Hardware (WHEA) Errors": (
                             _any("WHEA", "HARDWARE ERROR", "CORRECTABLE",
                                  "NON-FATAL", "FATAL ERROR", "PCIe LANE",
@@ -5199,7 +4899,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                         fg="#aaaaaa" if is_dark else "#555555",
                                         font=('Segoe UI', 8)).pack(anchor='w')
 
-                    # "Select Relevant Sensors" button per signature card
                     def _make_select(sig_name):
                         def _select():
                             selected = _sensors_for_signature(sig_name)
@@ -5218,7 +4917,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
             ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=10)
 
-        # Use cached results if available and not dirty, otherwise re-run once
         if self._sig_hits and not self._sig_dirty:
             _show(self._sig_hits)
         else:
@@ -5255,7 +4953,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         top.pack(fill=tk.X, pady=(0, 10))
         ttk.Label(top, text="DASHBOARD", font=('Segoe UI', 12, 'bold')).pack(side=tk.LEFT)
         ttk.Button(top, text="◐", command=self._toggle_theme, width=3).pack(side=tk.RIGHT)
-        # Update check button in the top bar
         ttk.Button(top, text="⟳", command=self._manual_update_check, width=3).pack(side=tk.RIGHT, padx=(0, 2))
 
         mode_f = ttk.LabelFrame(self.left, text=" View Settings ", padding=8)
@@ -5334,7 +5031,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.filter_btn = ttk.Button(search_f, text="🚨 Detect Out-of-Spec Issues", style="Issue.TButton", command=self._toggle_filter)
         self.filter_btn.pack(fill=tk.X, pady=(0, 4))
 
-        # Diagnose button + live badge row
         _bg = "#121212" if self.is_dark else "#f8f9fa"
         diag_row = tk.Frame(search_f, bg=_bg)
         diag_row.pack(fill=tk.X, pady=(0, 4))
@@ -5343,9 +5039,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                    style="Action.TButton").pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         self._sig_badge_var = tk.StringVar(value="⏳")
-        self._sig_badge_lbl = None   # replaced by per-severity labels below
+        self._sig_badge_lbl = None
 
-        # Per-severity badge labels
         self._badge_crit_lbl = tk.Label(diag_row, text="", font=('Segoe UI', 8, 'bold'),
                                          bg=_bg, fg="#ff4d4d", padx=3)
         self._badge_warn_lbl = tk.Label(diag_row, text="", font=('Segoe UI', 8, 'bold'),
@@ -5363,7 +5058,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         ttk.Button(search_f, text="🖥 View Detected Hardware", command=self._open_hardware_info).pack(fill=tk.X, pady=(0, 4))
         ttk.Button(search_f, text="⚙ Edit Detection Limits", command=self._open_limits_editor).pack(fill=tk.X, pady=(0, 8))
 
-        # Start background watcher — marks dirty so first run fires immediately
         self._sig_dirty = True
         self._start_sig_watcher()
 
@@ -5401,7 +5095,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         self.scroll_frame.bind("<Configure>", lambda e: _refresh_scrollregion())
         self.canvas_checklist.bind("<Configure>", _on_checklist_canvas_configure)
-        # Bind to paned sash release — fires once when user lets go of the divider
         self.paned.bind("<ButtonRelease-1>", _on_sash_release)
         self.canvas_checklist.configure(yscrollcommand=self.sc_checklist.set)
 
@@ -5434,8 +5127,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.show_toast("Checking for updates...")
         check_for_updates(
             self.root,
-            ignored_version="",          # Manual check always shows the dialog even for ignored versions
-            updates_disabled=False,      # Manual check always runs regardless of disabled flag
+            ignored_version="",
+            updates_disabled=False,
             on_ignore=self._on_ignore_version,
             on_disable=self._on_disable_updates,
             silent=False
@@ -5591,7 +5284,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             if new_name in self.custom_groups:
                 messagebox.showwarning("Name Taken",
                     f"A preset named '{new_name}' already exists.\nPlease choose a different name.")
-                # Re-open so user can try again
                 self._rename_group(old_name)
                 return
             self.custom_groups[new_name] = self.custom_groups.pop(old_name)
@@ -5611,14 +5303,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             sensors = data["sensors"]
 
             if imported_name not in self.custom_groups:
-                # No conflict — import directly
                 self.custom_groups[imported_name] = sensors
                 self._save_config()
                 self._refresh_group_buttons()
                 self.show_toast(f"Imported: '{imported_name}'")
                 return
 
-            # Conflict — ask user what to do
             dialog = tk.Toplevel(self.root)
             dialog.title("Name Already Exists")
             dialog.resizable(False, False)
@@ -5747,7 +5437,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._apply_theme_colors()
         self.update_plot()
         self.root.after(300, self._prompt_sensor_aliases)
-        # Re-open debug window with fresh data if debug mode was active
         if self.debug_mode:
             self._open_debug_window()
 
@@ -5796,7 +5485,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         bar_fg = tk.Frame(bar_bg, bg="#1f6aa5", height=4, bd=0)
         bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
 
-        # Indeterminate bar — bounces back and forth
         _bar_pos  = [0.0]
         _bar_dir  = [1]
         _bar_step = 0.06
@@ -5846,7 +5534,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         threading.Thread(target=_worker, daemon=True).start()
 
-
     def _clear_all(self):
         for v in self.vars.values():
             v.set(False)
@@ -5880,7 +5567,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             self._on_mouse_leave(event)
             return
         try:
-            # Heatmap tooltip
             if self.heatmap_mode and hasattr(self, '_heatmap_sel') and self._heatmap_sel:
                 x_vals = self._heatmap_x_vals
                 raw_x  = event.xdata
@@ -5949,7 +5635,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.fig.patch.set_facecolor(bg_color)
         sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
 
-        # Heatmap mode — takes priority over all other modes
         if self.heatmap_mode:
             self._draw_heatmap(sel)
             return
@@ -5960,7 +5645,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         def _fmt_xticks(ax):
             if not use_time:
                 return
-            # Format X tick labels as MM:SS or H:MM:SS
             def _fmt(val, _):
                 return self._format_elapsed(val)
             import matplotlib.ticker as ticker
@@ -6093,7 +5777,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             self.fig.subplots_adjust(right=0.82)
         self.canvas_widget.draw_idle()
 
-
 if __name__ == "__main__":
     import threading
     root = tk.Tk()
@@ -6102,7 +5785,6 @@ if __name__ == "__main__":
     if not path:
         root.destroy()
     else:
-        # -- Startup loading spinner -------------------------------------
         splash = tk.Toplevel(root)
         splash.title("RESYNC.ERR")
         splash.resizable(False, False)
