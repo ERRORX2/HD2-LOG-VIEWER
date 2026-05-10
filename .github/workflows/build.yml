@@ -11,7 +11,6 @@ permissions:
 
 env:
   PYTHONHASHSEED: "1"
-  SOURCE_DATE_EPOCH: "1"
 
 jobs:
   build:
@@ -40,41 +39,41 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Linux system deps
+      - name: Install Linux system dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-tk
+          sudo apt-get install -y python3-tk zip
 
-      - name: Install Python Dependencies (Windows)
+      - name: Install Python dependencies (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
           pip install pandas numpy matplotlib pyinstaller
 
-      - name: Install Python Dependencies (Linux)
+      - name: Install Python dependencies (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install pandas numpy matplotlib pyinstaller
 
-      - name: Prepare Artifact Folder (Windows)
+      - name: Prepare artifact folder (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifact | Out-Null
           New-Item -ItemType Directory -Force artifact\sha256 | Out-Null
 
-      - name: Prepare Artifact Folder (Linux)
+      - name: Prepare artifact folder (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p artifact
           mkdir -p artifact/sha256
 
-      - name: Build Windows Executable
+      - name: Build Windows executable
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -93,7 +92,7 @@ jobs:
           Copy-Item "dist\HD2_LOG_VIEWER.exe" "artifact\${{ matrix.artifact_binary }}" -Force
           Copy-Item "groups.json" "artifact\" -Force
 
-      - name: Build Linux Executable
+      - name: Build Linux executable
         if: runner.os == 'Linux'
         shell: bash
         run: |
@@ -121,28 +120,26 @@ jobs:
           cat > artifact/README_LINUX.txt << 'EOF'
           HD2 LOG VIEWER - Linux
 
-          How to Run:
-          chmod +x HD2_LOG_VIEWER_linux
-          ./HD2_LOG_VIEWER_linux
+          Run:
+            chmod +x HD2_LOG_VIEWER_linux
+            ./HD2_LOG_VIEWER_linux
 
           If missing dependencies:
-          sudo apt-get install python3-tk
+            sudo apt-get install python3-tk
           EOF
 
-      - name: Generate Build Info (Windows)
+      - name: Generate build info (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $buildInfo = @{
+          @{
             version = "${{ github.ref_name }}"
             date = Get-Date -Format "yyyy-MM-dd"
             commit = "${{ github.sha }}"
-            platform = "${{ runner.os }}"
-          } | ConvertTo-Json -Depth 10
+            platform = "windows"
+          } | ConvertTo-Json | Set-Content "artifact\build_info.json"
 
-          $buildInfo | Set-Content "artifact\build_info.json" -Encoding utf8
-
-      - name: Generate Build Info (Linux)
+      - name: Generate build info (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
@@ -151,7 +148,7 @@ jobs:
             "version": "${{ github.ref_name }}",
             "date": "$(date +%Y-%m-%d)",
             "commit": "${{ github.sha }}",
-            "platform": "${{ runner.os }}"
+            "platform": "linux"
           }
           EOF
 
@@ -176,7 +173,6 @@ jobs:
         shell: pwsh
         run: |
           $zip = "release_${{ github.ref_name }}_${{ matrix.zip_suffix }}.zip"
-
           Compress-Archive -Path "artifact\*" -DestinationPath "artifact\$zip" -Force
 
       - name: Create ZIP (Linux)
@@ -188,16 +184,15 @@ jobs:
           zip -r "$ZIP" ./*
           cd ..
 
-      - name: Upload Artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.zip_suffix }}
           path: artifact/
 
-      - name: Upload Release
+      - name: Create release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: artifact/release_*.zip
-          prerelease: ${{ contains(github.ref_name, '-dev') }}
           generate_release_notes: true
