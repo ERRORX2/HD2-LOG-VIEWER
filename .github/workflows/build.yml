@@ -39,31 +39,26 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
-      - name: Install Dependencies (Windows)
+      - name: Install Linux system deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+
+      - name: Install Python Dependencies (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
+          pip install pandas numpy matplotlib pyinstaller
 
-          if (Test-Path "requirements.txt") {
-            pip install -r requirements.txt
-          } else {
-            pip install pandas matplotlib numpy pyinstaller
-          }
-
-      - name: Install Dependencies (Linux)
+      - name: Install Python Dependencies (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
           python -m pip install --upgrade pip
-
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            pip install pandas matplotlib numpy pyinstaller
-          fi
+          pip install pandas numpy matplotlib pyinstaller
 
       - name: Prepare Artifact Folder (Windows)
         if: runner.os == 'Windows'
@@ -117,7 +112,6 @@ jobs:
 
           cp "dist/HD2_LOG_VIEWER" "artifact/${{ matrix.artifact_binary }}"
           cp "groups.json" "artifact/groups.json"
-
           chmod +x "artifact/${{ matrix.artifact_binary }}"
 
       - name: Create Linux README
@@ -127,38 +121,12 @@ jobs:
           cat > artifact/README_LINUX.txt << 'EOF'
           HD2 LOG VIEWER - Linux
 
-          How to Run
-          ==========
+          How to Run:
+          chmod +x HD2_LOG_VIEWER_linux
+          ./HD2_LOG_VIEWER_linux
 
-          1. Extract the ZIP
-
-          2. Open a terminal in the extracted folder
-
-          3. Make the binary executable:
-
-             chmod +x HD2_LOG_VIEWER_linux
-
-          4. Run the application:
-
-             ./HD2_LOG_VIEWER_linux
-
-          Notes
-          =====
-
-          - This build is intended for x86_64 Linux systems.
-          - Built on Ubuntu 22.04 for broader compatibility.
-          - May also work on Fedora, Arch, Nobara, SteamOS, and similar modern distros.
-          - If the application fails to start, ensure required GUI/system libraries are installed.
-
-          Included Files
-          ==============
-
-          - HD2_LOG_VIEWER_linux
-          - groups.json
-          - manifest.json
-          - build_info.json
-          - sha256/
-
+          If missing dependencies:
+          sudo apt-get install python3-tk
           EOF
 
       - name: Generate Build Info (Windows)
@@ -169,8 +137,6 @@ jobs:
             version = "${{ github.ref_name }}"
             date = Get-Date -Format "yyyy-MM-dd"
             commit = "${{ github.sha }}"
-            builder = "github-actions"
-            tool = "pyinstaller"
             platform = "${{ runner.os }}"
           } | ConvertTo-Json -Depth 10
 
@@ -185,111 +151,48 @@ jobs:
             "version": "${{ github.ref_name }}",
             "date": "$(date +%Y-%m-%d)",
             "commit": "${{ github.sha }}",
-            "builder": "github-actions",
-            "tool": "pyinstaller",
             "platform": "${{ runner.os }}"
           }
           EOF
 
-      - name: Generate SHA256 Hashes (Windows)
+      - name: Generate SHA256 (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $binHash  = (Get-FileHash "artifact\${{ matrix.artifact_binary }}" -Algorithm SHA256).Hash
-          $jsonHash = (Get-FileHash "artifact\groups.json" -Algorithm SHA256).Hash
-          $infoHash = (Get-FileHash "artifact\build_info.json" -Algorithm SHA256).Hash
+          (Get-FileHash "artifact\${{ matrix.artifact_binary }}" -Algorithm SHA256).Hash | Set-Content "artifact\sha256\binary.sha256"
+          (Get-FileHash "artifact\groups.json" -Algorithm SHA256).Hash | Set-Content "artifact\sha256\groups.sha256"
+          (Get-FileHash "artifact\build_info.json" -Algorithm SHA256).Hash | Set-Content "artifact\sha256\build.sha256"
 
-          $binHash  | Set-Content "artifact\sha256\binary.sha256"
-          $jsonHash | Set-Content "artifact\sha256\groups.sha256"
-          $infoHash | Set-Content "artifact\sha256\build_info.sha256"
-
-      - name: Generate SHA256 Hashes (Linux)
+      - name: Generate SHA256 (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
           sha256sum "artifact/${{ matrix.artifact_binary }}" | awk '{print $1}' > artifact/sha256/binary.sha256
           sha256sum "artifact/groups.json" | awk '{print $1}' > artifact/sha256/groups.sha256
-          sha256sum "artifact/build_info.json" | awk '{print $1}' > artifact/sha256/build_info.sha256
+          sha256sum "artifact/build_info.json" | awk '{print $1}' > artifact/sha256/build.sha256
 
-      - name: Create Manifest (Windows)
+      - name: Create ZIP (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $binHash  = Get-Content "artifact\sha256\binary.sha256"
-          $jsonHash = Get-Content "artifact\sha256\groups.sha256"
-          $infoHash = Get-Content "artifact\sha256\build_info.sha256"
+          $zip = "release_${{ github.ref_name }}_${{ matrix.zip_suffix }}.zip"
 
-          $manifest = @{
-            version = "${{ github.ref_name }}"
-            platform = "${{ runner.os }}"
-            files = @{
-              "${{ matrix.artifact_binary }}" = $binHash
-              "groups.json" = $jsonHash
-              "build_info.json" = $infoHash
-            }
-          } | ConvertTo-Json -Depth 10
+          Compress-Archive -Path "artifact\*" -DestinationPath "artifact\$zip" -Force
 
-          $manifest | Set-Content "artifact\manifest.json" -Encoding utf8
-
-          $manifestHash = (Get-FileHash "artifact\manifest.json" -Algorithm SHA256).Hash
-          $manifestHash | Set-Content "artifact\sha256\manifest.sha256"
-
-      - name: Create Manifest (Linux)
+      - name: Create ZIP (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          BIN_HASH=$(cat artifact/sha256/binary.sha256)
-          JSON_HASH=$(cat artifact/sha256/groups.sha256)
-          INFO_HASH=$(cat artifact/sha256/build_info.sha256)
-
-          cat > artifact/manifest.json << EOF
-          {
-            "version": "${{ github.ref_name }}",
-            "platform": "${{ runner.os }}",
-            "files": {
-              "${{ matrix.artifact_binary }}": "$BIN_HASH",
-              "groups.json": "$JSON_HASH",
-              "build_info.json": "$INFO_HASH"
-            }
-          }
-          EOF
-
-          sha256sum artifact/manifest.json | awk '{print $1}' > artifact/sha256/manifest.sha256
-
-      - name: Create Release ZIP (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $tag = "${{ github.ref_name }}"
-          $zip = "release_${tag}_${{ matrix.zip_suffix }}.zip"
-
-          Compress-Archive `
-            -Path "artifact\*" `
-            -DestinationPath "artifact\$zip" `
-            -Force
-
-          $zipHash = (Get-FileHash "artifact\$zip" -Algorithm SHA256).Hash
-          $zipHash | Set-Content "artifact\sha256\zip.sha256"
-
-      - name: Create Release ZIP (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          TAG="${{ github.ref_name }}"
-          ZIP="release_${TAG}_${{ matrix.zip_suffix }}.zip"
-
+          ZIP="release_${{ github.ref_name }}_${{ matrix.zip_suffix }}.zip"
           cd artifact
           zip -r "$ZIP" ./*
           cd ..
 
-          sha256sum "artifact/$ZIP" | awk '{print $1}' > artifact/sha256/zip.sha256
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifact-${{ matrix.zip_suffix }}
+          name: build-${{ matrix.zip_suffix }}
           path: artifact/
-          retention-days: 30
 
       - name: Upload Release
         if: startsWith(github.ref, 'refs/tags/')
