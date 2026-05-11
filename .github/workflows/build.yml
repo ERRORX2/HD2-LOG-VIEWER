@@ -117,7 +117,7 @@ jobs:
             --icon="assets/icon.ico" \
             --name "HD2_LOG_VIEWER" \
             --add-data "groups.json:." \
-            HD2_LOG_VIEWER.py
+            HD2_LOG_VIEWER.pyw
 
           cp "dist/HD2_LOG_VIEWER" "artifact/${{ matrix.artifact_binary }}"
           cp "groups.json" "artifact/groups.json"
