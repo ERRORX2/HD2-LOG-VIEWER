@@ -59,12 +59,13 @@ _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
 GROUPS_FILE         = "groups.json"
 SENSOR_ALIASES_FILE = "sensor_aliases.json"
-CURRENT_VERSION = "1.4.10"
+CURRENT_VERSION = "1.4.11"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
                 ignored_version: str = "", updates_disabled: bool = False, time_mode: bool = False,
-                thresholds: Dict = None, heatmap_mode: bool = False, disabled_sigs: list = None):
+                thresholds: Dict = None, heatmap_mode: bool = False, disabled_sigs: list = None,
+                sig_timeline_enabled: bool = True):
     config = {
         "groups": groups_dict,
         "settings": {
@@ -76,7 +77,8 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
             "time_mode": time_mode,
             "heatmap_mode": heatmap_mode,
             "thresholds": thresholds or {},
-            "disabled_sigs": disabled_sigs or []
+            "disabled_sigs": disabled_sigs or [],
+            "sig_timeline_enabled": sig_timeline_enabled,
         }
     }
     try:
@@ -85,9 +87,9 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
     except:
         pass
 
-def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, list]:
+def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, list, bool]:
     if not Path(GROUPS_FILE).exists():
-        return {}, False, False, False, "", False, False, {}, False, []
+        return {}, False, False, False, "", False, False, {}, False, [], True
     try:
         with open(GROUPS_FILE, 'r') as f:
             data = json.load(f)
@@ -102,10 +104,11 @@ def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, 
                         sets.get("time_mode", False),
                         sets.get("thresholds", {}),
                         sets.get("heatmap_mode", False),
-                        sets.get("disabled_sigs", []))
-            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False, []
+                        sets.get("disabled_sigs", []),
+                        sets.get("sig_timeline_enabled", True))
+            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False, [], True
     except:
-        return {}, False, False, False, "", False, False, {}, False, []
+        return {}, False, False, False, "", False, False, {}, False, [], False, True
 
 def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: bool = False,
                       on_ignore=None, on_disable=None, silent: bool = True):
@@ -531,7 +534,8 @@ class TelemetryApp:
 
         (self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
          self.ignored_version, self.updates_disabled, self.time_mode,
-         saved_thresholds, self.heatmap_mode, disabled_sigs_list) = load_config()
+         saved_thresholds, self.heatmap_mode, disabled_sigs_list, sig_tl_enabled) = load_config()
+        self.sig_timeline_enabled = sig_tl_enabled
         self.disabled_sigs = set(disabled_sigs_list)
 
         self.vars = {}
@@ -701,7 +705,7 @@ class TelemetryApp:
         accent = "#1f6aa5" if is_dark else "#3498db"
 
         dialog = tk.Toplevel(self.root)
-        dialog.title("Detection Limits Editor")
+        dialog.title("Settings")
         dialog.geometry("560x680")
         dialog.minsize(480, 500)
         dialog.grab_set()
@@ -851,6 +855,18 @@ class TelemetryApp:
         range_row("+5V range",   "sig_v5_lo",   "sig_v5_hi",   self.sig_v5_lo,  self.sig_v5_hi,  "V")
         range_row("+3.3V range", "sig_v33_lo",  "sig_v33_hi",  self.sig_v33_lo, self.sig_v33_hi, "V")
 
+        section("Signature Timeline")
+        tk.Label(body, text="Show signature events as a timeline strip above the plot.",
+                 bg=bg, fg="#888", font=('Segoe UI', 8), wraplength=480,
+                 justify='left').pack(anchor='w', padx=8, pady=(2, 4))
+        tl_frame = tk.Frame(body, bg=bg)
+        tl_frame.pack(fill=tk.X, padx=8, pady=(0, 4))
+        tl_enabled_var = tk.BooleanVar(value=self.sig_timeline_enabled if hasattr(self, 'sig_timeline_enabled') else True)
+        tk.Checkbutton(tl_frame, text="Enable signature timeline strip",
+                       variable=tl_enabled_var, bg=bg, activebackground=bg,
+                       selectcolor="#1f6aa5" if is_dark else "#ffffff",
+                       fg=fg, font=('Segoe UI', 9)).pack(side=tk.LEFT)
+
         section("Signature Enable / Disable")
         tk.Label(body, text="Uncheck a signature to exclude it from detection and reports.",
                  bg=bg, fg="#888", font=('Segoe UI', 8), wraplength=480,
@@ -984,6 +1000,7 @@ class TelemetryApp:
                 self.sig_v33_hi              = float(entries['sig_v33_hi'].get())
 
                 self.disabled_sigs = {name for name, var in sig_vars.items() if not var.get()}
+                self.sig_timeline_enabled = tl_enabled_var.get()
 
                 self._save_config()
                 self._build_checklist()
@@ -1058,6 +1075,8 @@ class TelemetryApp:
                 self.sig_v33_lo              = misc['sig_v33_lo']
                 self.sig_v33_hi              = misc['sig_v33_hi']
                 self.disabled_sigs           = set()
+                self.sig_timeline_enabled    = True
+                tl_enabled_var.set(True)
                 for name, var in sig_vars.items():
                     var.set(True)
                 self._save_config()
@@ -1141,7 +1160,8 @@ class TelemetryApp:
         }
         save_config(self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
                     self.ignored_version, self.updates_disabled, self.time_mode, thresholds,
-                    self.heatmap_mode, list(self.disabled_sigs))
+                    self.heatmap_mode, list(self.disabled_sigs),
+                    getattr(self, 'sig_timeline_enabled', True))
 
     def show_toast(self, message: str, duration: int = 2000):
         toast = tk.Toplevel(self.root)
@@ -1190,6 +1210,7 @@ class TelemetryApp:
         self.heatmap_btn.config(text="🌡 Heatmap: ON" if self.heatmap_mode else "🌡 Heatmap: OFF")
         self.update_plot()
         self._save_config()
+
 
     def _draw_heatmap(self, sel: list):
         """Draw a heatmap with absolute thresholds for known sensor types,
@@ -2324,6 +2345,10 @@ class TelemetryApp:
                 self._sig_hits    = hits
                 self._sig_running = False
                 self._update_sig_badge()
+                if getattr(self, 'sig_timeline_enabled', True):
+                    sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
+                    if not sel:
+                        self.update_plot()
             self.root.after(0, _done)
 
         def _tick():
@@ -2367,15 +2392,59 @@ class TelemetryApp:
         hits = []
         df = self.df
 
-        def add(name, severity, description, evidence):
+        def add(name, severity, description, evidence, mask=None, cols=None):
             if name in self.disabled_sigs:
                 return
             clean_ev = [str(e) for e in evidence if e and str(e).strip()]
+            start_idx, end_idx = None, None
+            if mask is not None:
+                try:
+                    active = mask.values if hasattr(mask, 'values') else mask
+                    idxs = [i for i, v in enumerate(active) if v]
+                    if idxs:
+                        start_idx, end_idx = idxs[0], idxs[-1]
+                except Exception:
+                    pass
+            spans = []
+            if start_idx is not None and end_idx is not None:
+                spans = [(start_idx, end_idx)]
+            if not spans:
+                try:
+                    sig_cols = [c for c in self._sensors_for_sig(name) if c in df.columns]
+                    if sig_cols:
+                        numeric = df[sig_cols].select_dtypes(include='number')
+                        if not numeric.empty:
+                            import numpy as _np
+                            score     = numeric.rank(pct=True).max(axis=1)
+                            peak      = int(score.idxmax())
+                            threshold = max(score.quantile(0.80), score.iloc[peak] * 0.75)
+                            arr    = score.values >= threshold
+                            padded = _np.concatenate(([False], arr, [False]))
+                            diff   = _np.diff(padded.astype(int))
+                            raw_s  = _np.where(diff == 1)[0].tolist()
+                            raw_e  = (_np.where(diff == -1)[0] - 1).tolist()
+                            max_gap = max(1, int(len(df) * 0.05))
+                            merged_s, merged_e = list(raw_s), list(raw_e)
+                            i = 0
+                            while i < len(merged_s) - 1:
+                                if merged_s[i + 1] - merged_e[i] <= max_gap:
+                                    merged_e[i] = merged_e[i + 1]
+                                    del merged_s[i + 1]
+                                    del merged_e[i + 1]
+                                else:
+                                    i += 1
+                            spans = [(int(s), int(e)) for s, e in zip(merged_s, merged_e)]
+                except Exception:
+                    pass
             hits.append({
-                'name': name, 
+                'name': name,
                 'severity': severity,
-                'description': description, 
-                'evidence': clean_ev
+                'description': description,
+                'evidence': clean_ev,
+                'start_idx': spans[0][0] if spans else None,
+                'end_idx':   spans[0][1] if spans else None,
+                'spans':     spans,
+                'cols': [c for c in (cols or []) if c and c in df.columns],
             })
 
         def _a(key):
@@ -2442,11 +2511,14 @@ class TelemetryApp:
             if is_critical or is_warning:
                 thr_active = throttle and mx(throttle) >= 1.0
                 severity = "CRITICAL" if is_critical else "WARNING"
+                _cpu_thresh = crit_threshold if is_critical else warn_threshold
+                _cpu_mask = df[cpu_temp] >= _cpu_thresh
                 add("CPU Thermal Throttling", severity,
                     "CPU is hitting its thermal ceiling. ADVICE: Check CPU cooler mounting, re-apply thermal paste, or ensure your AIO pump hasn't failed.",
                     [f"Peak Temp: {mx(cpu_temp):.1f}°C",
                      f"Limit: {limit:.0f}°C",
-                     f"Throttling Flag: {'Active' if thr_active else 'Inactive'}"])
+                     f"Throttling Flag: {'Active' if thr_active else 'Inactive'}"],
+                    mask=_cpu_mask, cols=[cpu_temp, throttle])
         
         if gpu_hotspot:
             hs_max = mx(gpu_hotspot)
@@ -2467,7 +2539,7 @@ class TelemetryApp:
             if hs_max >= hs_limit:
                 add("GPU Overheating (Hotspot)", "CRITICAL", 
                     "The GPU Hotspot is at dangerous levels. ADVICE: Immediately increase GPU fan curves in Afterburner and check for obstructed case airflow.",
-                    evidence + [f"Hardware Limit: {hs_limit}°C"])
+                    evidence + [f"Hardware Limit: {hs_limit}°C"], cols=[gpu_hotspot, gpu_edge])
             
             elif hs_max > (hs_limit - 10) or delta_val >= 21.0:
                 if delta_val >= 21.0:
@@ -2475,7 +2547,7 @@ class TelemetryApp:
                 else:
                     msg = "GPU Hotspot is approaching dangerous levels. ADVICE: Increase fan speeds or reduce the power limit."
                 
-                add("GPU Thermal Warning", "WARNING", msg, evidence)
+                add("GPU Thermal Warning", "WARNING", msg, evidence, cols=[gpu_hotspot, gpu_edge])
             
         if not is_laptop:
             v12 = self._col('+12V')
@@ -2502,8 +2574,8 @@ class TelemetryApp:
                     "A GPU driver timeout pattern was detected. Likely driver stall or reset event.",
                     [
                 f"Confirmed Events: {int(confirmed_tdr.sum())} samples detected."
-                    ]
-                )
+                    ],
+                    mask=confirmed_tdr, cols=[gpu_usage_col, gpu_clock])
         
         drive_temps = [c for c in df.columns if 'TEMP' in c.upper() and any(k in c.upper() for k in ['DRIVE', 'NVME', 'SSD'])]
 
@@ -2539,14 +2611,14 @@ class TelemetryApp:
         if whea and mx(whea) > 0:
             add("Hardware (WHEA) Errors", "CRITICAL", 
                 "Windows detected physical hardware errors. ADVICE: This is often caused by unstable RAM (XMP/EXPO) or CPU undervolts. Revert to BIOS defaults.",
-                [f"Total Errors: {int(mx(whea))}"])
+                [f"Total Errors: {int(mx(whea))}"], cols=[whea])
         
         ppt_limit = self._col('CPU', 'PPT', 'LIMIT')
         if cpu_power and ppt_limit and self._sustained(cpu_power, mx(ppt_limit)*self.sig_ppt_sat_pct,
                                                         self.sig_ppt_sat_samples):
             add("CPU Power Limit Reached", "WARNING", 
                 "CPU performance is being capped by power limits. ADVICE: If temps are safe, you can increase 'PPT' or 'PL1/PL2' limits in BIOS.",
-                [f"Power Sustained at: {avg(cpu_power):.1f}W"])
+                [f"Power Sustained at: {avg(cpu_power):.1f}W"], cols=[cpu_power])
         
         for col in df.columns:
             if ('FAN' in col.upper() or 'RPM' in col.upper()) and '[%]' not in col:
@@ -2560,10 +2632,12 @@ class TelemetryApp:
                         if gpu_hotspot: is_hot |= (df[gpu_hotspot] > self.sig_fan_hot_gpu_c)
                         if cpu_temp: is_hot |= (df[cpu_temp] > self.sig_fan_hot_cpu_c)
                     
-                    if (is_stalled & is_hot).rolling(window=3).sum().max() >= 3:
+                    _fan_mask = (is_stalled & is_hot).rolling(window=3).sum() >= 3
+                    if _fan_mask.max() >= 1:
                         add("Fan Stall Detected", "CRITICAL", 
                             f"Fan '{col}' stopped while components were hot. ADVICE: Check for cables blocking the fan blades or a failing motor.",
-                            ["RPM hit 0 during load samples."])
+                            ["RPM hit 0 during load samples."],
+                            mask=_fan_mask, cols=[col, cpu_temp, gpu_hotspot])
                         break
         
         df = df.copy()
@@ -2624,8 +2698,8 @@ class TelemetryApp:
                         f"Average Event Duration: {avg_duration:.2f} {time_unit}",
                         f"Max VRAM Pressure: {vram_pct.max():.1f}%",
                         f"Max Spill Memory: {spill.max():.0f}"
-                    ]
-                )
+                    ],
+                    mask=overflow, cols=[gpu_mem_usage, gpu_mem_dynamic])
 
             df.drop(columns=["_overflow_state", "_time_diff"], inplace=True, errors="ignore")
         
@@ -2678,7 +2752,8 @@ class TelemetryApp:
         if ram_load and mx(ram_load) > self.sig_ram_exhaust_pct:
             add("System RAM Exhaustion", "WARNING", 
                 "Physical RAM is nearly full. ADVICE: Close browser tabs, Discord, or other background apps. Consider upgrading to 32GB RAM.", 
-                [f"Max Load: {mx(ram_load):.1f}%", f"Threshold: {self.sig_ram_exhaust_pct}%"])
+                [f"Max Load: {mx(ram_load):.1f}%", f"Threshold: {self.sig_ram_exhaust_pct}%"],
+                mask=df[ram_load] > self.sig_ram_exhaust_pct, cols=[ram_load])
         
         v_load = self._col('VIRTUAL', 'MEMORY', 'LOAD') or self._col('PAGE', 'FILE', 'USAGE')
         if v_load and mx(v_load) > 98:
@@ -2692,13 +2767,14 @@ class TelemetryApp:
                 add("CPU Bottleneck", "WARNING", 
                     "CPU is maxed out while GPU is idling. ADVICE: Increase resolution/graphics settings to shift load to GPU, or close background apps.", 
                     [f"Avg GPU Usage during spike: {df.loc[bn, gpu_usage_col].mean():.1f}%",
-                     f"Thresholds: GPU < {self.sig_cpu_bn_gpu_pct}%, CPU > {self.sig_cpu_bn_cpu_pct}%"])
+                     f"Thresholds: GPU < {self.sig_cpu_bn_gpu_pct}%, CPU > {self.sig_cpu_bn_cpu_pct}%"],
+                    mask=bn, cols=[cpu_usage_col, gpu_usage_col])
         
         vrm_temp = self._col('VRM') or self._col('MOS')
         if vrm_temp and mx(vrm_temp) > self.sig_vrm_temp_max:
             add("VRM Overheating", "CRITICAL", 
                 "Motherboard power delivery is too hot. ADVICE: Improve case airflow or add a small fan directed at the motherboard heatsinks.", 
-                [f"Max: {mx(vrm_temp):.1f}°C", f"Threshold: {self.sig_vrm_temp_max}°C"])
+                [f"Max: {mx(vrm_temp):.1f}°C", f"Threshold: {self.sig_vrm_temp_max}°C"], cols=[vrm_temp])
         
         req_cols = [c for c in df.columns if 'Clock (perf #' in c]
         if req_cols:
@@ -5115,7 +5191,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._badge_crit_lbl.pack(side=tk.RIGHT)
 
         ttk.Button(search_f, text="🖥 View Detected Hardware", command=self._open_hardware_info).pack(fill=tk.X, pady=(0, 4))
-        ttk.Button(search_f, text="⚙ Edit Detection Limits", command=self._open_limits_editor).pack(fill=tk.X, pady=(0, 8))
+        ttk.Button(search_f, text="⚙ Settings", command=self._open_limits_editor).pack(fill=tk.X, pady=(0, 8))
 
         self._sig_dirty = True
         self._start_sig_watcher()
@@ -5514,7 +5590,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             self._sig_watcher_id = None
 
         if hasattr(self, 'canvas_widget') and self.canvas_widget:
-            for cid in (getattr(self, '_cid_move', None), getattr(self, '_cid_leave', None)):
+            for cid in (getattr(self, '_cid_move', None), getattr(self, '_cid_leave', None), getattr(self, '_timeline_cid', None), getattr(self, '_timeline_mov_cid', None)):
                 if cid is not None:
                     try:
                         self.canvas_widget.mpl_disconnect(cid)
@@ -5522,6 +5598,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         pass
             self._cid_move = None
             self._cid_leave = None
+            self._timeline_cid = None
+            self._timeline_mov_cid = None
 
         def _clear_var(v):
             try:
@@ -5712,6 +5790,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             self.show_toast(f"Copy failed: {e}")
 
     def _clear_cursors(self):
+        self._last_cursor_idx = -1
         for line in self.cursor_lines:
             try:
                 line.remove()
@@ -5726,6 +5805,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             self.cursor_text = None
 
     def _on_mouse_leave(self, event):
+        self._last_cursor_idx = -1
         self._clear_cursors()
         self.canvas_widget.draw_idle()
 
@@ -5734,25 +5814,30 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             self._on_mouse_leave(event)
             return
         try:
+            fc = '#252525' if self.is_dark else 'white'
+            tc = 'white'   if self.is_dark else 'black'
+
             if self.heatmap_mode and hasattr(self, '_heatmap_sel') and self._heatmap_sel:
                 x_vals = self._heatmap_x_vals
-                raw_x  = event.xdata
-                raw_y  = event.ydata
-                idx = int(np.argmin(np.abs(x_vals - raw_x)))
-                sensor_idx = int(round(raw_y))
+                idx = int(np.argmin(np.abs(x_vals - event.xdata)))
+                sensor_idx = int(round(event.ydata))
+                cache_key = (idx, sensor_idx)
+                if cache_key == getattr(self, '_last_cursor_idx', None):
+                    return
+                self._last_cursor_idx = cache_key
                 if 0 <= idx < len(x_vals) and 0 <= sensor_idx < len(self._heatmap_sel):
                     col = self._heatmap_sel[sensor_idx]
                     val = self._heatmap_matrix_raw[col][idx]
                     self._clear_cursors()
-                    for ax in self.fig.axes:
-                        self.cursor_lines.append(ax.axvline(x=x_vals[idx],
+                    ax = event.inaxes
+                    for a in self.fig.axes:
+                        self.cursor_lines.append(a.axvline(x=x_vals[idx],
                             color='white' if self.is_dark else 'gray', ls='--', alpha=0.5))
                     x_label = self._format_elapsed(x_vals[idx]) if self.time_mode else f"Rec: {idx}"
                     txt = f"{x_label}\n{col[:35]}: {val:.2f}"
                     self.cursor_text = self.fig.text(0.01, 0.99, txt, va='top', ha='left',
-                        bbox=dict(boxstyle='round',
-                                  facecolor='#252525' if self.is_dark else 'white', alpha=0.85),
-                        fontsize=8, color='white' if self.is_dark else 'black')
+                        bbox=dict(boxstyle='round', facecolor=fc, alpha=0.85, edgecolor='#555'),
+                        fontsize=8, color=tc)
                     self.canvas_widget.draw_idle()
                 return
 
@@ -5768,18 +5853,21 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 self._on_mouse_leave(event)
                 return
 
+            if idx == getattr(self, '_last_cursor_idx', -1):
+                return
+            self._last_cursor_idx = idx
+
             self._clear_cursors()
-            for ax in self.fig.axes:
+            plot_axes = [a for a in self.fig.axes if a is not getattr(self, '_sig_timeline_ax', None)]
+            for a in self.fig.axes:
                 plot_x = x_vals[idx] if use_time else idx
-                l = ax.axvline(x=plot_x, color='white' if self.is_dark else 'gray', ls='--', alpha=0.5)
+                l = a.axvline(x=plot_x, color='white' if self.is_dark else 'gray', ls='--', alpha=0.5)
                 self.cursor_lines.append(l)
 
             sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
 
             if use_time:
-                elapsed = x_vals[idx]
-                time_str = self._format_elapsed(elapsed)
-                txt = f"Time: {time_str}\n"
+                txt = f"Time: {self._format_elapsed(x_vals[idx])}\n"
             else:
                 txt = f"Rec: {idx}\n"
 
@@ -5787,12 +5875,302 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 d_val = abs(self.df.iloc[idx][sel[0]] - self.df.iloc[idx][sel[1]])
                 txt += f"Δ Delta: {d_val:.2f}\n---\n"
             txt += "\n".join([f"{c}: {self.df.iloc[idx][c]:.2f}" for c in sel])
+
+            ax = event.inaxes if event.inaxes in plot_axes else (plot_axes[0] if plot_axes else event.inaxes)
             self.cursor_text = self.fig.text(0.01, 0.99, txt, va='top', ha='left',
-                bbox=dict(boxstyle='round', facecolor='#252525' if self.is_dark else 'white', alpha=0.8),
-                fontsize=8, color='white' if self.is_dark else 'black')
+                bbox=dict(boxstyle='round', facecolor=fc, alpha=0.8, edgecolor='#555'),
+                fontsize=8, color=tc)
             self.canvas_widget.draw_idle()
         except Exception:
             pass
+
+
+    def _calc_timeline_rows(self, hits):
+        if not hits:
+            return 1
+        entries = []
+        for hit in hits:
+            spans = hit.get('spans') or []
+            if not spans:
+                s, e = hit.get('start_idx'), hit.get('end_idx')
+                spans = [(s, e)] if s is not None else []
+            for span in spans:
+                entries.append(span)
+        if not entries:
+            return 1
+        row_end = []
+        for span in entries:
+            x0 = span[0] if span else 0
+            x1 = span[1] if span else x0
+            placed = False
+            for i, rx in enumerate(row_end):
+                if x0 > rx:
+                    row_end[i] = x1
+                    placed = True
+                    break
+            if not placed:
+                row_end.append(x1)
+        return max(1, len(row_end))
+
+    def _sensors_for_sig(self, sig_name: str) -> set:
+        cols = set(self.df.columns)
+        def _any(*keywords):
+            kw = [k.upper() for k in keywords]
+            return {c for c in cols if any(k in c.upper() for k in kw)}
+        def _cols(*keywords):
+            kw = [k.upper() for k in keywords]
+            return {c for c in cols if all(k in c.upper() for k in kw)}
+        m = {
+            "CPU Thermal Throttling": (
+                _any("TDIE","TCTL","TJMAX","PROCHOT","THROTTL","CPU PACKAGE [","CPU PACKAGE TEMP","PACKAGE TEMP","CORE TEMP","CPU TEMP","CPU TEMPERATURE","CORE MAX","CORE DISTANCE","DISTANCE TO TJMAX","CPU HOT","THERMAL THROTTL","CPU DIE","CCD TEMP","CCD1","CCD2","IOD TEMP","CPU CCD","P-CORE","E-CORE","RING TEMP","PAKET","KERN") |
+                _cols("CPU","POWER") | _cols("CORE","DISTANCE")
+            ),
+            "CPU Power Limit Reached": (
+                _any("PL1","PL2","PL3","PL4","PPT","EDC","TDC","POWER LIMIT","THROTTL","PROCHOT","PACKAGE POWER LIMIT","CPU POWER LIMIT","TURBO POWER","POWER LIMIT EXCEEDED","IA LIMIT","GT LIMIT","RING LIMIT","RUNNING AVERAGE THERMAL","RAPL","PERFORMANCE LIMIT - POWER","PERFORMANCE LIMIT - THERMAL","CURRENT CDTP") |
+                _cols("CPU","POWER") | _cols("CPU","PACKAGE","POWER") | _cols("IA","POWER")
+            ),
+            "CPU Bottleneck": _any("TOTAL CPU","CPU USAGE","CPU LOAD","CPU UTIL","CPU AUSLASTUNG","CPU BELASTUNG","GPU USAGE","GPU CORE LOAD","GPU LOAD","GPU AUSLASTUNG","GPU CORE USAGE","MAX CPU","CPU THREAD","THREAD USAGE"),
+            "CPU Clock Stretching — Major": (_cols("EFFECTIVE","CLOCK") | _cols("CLOCK","PERF") | _cols("CPU","USAGE") | _cols("CPU","LOAD") | _any("TOTAL CPU USAGE","TOTAL CPU LOAD","AVERAGE EFFECTIVE","EFF CLOCK","T0 EFFECTIVE","T1 EFFECTIVE","CORE RATIO","BUS CLOCK")),
+            "CPU Clock Stretching — Minor": (_cols("EFFECTIVE","CLOCK") | _cols("CLOCK","PERF") | _cols("CPU","USAGE") | _cols("CPU","LOAD") | _any("TOTAL CPU USAGE","TOTAL CPU LOAD","AVERAGE EFFECTIVE","EFF CLOCK","T0 EFFECTIVE","T1 EFFECTIVE")),
+            "GPU Thermal Warning": _any("GPU TEMPERATURE","GPU TEMP [","GPU HOT","GPU HOTSPOT","HOT SPOT","GPU JUNCTION","GPU MEMORY JUNCTION","GPU THERMAL","THERMAL LIMIT","GPU EDGE","EDGE TEMP","GPU JUNCTION TEMP","GPU CORE TEMP","GPU DIODE","GPU TEMPERATUR"),
+            "GPU Overheating (Hotspot)": (_any("GPU TEMPERATURE","GPU TEMP [","GPU HOT","GPU HOTSPOT","HOT SPOT","GPU JUNCTION","GPU MEMORY JUNCTION","GPU THERMAL","THERMAL LIMIT","GPU EDGE","EDGE TEMP","GPU CORE TEMP","GPU DIODE","GPU TEMPERATUR") | _cols("GPU","POWER") | _cols("GPU","CLOCK") | _cols("GPU","USAGE")),
+            "GPU Driver TDR (Timeout)": (_cols("GPU","USAGE") | _cols("GPU","LOAD") | _cols("GPU","CLOCK") | _cols("GPU","FREQUENCY") | _any("GPU AUSLASTUNG","GPU TAKT","GPU CORE USAGE","GPU CORE CLOCK","GPU EFFECTIVE CLOCK","GPU CROSSBAR")),
+            "GPU Power Limit Saturated": (_any("GPU POWER","GPU BOARD POWER","GPU PACKAGE POWER","TGP","TBP","GPU TGP","GPU TBP","GPU WATT","GPU LEISTUNG","PERFORMANCE LIMIT - POWER","PERFORMANCE LIMIT - THERMAL","PERFORMANCE LIMIT - UTILIZATION","PERFORMANCE LIMIT - RELIABILITY","PERFORMANCE LIMIT - MAX","PERFCAP","POWER LIMIT","PERF LIMIT","GPU INPUT POWER","GPU RAIL POWER","GPU 12VHPWR","NVVDD","FBVDD") | _cols("GPU","CLOCK") | _cols("GPU","USAGE")),
+            "GPU Power Limit Oscillation": (_any("GPU POWER","GPU BOARD POWER","TGP","TBP","PERFORMANCE LIMIT - POWER","PERFCAP","POWER LIMIT","GPU WATT","GPU LEISTUNG","GPU INPUT POWER","NVVDD","FBVDD") | _cols("GPU","CLOCK")),
+            "GPU VRAM Overflow Analysis": _any("VRAM","GPU MEMORY","D3D MEMORY","GPU MEM","MEMORY ALLOCATED","MEMORY AVAILABLE [MB","GPU D3D","DEDICATED VIDEO","VIDEO MEMORY","VIRTUAL MEMORY","GDDR","HBM","GPU MEMORY USAGE","GPU MEMORY LOAD","GPU MEMORY ALLOCATED","GPU MEMORY AVAILABLE","D3D MEMORY DEDICATED","D3D MEMORY DYNAMIC","SHARED MEMORY"),
+            "VRAM Thermal Throttling": (_any("GPU MEMORY JUNCTION","MEMORY JUNCTION","VRAM TEMP","VRAM TEMPERATURE","GPU MEM TEMP","HBM TEMP","GDDR TEMP","GPU MEMORY TEMP","MEMORY TEMP") | _cols("GPU","MEMORY","CLOCK") | _cols("GPU","CLOCK")),
+            "VRAM Swapping / System Memory Spillover": _any("GPU D3D MEMORY","D3D MEMORY DYNAMIC","D3D MEMORY DEDICATED","GPU MEMORY ALLOCATED","SHARED MEMORY","VIRTUAL MEMORY","PAGE FILE","GPU MEMORY AVAILABLE","DEDICATED VIDEO MEMORY"),
+            "PSU +12V Rail Sag": (_any("+12V [V]","+12V VOLTAGE","12V RAIL","ATX 12V","EPS 12V","12V SUPPLY","VBUS 12","12V OUT","12 VOLT","VCC 12V","12VDC","+12.0V","12.000V","VCORE 12V","MAIN 12V") | _cols("GPU","POWER")),
+            "PSU +5V Rail Unstable": _any("+5V [V]","+5V VOLTAGE","5V RAIL","ATX 5V","5V SUPPLY","5VSB","5V STANDBY","VBUS 5","5V OUT","5 VOLT","VCC 5V","5VDC","+5.0V","5.000V","MAIN 5V","+5VS","5V SB","VIN 5V","AVCC"),
+            "PSU +3.3V Rail Unstable": _any("+3.3V [V]","+3.3V VOLTAGE","3.3V RAIL","3V3","3.3V SUPPLY","3.3V OUT","ATX 3.3","3.3 VOLT","3.3VDC","VCC 3.3","+3.3VS","3.3V SB","VDD 3.3","VDDA","AVDD","+3.30V","3.300V","3.3000V","VDD (SWA)","VDDQ (SWB)","VPP (SWC)","1.8V VOUT","1.0V VOUT","3VSB","3V SB","3.3VSB","VIN 3.3","+3V3","3V3 RAIL","3.3V VOLTAGE","3.3V SENSOR","VCC3","VCC 3","VCCIO"),
+            "PSU Hardware Failure Indicators": (_any("+12V [V]","+12V VOLTAGE","12V RAIL","ATX 12V","EPS 12V") | _any("+5V [V]","+5V VOLTAGE","5V RAIL","ATX 5V") | _any("+3.3V [V]","+3.3V VOLTAGE","3.3V RAIL","3V3") | _any("POWER SUPPLY","HARDWARE LIMIT","SOFTWARE LIMIT","AVG. POWER (PL1)","BURST POWER (PL2)","CURRENT (PL4)","THROTTL","PERFORMANCE LIMIT") | _cols("GPU","USAGE") | _cols("GPU","CLOCK")),
+            "Fan Stall Detected": (_any("FAN","RPM","PUMP","COOLER","FAN SPEED","FAN RPM","CPU FAN","GPU FAN","CHASSIS FAN","CASE FAN","SYS FAN","AIO PUMP","WATER PUMP","LüFTER","VENTILATEUR","CPU [RPM]","GPU [RPM]","FAN1","FAN2","FAN3") | _cols("CPU","TEMP") | _cols("GPU","TEMP")),
+            "VRM Overheating": _any("VRM","MOSFET","CHOKE","MOS TEMP","PHASE TEMP","VCORE TEMP","CPU VRM","GPU VRM","SVI","VDDCR","VDDCR_SOC","POWER STAGE","PWM TEMP","PWMIC","DIGI+ VRM","ASUS VRM","VRM HOT","VRM TEMPERATURE","MOSFet","FET TEMP","IA VR","GT VR","SA VR","VR TEMP"),
+            "System RAM Exhaustion": _any("PHYSICAL MEMORY","MEMORY USED","MEMORY LOAD","MEMORY AVAILABLE","RAM LOAD","RAM USAGE","PHYSICAL MEMORY USED","PHYSICAL MEMORY LOAD","PHYSICAL MEMORY AVAILABLE","MEMORY USAGE","RAM USED","RAM AVAILABLE","SPEICHER","ARBEITSSPEICHER"),
+            "Virtual Memory Limit": _any("VIRTUAL MEMORY","PAGE FILE","COMMIT","PAGEFILE","SWAP","VIRTUAL MEMORY COMMITTED","VIRTUAL MEMORY AVAILABLE","VIRTUAL MEMORY LOAD","PAGE FILE USAGE","PAGE FILE TOTAL","COMMITTED BYTES","COMMIT LIMIT"),
+            "Storage Thermal Critical": _any("DRIVE TEMP","SSD TEMP","NVME TEMP","HDD TEMP","DRIVE TEMPERATURE","DISK TEMP","DISK TEMPERATURE","M.2 TEMP","STORAGE TEMP","LAUFWERK TEMP","FESTPLATTE TEMP","TEMPERATURE [°C]","DRIVE TEMPERATURE [°C]","DRIVE TEMPERATURE 2","DRIVE TEMPERATURE 3","COMPOSITE TEMP","SENSOR 1 TEMP","SENSOR 2 TEMP"),
+            "Storage Overheating": _any("DRIVE TEMP","SSD TEMP","NVME TEMP","HDD TEMP","DRIVE TEMPERATURE","DISK TEMP","M.2 TEMP","COMPOSITE TEMP","STORAGE TEMP","DRIVE TEMPERATURE 2","DRIVE TEMPERATURE 3","SENSOR 1 TEMP","SENSOR 2 TEMP"),
+            "Storage Congestion": _any("READ RATE","WRITE RATE","READ ACTIVITY","WRITE ACTIVITY","TOTAL ACTIVITY","DRIVE ACTIVITY","DISK ACTIVITY","IO RATE","READ TOTAL","WRITE TOTAL","READ SPEED","WRITE SPEED","DISK SPEED","MB/S","READ [MB","WRITE [MB"),
+            "Storage I/O Bottleneck / Hitching": _any("READ RATE","WRITE RATE","READ ACTIVITY","WRITE ACTIVITY","TOTAL ACTIVITY","READ SPEED","WRITE SPEED","IO RATE","FRAME TIME","FRAMETIME","GPU BUSY","CPU BUSY"),
+            "S.M.A.R.T. Hardware Failure": _any("DRIVE FAIL","DRIVE WARN","DRIVE WARNING","DRIVE FAILURE","S.M.A.R.T","SMART","FAILURE [YES","WARNING [YES","REALLOCATED","PENDING SECTOR","UNCORRECTABLE","OFFLINE UNCORRECTABLE","CRC ERROR","ULTRA DMA CRC"),
+            "SSD Lifespan Critical": _any("REMAINING LIFE","DRIVE HEALTH","WEAR LEVEL","AVAILABLE SPARE","DRIVE REMAINING","NAND ENDURANCE","MEDIA WEAROUT","PERCENT USED","PERCENT LIFETIME","TOTAL BYTES WRITTEN","TOTAL HOST WRITES","HOST WRITES","NAND WRITES","DRIVE REMAINING LIFE","SSD HEALTH","ENDURANCE REMAINING"),
+            "SSD Wear Warning": _any("REMAINING LIFE","DRIVE HEALTH","WEAR LEVEL","AVAILABLE SPARE","NAND ENDURANCE","PERCENT USED","PERCENT LIFETIME","TOTAL HOST WRITES","HOST WRITES","DRIVE REMAINING LIFE","SSD HEALTH","ENDURANCE REMAINING"),
+            "Micro-Stuttering Detected": _any("FRAME TIME","FRAMETIME","FPS","FRAME RATE","GPU BUSY","CPU BUSY","GPU WAIT","CPU WAIT","PRESENTED","DISPLAYED","ANIMATION ERROR","FRAME TIME PRESENTED","FRAME TIME DISPLAYED","FRAMERATE PRESENTED","FRAMERATE DISPLAYED","1% LOW","0.1% LOW","99TH","1ST PERCENTILE","LATENCY","RENDER TIME"),
+            "Background Process Interference": _any("CPU USAGE","TOTAL CPU","CPU LOAD","CPU UTIL","GPU USAGE","GPU LOAD","GPU CORE LOAD","FRAME TIME","FRAMETIME","MAX CPU","CPU THREAD","THREAD USAGE","PROCESS CPU","CPU AUSLASTUNG"),
+            "GPU Priority Conflict (Background App)": _any("FRAME TIME","FRAMETIME","GPU USAGE","GPU LOAD","GPU BUS","BUS LOAD","GPU WAIT","GPU BUSY","GPU CLOCK","FPS","GPU CORE LOAD","GPU D3D USAGE","GPU GRAPHICS USAGE","GPU COMPUTE USAGE","GPU VIDEO USAGE"),
+            "GPU Engine Wait Bottleneck": _any("GPU WAIT","GPU BUSY","GPU WAIT (AVG)","GPU BUSY (AVG)","FRAME TIME","FRAMETIME","CPU WAIT","CPU BUSY","FPS","GPU WAIT [MS]","GPU BUSY [MS]","CPU WAIT [MS]","CPU BUSY [MS]","ANIMATION ERROR"),
+            "Hardware (WHEA) Errors": _any("WHEA","HARDWARE ERROR","CORRECTABLE","NON-FATAL","FATAL ERROR","PCIe LANE","WINDOWS HARDWARE ERROR","MCE","MACHINE CHECK","CORRECTABLE ERROR COUNT","NON-FATAL ERROR COUNT","FATAL ERROR COUNT","WHEA ERROR","HARDWARE ERRORS","TOTAL ERRORS","UNSUPPORTED REQUEST"),
+            "Chipset Thermal Throttling": _any("CHIPSET","PCH TEMP","PCH [","PCH TEMPERATURE","MOTHERBOARD [","MOTHERBOARD TEMP","NB TEMP","NORTHBRIDGE","SOUTHBRIDGE","PLATFORM CONTROLLER","PCH TEMPERATURE [","PCH TEMPERATURE2","PCH TEMPERATURE3","PCH TEMPERATURE4","SMU TEMP","SPD HUB"),
+            "PCIe Bus Interface Chokepoint": _any("GPU BUS","BUS LOAD","PCIE LINK","PCIE SPEED","GPU USAGE","GPU CLOCK","FRAME TIME","PCIE LINK SPEED","PCIE BANDWIDTH","GPU BUS LOAD","GPU BUS INTERFACE","GPU PCIE","LINK SPEED","GT/S"),
+            "PCIe Bus Signal Instability": _any("RECEIVER ERROR","REPLAY COUNT","REPLAY ROLLOVER","BAD TLP","BAD DLLP","RECOVERY COUNT","CORRECTABLE ERROR COUNT","NON-FATAL ERROR COUNT","FATAL ERROR COUNT","UNSUPPORTED REQUEST","PCIE LANE","LCRC ERROR","NAKS SENT","NAKS RECEIVED","PCI EXPRESS ERROR","PCIE ERROR"),
+            "Kernel Driver Latency (DPC/ISR)": _any("DPC","SYSTEM INTERRUPT","LATENCY","FRAME TIME","FRAMETIME","CPU BUSY","CPU WAIT","DPC LATENCY","ISR LATENCY","INTERRUPT LATENCY","KERNEL LATENCY","DPC/ISR","DEFERRED PROCEDURE"),
+            "Laptop Power Delivery Failure (Limp Mode)": (_any("BATTERY","CHARGE","DISCHARGE","AC ADAPTER","REMAINING CAPACITY","CHARGE LEVEL","CHARGE RATE","BATTERY VOLTAGE","BATTERY CAPACITY","CHARGE CURRENT","DISCHARGE RATE","WEAR LEVEL","FULL CHARGE CAPACITY","DESIGN CAPACITY","POWER SOURCE","AC/DC","PLUGGED IN","ON BATTERY","LAPTOP BATTERY","BATTERY REMAINING","BATTERY POWER","DISCHARGE CURRENT") | _cols("CPU","POWER") | _cols("GPU","POWER")),
+            "Phantom Clock Cap": _any("GPU CLOCK","GPU CORE CLOCK","GPU EFFECTIVE CLOCK","GPU CROSSBAR","GPU VIDEO CLOCK","GPU MEMORY CLOCK","PERFORMANCE LIMIT","POWER LIMIT","THERMAL LIMIT","RELIABILITY VOLTAGE","OPERATING VOLTAGE","GPU BOOST CLOCK","BOOST CLOCK","GPU BASE CLOCK","BASE CLOCK","PERFCAP REASON","CLOCK CAP","CLOCK LIMIT"),
+        }
+        return m.get(sig_name, set()) & cols
+
+    def _timeline_peak_idx(self, hit):
+        """For hits without positional data, find the row index of the peak in relevant cols."""
+        cols = [c for c in hit.get('cols', []) if c and c in self.df.columns]
+        if not cols:
+            return None
+        try:
+            peak_idx = int(self.df[cols[0]].idxmax())
+            return peak_idx
+        except Exception:
+            return None
+
+    def _draw_sig_timeline(self, ax, x_vals, hits):
+        sev_colors = {'CRITICAL': '#e74c3c', 'WARNING': '#f39c12', 'INFO': '#3498db'}
+        is_dark = self.is_dark
+
+        ax.set_facecolor('#0d0d0d' if is_dark else '#f5f5f5')
+        ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        n = len(x_vals)
+        x_min, x_max = x_vals[0], x_vals[-1]
+        x_range = max(x_max - x_min, 1e-9)
+
+        self._sig_timeline_ax     = ax
+        self._sig_timeline_x_vals = x_vals
+
+        if not hits:
+            ax.set_xlim(x_min, x_max)
+            ax.set_ylim(0, 1)
+            ax.text(0.5, 0.5, 'No signatures triggered', ha='center', va='center',
+                    fontsize=7, color='#4ec94e', transform=ax.transAxes)
+            self._sig_timeline_hits = []
+            return
+
+        def _xi(idx):
+            return x_vals[max(0, min(int(idx), n - 1))]
+
+        def _fmt(xv):
+            try:
+                return self._format_elapsed(xv)
+            except Exception:
+                return f'{xv:.1f}'
+
+        # Expand hits into one entry per span
+        entries = []
+        for hit in hits:
+            spans = hit.get('spans') or []
+            if not spans:
+                s = hit.get('start_idx')
+                e = hit.get('end_idx')
+                spans = [(s, e)] if s is not None and e is not None else [None]
+            for span_idx, span in enumerate(spans):
+                if span is not None:
+                    x0 = _xi(span[0])
+                    x1 = _xi(span[1])
+                    if x1 <= x0:
+                        x1 = x0 + x_range * 0.005
+                    has_span = True
+                else:
+                    peak = self._timeline_peak_idx(hit)
+                    x0 = x1 = _xi(peak) if peak is not None else x_min + x_range * 0.5
+                    has_span = False
+                entries.append((hit, x0, x1, has_span, span_idx == 0))
+
+        GAP = x_range * 0.003
+
+        # Assign rows greedily
+        row_end_x = []
+        entry_rows = []
+        for (_, x0, x1, _, _) in entries:
+            placed = False
+            for i, rx in enumerate(row_end_x):
+                if x0 > rx + GAP:
+                    row_end_x[i] = x1
+                    entry_rows.append(i)
+                    placed = True
+                    break
+            if not placed:
+                entry_rows.append(len(row_end_x))
+                row_end_x.append(x1)
+
+        n_rows = max(1, len(row_end_x))
+        row_h  = 1.0 / n_rows
+
+        ax.set_xlim(x_min, x_max)
+        ax.set_ylim(0, 1)
+
+        hit_patches = []
+        for (hit, x0, x1, has_span, first_span), row in zip(entries, entry_rows):
+            color  = sev_colors.get(hit.get('severity', 'INFO'), '#3498db')
+            y_bot  = 1.0 - (row + 1) * row_h + 0.02
+            y_top  = 1.0 - row * row_h        - 0.02
+            center = (x0 + x1) / 2
+
+            if has_span:
+                patch = ax.axvspan(x0, x1, ymin=y_bot, ymax=y_top,
+                                   color=color, alpha=0.6, zorder=3)
+                ax.plot([x0, x0], [y_bot, y_top], color=color, lw=1.5, alpha=0.9, zorder=4)
+                ax.plot([x1, x1], [y_bot, y_top], color=color, lw=1.5, alpha=0.9, zorder=4)
+                ax.text(x0, y_bot - 0.02, _fmt(x0),
+                        ha='left', va='top', fontsize=5, color=color, clip_on=True, zorder=5)
+                ax.text(x1, y_bot - 0.02, _fmt(x1),
+                        ha='right', va='top', fontsize=5, color=color, clip_on=True, zorder=5)
+            else:
+                patch = ax.axvline(x0, ymin=y_bot, ymax=y_top,
+                                   color=color, lw=2.5, alpha=0.85, zorder=3)
+                ax.text(x0, y_bot - 0.02, _fmt(x0),
+                        ha='center', va='top', fontsize=5, color=color, clip_on=True, zorder=5)
+
+            if first_span:
+                y_mid = (y_bot + y_top) / 2
+                ax.text(center, y_mid, hit['name'],
+                        ha='center', va='center', fontsize=6,
+                        color='white', fontweight='bold', clip_on=True, zorder=5)
+
+            hit_patches.append((patch, hit, center, y_bot, y_top))
+
+        self._sig_timeline_hits = hit_patches
+
+    def _on_timeline_motion(self, event):
+        if event.inaxes is not getattr(self, '_sig_timeline_ax', None):
+            if getattr(self, '_timeline_tooltip', None):
+                self._timeline_tooltip.set_visible(False)
+                self.canvas_widget.draw_idle()
+            return
+        if not getattr(self, '_sig_timeline_hits', None):
+            return
+        xc, yc = event.xdata, event.ydata
+        if xc is None or yc is None:
+            return
+
+        x_range = self._sig_timeline_x_vals[-1] - self._sig_timeline_x_vals[0]
+        threshold = x_range * 0.06
+
+        best, best_dist = None, float('inf')
+        for entry in self._sig_timeline_hits:
+            patch, hit, center, y_bot, y_top = entry
+            if y_bot <= yc <= y_top:
+                dist = abs(center - xc)
+                if dist < best_dist:
+                    best_dist, best = dist, entry
+
+        ax = self._sig_timeline_ax
+        if not hasattr(self, '_timeline_tooltip') or self._timeline_tooltip is None:
+            self._timeline_tooltip = ax.annotate(
+                '', xy=(0, 0), xytext=(8, 8), textcoords='offset points',
+                bbox=dict(boxstyle='round,pad=0.5',
+                          facecolor='#1a1a2e' if self.is_dark else '#fff',
+                          edgecolor='#888', alpha=0.97),
+                fontsize=7.5, color='white' if self.is_dark else 'black',
+                zorder=10, visible=False, annotation_clip=False,
+            )
+        tt = self._timeline_tooltip
+
+        if best and best_dist < threshold:
+            patch, hit, center, y_bot, y_top = best
+            icon = '🔴' if hit['severity'] == 'CRITICAL' else '🟡' if hit['severity'] == 'WARNING' else '🔵'
+            lines = [f"{icon}  {hit['name']}"]
+            for ev in hit.get('evidence', [])[:5]:
+                lines.append(f"  • {ev}")
+            if hit.get('cols'):
+                lines.append(f"  Sensors: {', '.join(c[:35] for c in hit['cols'][:3])}")
+            lines.append("  [click to select sensors & zoom]")
+            tt.set_text('\n'.join(lines))
+            tt.xy = (xc, yc)
+            tt.set_visible(True)
+        else:
+            tt.set_visible(False)
+        self.canvas_widget.draw_idle()
+
+    def _on_timeline_click(self, event):
+        if event.inaxes is not getattr(self, '_sig_timeline_ax', None):
+            return
+        if not getattr(self, '_sig_timeline_hits', None):
+            return
+        xc, yc = event.xdata, event.ydata
+        if xc is None or yc is None:
+            return
+
+        best, best_dist = None, float('inf')
+        for entry in self._sig_timeline_hits:
+            patch, hit, center, y_bot, y_top = entry
+            if y_bot <= yc <= y_top:
+                dist = abs(center - xc)
+                if dist < best_dist:
+                    best_dist, best = dist, entry
+        if best is None:
+            return
+
+        patch, hit, center, y_bot, y_top = best
+
+        cols = self._sensors_for_sig(hit['name'])
+        if cols:
+            for v in self.vars.values():
+                v.set(False)
+            for col in cols:
+                if col in self.vars:
+                    self.vars[col].set(True)
+
+        self.update_plot()
+        self.show_toast(f"{hit['severity']}: {hit['name']}")
 
     def update_plot(self):
         self.fig.clear()
@@ -5809,6 +6187,28 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         x_vals, ts, use_time = self._get_x_axis()
         ref_x = self._get_ref_x_axis()
 
+        from matplotlib.gridspec import GridSpec
+        if self._sig_hits and getattr(self, 'sig_timeline_enabled', True):
+            sel_set = {c for c, v in self.vars.items() if v.get()}
+            if sel_set:
+                hits = [h for h in self._sig_hits
+                        if self._sensors_for_sig(h['name']) & sel_set]
+            else:
+                hits = list(self._sig_hits)
+        else:
+            hits = []
+        if hits:
+            n_rows   = max(1, self._calc_timeline_rows(hits))
+            tl_ratio = min(n_rows * 0.045, 0.25)
+            gs = GridSpec(2, 1, figure=self.fig,
+                          height_ratios=[tl_ratio, 1 - tl_ratio],
+                          hspace=0.04)
+            self._sig_timeline_ax = self.fig.add_subplot(gs[0])
+            self._main_plot_gs    = gs[1]
+        else:
+            self._sig_timeline_ax = None
+            self._main_plot_gs    = None
+
         def _fmt_xticks(ax):
             if not use_time:
                 return
@@ -5819,7 +6219,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             ax.tick_params(axis='x', labelrotation=30)
 
         if self.delta_mode and self.multi_mode:
-            ax = self.fig.add_subplot(111)
+            ax = self.fig.add_subplot(self._main_plot_gs if self._main_plot_gs is not None else 111)
             ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
             ax.text(0.5, 0.5, "Turn off Multi Mode to use Delta",
                     ha='center', va='center', color='#ffcc00', fontsize=12, fontweight='bold')
@@ -5827,9 +6227,16 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             return
 
         if not sel:
-            ax = self.fig.add_subplot(111)
-            ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
-            ax.text(0.5, 0.5, "No Sensors Selected", ha='center', va='center', color='gray')
+            if self._sig_timeline_ax is not None and hits:
+                self._draw_sig_timeline(self._sig_timeline_ax, x_vals, hits)
+                if not hasattr(self, '_timeline_cid') or self._timeline_cid is None:
+                    self._timeline_cid     = self.canvas_widget.mpl_connect('button_press_event', self._on_timeline_click)
+                    self._timeline_mov_cid = self.canvas_widget.mpl_connect('motion_notify_event', self._on_timeline_motion)
+                self._timeline_tooltip = None
+            else:
+                ax = self.fig.add_subplot(111)
+                ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
+                ax.text(0.5, 0.5, "No Sensors Selected", ha='center', va='center', color='gray')
             self.canvas_widget.draw_idle()
             return
 
@@ -5846,6 +6253,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         colors = matplotlib.rcParams['axes.prop_cycle'].by_key()['color']
 
         if self.multi_mode:
+            from matplotlib.gridspec import GridSpecFromSubplotSpec
             category_groups = {}
             for col in sel:
                 cat = self._get_category(col)
@@ -5858,44 +6266,98 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             axes = []
             color_idx = 0
 
+            hspace     = min(0.6, max(0.15, 1.2 / num_plots))
+            self._last_multi_hspace = hspace
+            legend_fs  = max(7, 9 - num_plots // 4)
+            tick_fs    = max(7, 9 - num_plots // 5)
+            show_stats = num_plots <= 4
+
+            _inner = GridSpecFromSubplotSpec(
+                num_plots, 1,
+                subplot_spec=self._main_plot_gs if self._main_plot_gs is not None else GridSpec(1, 1, figure=self.fig)[0],
+                hspace=hspace
+            )
+
             for i, cat_name in enumerate(active_cats):
-                ax = self.fig.add_subplot(num_plots, 1, i + 1, sharex=axes[0] if axes else None)
+                ax = self.fig.add_subplot(_inner[i], sharex=axes[0] if axes else None)
                 axes.append(ax)
                 ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
-                ax.set_ylabel(cat_name, color=text_color, fontsize=8, fontweight='bold')
+                if num_plots <= 5:
+                    ax.set_ylabel(cat_name, color=text_color, fontsize=max(7, 9 - num_plots // 5),
+                                  fontweight='bold', labelpad=2)
 
                 for col_name in category_groups[cat_name]:
                     main_color = colors[color_idx % len(colors)]
                     if self.compare_mode and self.ref_df is not None and col_name in self.ref_df.columns:
                         ax.plot(ref_x, self.ref_df[col_name],
-                                ls='--', lw=1, alpha=0.4, color=main_color, zorder=2)
+                                ls='--', lw=1, alpha=0.5, color=main_color, zorder=2,
+                                label=f"REF: {col_name}")
                     series = self.df[col_name].dropna()
-                    stats = f"Min: {series.min():.1f}  Avg: {series.mean():.1f}  Max: {series.max():.1f}"
-                    ax.plot(x_vals, self.df[col_name], label=f"{col_name}\n{stats}",
+                    if show_stats:
+                        stats = f"Min: {series.min():.1f}  Avg: {series.mean():.1f}  Max: {series.max():.1f}"
+                        label = f"{col_name}\n{stats}"
+                    else:
+                        label = col_name
+                    ax.plot(x_vals, self.df[col_name], label=label,
                             lw=1.5, color=main_color, zorder=3)
                     _draw_spec_zones(ax, col_name)
                     color_idx += 1
 
                 ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
-                ax.tick_params(colors=text_color, labelsize=8)
+                ax.tick_params(colors=text_color, labelsize=tick_fs)
+                if num_plots > 5:
+                    ax.yaxis.set_tick_params(labelleft=False)
+                    ax.set_ylabel(cat_name, color=text_color,
+                                  fontsize=max(7, 9 - num_plots // 5),
+                                  fontweight='bold', labelpad=2, rotation=0,
+                                  ha='right', va='center')
                 _fmt_xticks(ax)
-                l = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1), fontsize='x-small', frameon=False)
-                if l:
-                    for t in l.get_texts():
-                        t.set_color(text_color)
+
             for ax in axes[:-1]:
                 for _lbl in ax.get_xticklabels(): _lbl.set_visible(False)
-            self.fig.subplots_adjust(right=0.80, hspace=0.3)
+
+            all_handles, all_labels = [], []
+            max_name_len = max(14, 32 - num_plots * 2)
+            for ax, cat_name in zip(axes, active_cats):
+                h, lb = ax.get_legend_handles_labels()
+                if not h:
+                    continue
+                # category header as a blank patch with bold text
+                from matplotlib.patches import Patch
+                all_handles.append(Patch(color='none'))
+                all_labels.append(f"── {cat_name} ──")
+                for handle, label in zip(h, lb):
+                    short = label.split('\n')[0]
+                    short = short[:max_name_len] + ('…' if len(short) > max_name_len else '')
+                    all_handles.append(handle)
+                    all_labels.append(f"  {short}")
+            leg = self.fig.legend(all_handles, all_labels,
+                                  loc='center left',
+                                  bbox_to_anchor=(0.82, 0.5),
+                                  fontsize=legend_fs, frameon=False,
+                                  handlelength=1.2, handletextpad=0.4,
+                                  labelspacing=0.25, ncol=1)
+            if leg:
+                header_color = '#aaaaaa' if self.is_dark else '#666666'
+                for t in leg.get_texts():
+                    txt = t.get_text()
+                    if txt.startswith('──'):
+                        t.set_color(header_color)
+                        t.set_fontweight('bold')
+                        t.set_fontsize(max(6, legend_fs - 1))
+                    else:
+                        t.set_color(text_color)
 
         elif self.delta_mode and len(sel) >= 2:
-            ax = self.fig.add_subplot(111)
+            ax = self.fig.add_subplot(self._main_plot_gs if self._main_plot_gs is not None else 111)
             ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
             s1, s2 = self.df[sel[0]], self.df[sel[1]]
             delta = (s1 - s2).abs()
 
             if self.compare_mode and self.ref_df is not None and sel[0] in self.ref_df.columns and sel[1] in self.ref_df.columns:
                 ref_delta = (self.ref_df[sel[0]] - self.ref_df[sel[1]]).abs()
-                ax.plot(ref_x, ref_delta, color="#ffcc00", ls='--', alpha=0.3, lw=1, zorder=1)
+                ax.plot(ref_x, ref_delta, color="#ffcc00", ls='--', alpha=0.5, lw=1, zorder=1,
+                        label=f"REF: Δ ({sel[0]} - {sel[1]})")
 
             def _stats_label(col, series):
                 s = series.dropna()
@@ -5913,13 +6375,16 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 for t in l.get_texts():
                     t.set_color(text_color)
         else:
-            ax = self.fig.add_subplot(111)
+            ax = self.fig.add_subplot(self._main_plot_gs if self._main_plot_gs is not None else 111)
             ax.set_facecolor("#1e1e1e" if is_dark else "#fdfdfd")
             for i, col_name in enumerate(sel):
                 main_color = colors[i % len(colors)]
                 if self.compare_mode and self.ref_df is not None and col_name in self.ref_df.columns:
+                    ref_s = self.ref_df[col_name].dropna()
+                    ref_stats = f"Min: {ref_s.min():.1f}  Avg: {ref_s.mean():.1f}  Max: {ref_s.max():.1f}"
                     ax.plot(ref_x, self.ref_df[col_name],
-                            ls='--', lw=1, alpha=0.4, color=main_color, zorder=2)
+                            ls='--', lw=1, alpha=0.5, color=main_color, zorder=2,
+                            label=f"REF: {col_name}\n{ref_stats}")
                 series = self.df[col_name].dropna()
                 stats = f"Min: {series.min():.1f}  Avg: {series.mean():.1f}  Max: {series.max():.1f}"
                 ax.plot(x_vals, self.df[col_name], label=f"{col_name}\n{stats}",
@@ -5934,12 +6399,24 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 for t in l.get_texts():
                     t.set_color(text_color)
 
+        if self._sig_timeline_ax is not None and hits:
+            self._draw_sig_timeline(self._sig_timeline_ax, x_vals, hits)
+        else:
+            self._sig_timeline_hits = []
+            self._sig_timeline_x_vals = x_vals
+
+        if not hasattr(self, '_timeline_cid') or self._timeline_cid is None:
+            self._timeline_cid     = self.canvas_widget.mpl_connect('button_press_event', self._on_timeline_click)
+            self._timeline_mov_cid = self.canvas_widget.mpl_connect('motion_notify_event', self._on_timeline_motion)
+        self._timeline_tooltip = None
+
         try:
-            self.fig.tight_layout(h_pad=0.5)
+            if not self.multi_mode:
+                self.fig.tight_layout(h_pad=0.5)
         except Exception:
             pass
         if self.multi_mode:
-            self.fig.subplots_adjust(right=0.80)
+            self.fig.subplots_adjust(right=0.80, hspace=getattr(self, '_last_multi_hspace', 0.3))
         else:
             self.fig.subplots_adjust(right=0.82)
         self.canvas_widget.draw_idle()

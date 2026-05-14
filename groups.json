@@ -153,6 +153,7 @@
                 "sig_v33_hi": 3.47
             }
         },
-        "disabled_sigs": []
+        "disabled_sigs": [],
+        "sig_timeline_enabled": true
     }
 }

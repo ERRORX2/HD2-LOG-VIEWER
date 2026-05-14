@@ -51,6 +51,7 @@ jobs:
             --onefile `
             --noconsole `
             --name "HD2_LOG_VIEWER" `
+            --icon "assets\icon.ico" `
             --add-data "groups.json;." `
             HD2_LOG_VIEWER.pyw
 
