@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Set, Tuple
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
+import psutil as _psutil
 import numpy as np
 import csv
 import json
@@ -216,7 +217,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.5.1"
+CURRENT_VERSION = "1.5.2"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -1396,6 +1397,8 @@ class TelemetryApp:
         self.fig.patch.set_facecolor(bg_color)
 
         if not sel:
+            if hasattr(self, '_legend_panel'):
+                self._legend_panel.pack(side=tk.RIGHT, fill=tk.Y)
             self._update_tk_legend([])
             ax = self.fig.add_subplot(111)
             ax.set_facecolor(bg2_color)
@@ -1700,6 +1703,8 @@ class TelemetryApp:
                 self._legend_panel.configure(bg=bg2)
                 if hasattr(self, '_legend_canvas'):
                     self._legend_canvas.configure(bg=bg2)
+                if hasattr(self, '_legend_scroll_frame'):
+                    self._legend_scroll_frame.configure(bg=bg2)
                 if hasattr(self, '_legend_inner'):
                     self._legend_inner.configure(bg=bg2)
                 if hasattr(self, '_legend_title'):
@@ -1707,6 +1712,8 @@ class TelemetryApp:
                 if hasattr(self, '_legend_vsb'):
                     self._legend_vsb.configure(bg=bg3, troughcolor=bg2,
                                                activebackground=accent)
+                if hasattr(self, '_legend_scroll_frame'):
+                    self._legend_scroll_frame.configure(bg=bg2)
             except Exception:
                 pass
 
@@ -2094,12 +2101,29 @@ class TelemetryApp:
         def mx(c):  return df[c].max()  if c and c in df.columns else None
         def avg(c): return df[c].mean() if c and c in df.columns else None
 
-        wl('═' * 72, 'header')
+        import os as _os, sys as _sys
+        try:
+            csv_bytes = _os.path.getsize(self.analyzer.path)
+            csv_mb    = csv_bytes / 1024 / 1024
+            csv_size  = f"{csv_mb:.2f} MB  ({csv_bytes:,} bytes)"
+        except Exception:
+            csv_size = "unknown"
+        try:
+            import psutil as _psutil
+            proc = _psutil.Process(_os.getpid())
+            ram_mb = proc.memory_info().rss / 1024 / 1024
+            mem_in_use = f"{ram_mb:.1f} MB"
+        except Exception:
+            mem_in_use = "psutil not installed"
+
+        wl('=' * 72, 'header')
         wl(f"  RESYNC.ERR v{CURRENT_VERSION}  -  Debug Dump", 'header')
-        wl(f"  CSV     : {self.analyzer.path}", 'header')
-        wl(f"  Rows    : {len(df):,}   Columns: {len(df.columns):,}", 'header')
-        wl(f"  Disabled: {sorted(self.disabled_sigs) or 'none'}", 'header')
-        wl('═' * 72, 'header')
+        wl(f"  CSV file  : {self.analyzer.path}", 'header')
+        wl(f"  CSV size  : {csv_size}", 'header')
+        wl(f"  Rows      : {len(df):,}   Columns: {len(df.columns):,}", 'header')
+        wl(f"  RAM in use: {mem_in_use}  (this process)", 'header')
+        wl(f"  Disabled  : {sorted(self.disabled_sigs) or 'none'}", 'header')
+        wl('=' * 72, 'header')
 
         cpu_temp      = self._col('TCTL') or self._col('TDIE') or self._col('CPU')
         cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col('CLOCK')
@@ -2533,10 +2557,56 @@ class TelemetryApp:
         else:
             wl("  No signatures triggered.", 'ok')
 
+        section("MCLK / XMP DETECTION")
+        mclk_debug = self._col_excl(['MCLK'],        excl=['GPU','VRAM','GDDR','VIDEO']) \
+                  or self._col_excl(['MEMORY CLOCK'], excl=['GPU','VRAM','GDDR','VIDEO']) \
+                  or self._col_excl(['DRAM CLOCK'],   excl=['GPU','VRAM','GDDR','VIDEO'])
+        col("mclk_col (excl GPU)", mclk_debug)
+        if mclk_debug and mclk_debug in df.columns:
+            m_med = df[mclk_debug].median()
+            is_ddr5 = m_med > 2400
+            effective = int(m_med * 2)
+            stock_ceiling = 2400 if is_ddr5 else 1333
+            val("MCLK median (MHz)", m_med)
+            val("Effective MT/s",    effective, "d")
+            w(f"       {'DDR generation':44s} = ")
+            wl("DDR5" if is_ddr5 else "DDR4", 'val')
+            at_stock = m_med <= stock_ceiling
+            w(f"       {'At stock speed (XMP off?)':44s} = ")
+            wl("YES" if at_stock else "NO", 'warn' if at_stock else 'ok')
+
+        section("UI STATE")
+        t = self._get_theme()
+        active_theme = self.custom_theme.get("active", "Dark (Default)")
+        pinned = getattr(self, '_pinned_line', None)
+        tooltip_on = getattr(self, '_tooltip_enabled', True)
+        sel_count = len([c for c, v in self.vars.items() if v.get() and c in df.columns])
+        w(f"       {'Active theme':44s} = ");     wl(active_theme, 'val')
+        w(f"       {'is_dark':44s} = ");          wl(str(self.is_dark), 'val')
+        w(f"       {'Theme bg / accent':44s} = ");wl(f"{t['bg']}  /  {t['accent']}", 'val')
+        w(f"       {'Pinned sensor':44s} = ");    wl(pinned or "none", 'ok' if not pinned else 'warn')
+        w(f"       {'Tooltip enabled':44s} = ");  wl(str(tooltip_on), 'ok' if tooltip_on else 'miss')
+        w(f"       {'Selected sensors':44s} = "); wl(str(sel_count), 'val')
+        w(f"       {'Multi mode':44s} = ");       wl(str(self.multi_mode), 'val')
+        w(f"       {'Heatmap mode':44s} = ");     wl(str(self.heatmap_mode), 'val')
+        w(f"       {'Delta mode':44s} = ");       wl(str(self.delta_mode), 'val')
+
+        section("SENSOR STATS CACHE")
+        cache = getattr(self, '_sensor_stats_cache', {})
+        if cache:
+            wl(f"  {len(cache)} sensor(s) cached:", 'ok')
+            for cname, (s_min, s_max) in list(cache.items())[:10]:
+                w(f"  {cname[:50]:50s}  ")
+                wl(f"min={s_min:.2f}  max={s_max:.2f}", 'val')
+            if len(cache) > 10:
+                wl(f"  ... and {len(cache)-10} more", 'muted')
+        else:
+            wl("  Cache empty - no sensors selected or plot not yet drawn.", 'muted')
+
         wl()
-        wl('═' * 72, 'header')
-        wl(f"  End of dump - Ctrl+F8 to refresh, ✕ to close", 'header')
-        wl('═' * 72, 'header')
+        wl('=' * 72, 'header')
+        wl(f"  End of dump - Ctrl+F8 to refresh, X to close", 'header')
+        wl('=' * 72, 'header')
 
         txt.config(state='disabled')
         txt.see('1.0')
@@ -2562,6 +2632,8 @@ class TelemetryApp:
                 self._update_sig_badge()
                 if getattr(self, 'sig_timeline_enabled', True):
                     sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
+
+
                     if not sel:
                         self.update_plot()
             self.root.after(0, _done)
@@ -6031,8 +6103,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                       font=('Segoe UI', 8, 'bold'), anchor='w')
         self._legend_title.pack(fill=tk.X, padx=4, pady=(4, 0))
 
-        _leg_scroll_frame = tk.Frame(self._legend_panel)
+        _t_init = self._get_theme()
+        _leg_scroll_frame = tk.Frame(self._legend_panel, bg=_t_init.get("bg2","#1e1e1e"))
         _leg_scroll_frame.pack(fill=tk.BOTH, expand=True)
+        self._legend_scroll_frame = _leg_scroll_frame
 
         _t_init = self._get_theme()
         self._legend_canvas = tk.Canvas(_leg_scroll_frame, highlightthickness=0, bd=0,
@@ -6635,11 +6709,39 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         self._legend_panel.configure(bg=bg2)
         self._legend_title.configure(bg=bg2, fg=accent)
-        self._legend_canvas.configure(bg=bg2)
-        self._legend_inner.configure(bg=bg2)
 
-        for w in self._legend_inner.winfo_children():
-            w.destroy()
+        if hasattr(self, '_legend_scroll_frame'):
+            try: self._legend_scroll_frame.destroy()
+            except Exception: pass
+
+        scroll_f = tk.Frame(self._legend_panel, bg=bg2)
+        scroll_f.pack(fill=tk.BOTH, expand=True)
+        self._legend_scroll_frame = scroll_f
+
+        self._legend_canvas = tk.Canvas(scroll_f, highlightthickness=0, bd=0, bg=bg2)
+        vsb = tk.Scrollbar(scroll_f, orient='vertical', command=self._legend_canvas.yview,
+                           bg=bg3, troughcolor=bg2, activebackground=accent)
+        self._legend_canvas.configure(yscrollcommand=vsb.set)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        self._legend_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self._legend_vsb = vsb
+
+        self._legend_inner = tk.Frame(self._legend_canvas, bg=bg2)
+        self._legend_inner_id = self._legend_canvas.create_window(
+            (0, 0), window=self._legend_inner, anchor='nw')
+
+        def _on_leg_configure(e):
+            self._legend_canvas.configure(scrollregion=self._legend_canvas.bbox('all'))
+            self._legend_canvas.itemconfig(self._legend_inner_id,
+                                           width=self._legend_canvas.winfo_width())
+        self._legend_inner.bind('<Configure>', _on_leg_configure)
+        self._legend_canvas.bind('<Configure>', lambda e: self._legend_canvas.itemconfig(
+            self._legend_inner_id, width=e.width))
+
+        def _on_scroll(e):
+            self._legend_canvas.yview_scroll(int(-1*(e.delta/120)), 'units')
+        self._legend_canvas.bind('<MouseWheel>', _on_scroll)
+        self._legend_inner.bind('<MouseWheel>', _on_scroll)
 
         pinned = getattr(self, '_pinned_line', None)
 
@@ -7356,6 +7458,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         grid_color = _t["bg3"]
         self.fig.patch.set_facecolor(bg_color)
         sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
+        if getattr(self, '_pinned_line', None) not in sel:
+            self._pinned_line = None
 
         self._sensor_stats_cache = {
             c: (float(self.df[c].min()), float(self.df[c].max()))
@@ -7419,6 +7523,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             return
 
         if not sel:
+            self._update_tk_legend([])
             if self._sig_timeline_ax is not None and hits:
                 self._draw_sig_timeline(self._sig_timeline_ax, x_vals, hits)
                 if not hasattr(self, '_timeline_cid') or self._timeline_cid is None:
