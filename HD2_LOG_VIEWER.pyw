@@ -216,7 +216,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.5.3"
+CURRENT_VERSION = "1.5.4"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -2692,7 +2692,9 @@ class TelemetryApp:
         hits = []
         df = self.df
 
-        def add(name, severity, description, evidence, mask=None, cols=None):
+        def add(name, severity, description, evidence, mask=None, cols=None, advice=None):
+            if advice:
+                description = description + " " + advice
             if name in self.disabled_sigs:
                 return
             clean_ev = [str(e) for e in evidence if e and str(e).strip()]
