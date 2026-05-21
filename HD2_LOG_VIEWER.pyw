@@ -216,7 +216,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.5.7"
+CURRENT_VERSION = "1.5.8"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -3841,7 +3841,7 @@ class TelemetryApp:
                 return 0.0
             max_idx = len(xv) - 1
             covered = sum(
-                max(0, xv[min(e, max_idx)] - xv[max(s, max_idx)])
+                max(0, xv[min(e, max_idx)] - xv[min(s, max_idx)])
                 for s, e in spans
             )
             return min(covered / total_x, 1.0)
@@ -6553,9 +6553,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         for col, var in list(self.vars.items()):
             if col not in new_cols:
                 var.set(False)
-        self.filter_active = False
-        self._sig_hits     = []
-        self._sig_dirty    = True
+        self.filter_active         = False
+        self._sig_hits             = []
+        self._sig_dirty            = True
+        self._sig_timeline_x_vals  = None
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
@@ -7453,11 +7454,14 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             return
         if not getattr(self, '_sig_timeline_hits', None):
             return
+        xv = getattr(self, '_sig_timeline_x_vals', None)
+        if xv is None or len(xv) < 2:
+            return
         xc, yc = event.xdata, event.ydata
         if xc is None or yc is None:
             return
 
-        x_range = self._sig_timeline_x_vals[-1] - self._sig_timeline_x_vals[0]
+        x_range = xv[-1] - xv[0]
         threshold = x_range * 0.06
 
         best, best_dist = None, float('inf')
@@ -7485,7 +7489,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             icon = '[CRIT]' if hit['severity'] == 'CRITICAL' else '[WARN]' if hit['severity'] == 'WARNING' else '[INFO]'
             lines = [f"{icon}  {hit['name']}"]
             spans = hit.get('spans', [])
-            if spans and hasattr(self, '_sig_timeline_x_vals'):
+            if spans and getattr(self, '_sig_timeline_x_vals', None) is not None:
                 xv = self._sig_timeline_x_vals
                 x0 = xv[max(0, spans[0][0])]
                 x1 = xv[min(len(xv) - 1, spans[-1][1])]
