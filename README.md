@@ -69,28 +69,28 @@ pythonw HD2_LOG_VIEWER.pyw
 ## 🛠️ Core Features
 
 ### 📊 Visualization
-* **Multi-Plot Mode:** Split sensors into categorized subplots — temperatures, clocks, voltages, utilization — for side-by-side comparison without overlap.
+* **Multi-Plot Mode:** Split sensors into categorized subplots - temperatures, clocks, voltages, utilization - for side-by-side comparison without overlap.
 * **Heatmap Mode:** Color-coded stress visualization across all selected sensors simultaneously, using absolute thresholds for known sensor types and per-sensor normalization as fallback.
-* **Δ Delta Mode:** Graph the absolute difference between sensor values over time — useful for tracking GPU core vs. hotspot spread or VRM thermal delta.
+* **Δ Delta Mode:** Graph the absolute difference between sensor values over time - useful for tracking GPU core vs. hotspot spread or VRM thermal delta.
 * **Time Mode:** Switch the X-axis between raw polling ticks and actual elapsed time when a timestamp column is detected.
 * **Interactive Tooltip:** Hover over any point on the chart for a synchronized readout of all plotted sensors at that exact moment.
 * **Signal Event Timeline:** A dedicated timeline strip below the chart marks where hardware anomalies were detected. Click any marker to jump directly to that moment and see what triggered it.
 * **Chart Export:** Save the current view as a high-resolution PNG (300 DPI) including the full sensor legend, or copy it directly to the clipboard with `Ctrl+C`.
 
 ### 🔍 Sensor Management
-* **Categorized Sensor List:** Sensors are automatically sorted into groups — Temperatures, Utilization, Clocks, Power, Voltage, Fan Speeds — for fast navigation across large logs.
+* **Categorized Sensor List:** Sensors are automatically sorted into groups - Temperatures, Utilization, Clocks, Power, Voltage, Fan Speeds - for fast navigation across large logs.
 * **Live Search:** Filter the sensor list in real time by typing; results update instantly.
 * **Out-of-Spec Filter:** One click hides all normal sensors and shows only those currently reading outside safe thresholds, highlighted in the list.
 * **Sensor Alias System:** Permanently rename ambiguous or hardware-specific sensor columns so they are correctly identified across any future log file from the same machine.
-* **Preset Groups:** Save any combination of selected sensors as a named preset. Apply, rename, delete, or share presets via clipboard — paste a shared preset from another user directly into the app.
+* **Preset Groups:** Save any combination of selected sensors as a named preset. Apply, rename, delete, or share presets via clipboard - paste a shared preset from another user directly into the app.
 
 ### 🔬 Diagnostics
 * **Hardware Failure Diagnosis:** Runs a full signature scan and presents findings as severity-tagged cards (Critical / Warning / Info) with plain-English descriptions, evidence values, and one-click sensor selection to jump straight to the relevant chart.
 * **Session Summary Narrative:** Automatically generates a plain-English paragraph summarizing the most significant findings and any causal relationships between issues detected.
-* **Discord Summary Copy:** Copies a compact, formatted summary of the session narrative and all detected signals — including severity and evidence — ready to paste directly into Discord or a support ticket.
+* **Discord Summary Copy:** Copies a compact, formatted summary of the session narrative and all detected signals - including severity and evidence - ready to paste directly into Discord or a support ticket.
 * **Real-Time Signature Badges:** The sidebar shows a live count of critical, warning, and info signals as soon as the scan completes in the background, without opening the diagnosis window.
 * **Out-of-Spec Detection:** Independently flags individual sensors that exceed configured thresholds, separate from the full signature engine.
-* **Detected Hardware View:** Parses the CSV label rows to identify and display the actual hardware devices present in the log — CPU, GPU, storage drives, network adapters, and more — grouped by category.
+* **Detected Hardware View:** Parses the CSV label rows to identify and display the actual hardware devices present in the log - CPU, GPU, storage drives, network adapters, and more - grouped by category.
 
 ### 🔁 Session Comparison
 * **Reference Baseline:** Pin the current session as a reference, then load a second CSV to compare directly against it.
@@ -108,12 +108,12 @@ pythonw HD2_LOG_VIEWER.pyw
 * **Persistent Theme:** The active theme and all customizations are saved and restored between sessions.
 
 ### ⚙️ Settings & Configuration
-* **Limits Editor:** Configure every detection threshold — temperature limits per component type, voltage rail safe ranges, power maximums, fan stall thresholds, frametime limits, and all signature-specific sensitivity parameters.
+* **Limits Editor:** Configure every detection threshold - temperature limits per component type, voltage rail safe ranges, power maximums, fan stall thresholds, frametime limits, and all signature-specific sensitivity parameters.
 * **Signature Controls:** Enable or disable individual signatures from the settings panel. The signal timeline and badge counts update accordingly.
 * **Tooltip Toggle:** Enable or disable the hover tooltip from the top bar without restarting.
 * **Crash Recovery:** Automatically trims corrupted or zeroed rows commonly left at the end of logs after crashes or hard resets.
 * **Update Notifications:** Checks for new releases silently on startup. If an update is found, you can open the release page, ignore that specific version, or disable future notifications. A manual check is available via the ⟳ button at any time.
-* **Debug Dump:** A hidden developer panel (`Ctrl+F8`) shows all resolved sensor columns, detected values, fabric clock ratios, PSU rail analysis, and internal state — useful for diagnosing why a signature did or did not fire.
+* **Debug Dump:** A hidden developer panel (`Ctrl+F8`) shows all resolved sensor columns, detected values, fabric clock ratios, PSU rail analysis, and internal state - useful for diagnosing why a signature did or did not fire.
 
 ---
 
@@ -132,7 +132,7 @@ HD2 LOG VIEWER includes an advanced signature detection system that analyzes sys
 * Fan stall detection during active load
 
 **⚡ Power & Voltage**
-* CPU clock stretching (major and minor) — effective vs. requested clock ratio analysis per core
+* CPU clock stretching (major and minor) - effective vs. requested clock ratio analysis per core
 * GPU power limit saturation and oscillation
 * PSU +12V rail sag and ripple analysis
 * Multi-rail voltage out-of-spec detection (+12V, +5V, +3.3V)
@@ -183,4 +183,4 @@ HD2 LOG VIEWER includes an advanced signature detection system that analyzes sys
 
 ## ⚖️ License
 
-MIT License — Developed for the hardware enthusiast and troubleshooting community.
+MIT License - Developed for the hardware enthusiast and troubleshooting community.
