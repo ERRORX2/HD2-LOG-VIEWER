@@ -216,7 +216,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.5.9"
+CURRENT_VERSION = "1.5.9-2"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -5926,7 +5926,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             threading.Thread(target=_run, daemon=True).start()
 
     def _open_about(self):
-
+        """Show the About dialog with credits."""
         _t = self._get_theme()
         bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]; fg = _t["fg"]; accent = _t["accent"]
 
@@ -5945,7 +5945,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         lambda: (setattr(self, '_about_window', None), dialog.destroy()))
 
         self.root.update_idletasks()
-        pw, ph = 440, 400
+        pw, ph = 440, 440
         x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
         y = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
         dialog.geometry(f"{pw}x{ph}+{x}+{y}")
@@ -5992,9 +5992,14 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         tk.Label(body, text="Built for the Helldivers 2 community \U0001f985",
                  font=('Segoe UI', 9, 'italic'), bg=bg, fg="#888").pack(anchor='w')
 
-        ttk.Button(dialog, text="Close",
+        btn_row = tk.Frame(dialog, bg=bg)
+        btn_row.pack(fill=tk.X, padx=30, pady=(0, 16))
+        ttk.Button(btn_row, text="⟳ Check for Updates",
+                   command=lambda: self._manual_update_check()
+                   ).pack(side=tk.LEFT)
+        ttk.Button(btn_row, text="Close",
                    command=lambda: (setattr(self, '_about_window', None), dialog.destroy())
-                   ).pack(pady=(0, 16))
+                   ).pack(side=tk.RIGHT)
 
     def _setup_ui(self):
         flag = " [DEBUG]" if self.debug_mode else ""
@@ -6017,9 +6022,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         top = ttk.Frame(self.left)
         top.pack(fill=tk.X, pady=(0, 10))
         ttk.Label(top, text="DASHBOARD", font=('Segoe UI', 12, 'bold')).pack(side=tk.LEFT)
-        ttk.Button(top, text="ℹ", command=self._open_about).pack(side=tk.RIGHT, padx=(0, 4))
-        ttk.Button(top, text="Theme", command=self._open_theme_editor).pack(side=tk.RIGHT)
-        ttk.Button(top, text="⟳", command=self._manual_update_check, width=3).pack(side=tk.RIGHT, padx=(0, 4))
+        ttk.Button(top, text="ℹ About", command=self._open_about).pack(side=tk.RIGHT)
+        ttk.Button(top, text="Theme", command=self._open_theme_editor).pack(side=tk.RIGHT, padx=(0, 4))
         self._tooltip_btn = ttk.Button(top, text="Tooltip: ON" if getattr(self, "_tooltip_enabled", True) else "Tooltip: OFF", width=16,
                                        command=self._toggle_tooltip)
         self._tooltip_btn.pack(side=tk.RIGHT, padx=(0, 4))
@@ -8305,8 +8309,44 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
 if __name__ == "__main__":
     import threading
+    import sys, os
+
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            f"ERRORX2.RESYNC.ERR.{CURRENT_VERSION}"
+        )
+    except Exception:
+        pass
+
     root = tk.Tk()
     root.withdraw()
+
+    try:
+        if getattr(sys, 'frozen', False):
+            _resolved_icon = sys.executable
+        else:
+            _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'icon.ico')
+            _resolved_icon = _p if os.path.exists(_p) else None
+    except Exception:
+        _resolved_icon = None
+
+    if _resolved_icon:
+        try:
+            root.iconbitmap(_resolved_icon)
+        except Exception:
+            pass
+
+    if _resolved_icon:
+        _orig_toplevel_init = tk.Toplevel.__init__
+        def _patched_toplevel_init(self, *args, **kwargs):
+            _orig_toplevel_init(self, *args, **kwargs)
+            try:
+                self.iconbitmap(_resolved_icon)
+            except Exception:
+                pass
+        tk.Toplevel.__init__ = _patched_toplevel_init
+
     path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
     if not path:
         root.destroy()
