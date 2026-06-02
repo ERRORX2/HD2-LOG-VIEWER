@@ -216,7 +216,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.5.9-3"
+CURRENT_VERSION = "1.5.9-4"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -8331,33 +8331,29 @@ if __name__ == "__main__":
     except Exception:
         _resolved_icon = None
 
-    def _apply_icon(window):
-        """Apply icon via both Tk and ctypes HWND to ensure taskbar shows it."""
-        if not _resolved_icon:
-            return
+    _icon_photo_large = None
+    _icon_photo_small = None
+    if _resolved_icon and not getattr(sys, 'frozen', False):
         try:
-            window.iconbitmap(_resolved_icon)
+            from PIL import Image, ImageTk
+            _img = Image.open(_resolved_icon)
+            _icon_photo_large = ImageTk.PhotoImage(_img.resize((32, 32), Image.LANCZOS), master=root)
+            _icon_photo_small = ImageTk.PhotoImage(_img.resize((16, 16), Image.LANCZOS), master=root)
         except Exception:
             pass
-        try:
-            import ctypes
-            GCL_HICON      = -14
-            GCL_HICONSM    = -34
-            WM_SETICON     = 0x0080
-            ICON_SMALL     = 0
-            ICON_BIG       = 1
-            IMAGE_ICON     = 1
-            LR_LOADFROMFILE    = 0x00000010
-            LR_DEFAULTSIZE     = 0x00000040
 
-            hwnd = ctypes.windll.user32.GetParent(window.winfo_id())
-            hicon = ctypes.windll.user32.LoadImageW(
-                None, _resolved_icon, IMAGE_ICON,
-                0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE
-            )
-            if hicon:
-                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG,   hicon)
-                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+    def _apply_icon(window):
+        """Apply icon to window title bar and taskbar."""
+        if not _resolved_icon:
+            return
+        if _icon_photo_large and _icon_photo_small:
+            try:
+                window.iconphoto(True, _icon_photo_large, _icon_photo_small)
+                return
+            except Exception:
+                pass
+        try:
+            window.iconbitmap(_resolved_icon)
         except Exception:
             pass
 
@@ -8367,14 +8363,13 @@ if __name__ == "__main__":
         _orig_toplevel_init = tk.Toplevel.__init__
         def _patched_toplevel_init(self, *args, **kwargs):
             _orig_toplevel_init(self, *args, **kwargs)
-            try:
-                self.iconbitmap(_resolved_icon)
-            except Exception:
-                pass
-            try:
-                self.after(0, lambda: _apply_icon(self))
-            except Exception:
-                pass
+            def _maybe_apply():
+                try:
+                    if self.winfo_exists() and self.title():
+                        _apply_icon(self)
+                except Exception:
+                    pass
+            self.after(10, _maybe_apply)
         tk.Toplevel.__init__ = _patched_toplevel_init
 
     path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
