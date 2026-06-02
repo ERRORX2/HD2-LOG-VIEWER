@@ -5925,6 +5925,77 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 self.root.after(0, _done)
             threading.Thread(target=_run, daemon=True).start()
 
+    def _open_about(self):
+
+        _t = self._get_theme()
+        bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]; fg = _t["fg"]; accent = _t["accent"]
+
+        if hasattr(self, '_about_window') and self._about_window and self._about_window.winfo_exists():
+            self._about_window.deiconify()
+            self._about_window.lift()
+            self._about_window.focus_force()
+            return
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("About RESYNC.ERR")
+        dialog.resizable(False, False)
+        dialog.configure(bg=bg)
+        self._about_window = dialog
+        dialog.protocol("WM_DELETE_WINDOW",
+                        lambda: (setattr(self, '_about_window', None), dialog.destroy()))
+
+        self.root.update_idletasks()
+        pw, ph = 440, 400
+        x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
+        dialog.geometry(f"{pw}x{ph}+{x}+{y}")
+
+        tk.Frame(dialog, bg=accent, height=4).pack(fill=tk.X)
+
+        body = tk.Frame(dialog, bg=bg, padx=30, pady=22)
+        body.pack(fill=tk.BOTH, expand=True)
+
+        tk.Label(body, text="RESYNC.ERR",
+                 font=('Segoe UI', 20, 'bold'), bg=bg, fg=accent).pack(anchor='w')
+        tk.Label(body, text=f"Hardware Telemetry Log Viewer  \u2022  v{CURRENT_VERSION}",
+                 font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w', pady=(0, 16))
+
+        tk.Frame(body, bg=bg3, height=1).pack(fill=tk.X, pady=(0, 14))
+
+        tk.Label(body, text="DEVELOPER",
+                 font=('Segoe UI', 8, 'bold'), bg=bg, fg="#888").pack(anchor='w')
+        tk.Label(body, text="ERROR_X2\u2122",
+                 font=('Segoe UI', 12, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(3, 0))
+        tk.Label(body, text="ERROR_X2\u2122 | 418th Archmagos",
+                 font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w')
+        gh = tk.Label(body, text="\u238b  github.com/ERRORX2",
+                      font=('Segoe UI', 9), bg=bg, fg=accent, cursor='hand2')
+        gh.pack(anchor='w', pady=(2, 0))
+        gh.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/ERRORX2"))
+
+        tk.Frame(body, bg=bg3, height=1).pack(fill=tk.X, pady=(14, 14))
+
+        tk.Label(body, text="SPECIAL THANKS",
+                 font=('Segoe UI', 8, 'bold'), bg=bg, fg="#888").pack(anchor='w')
+
+        for name, roles in [
+            ("Birby | 418th Technical Goose",
+             "Bug Testing  \u2022  Suggestions  \u2022  Program Icon"),
+        ]:
+            tk.Label(body, text=name,
+                     font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(6, 0))
+            tk.Label(body, text=roles,
+                     font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w')
+
+        tk.Frame(body, bg=bg3, height=1).pack(fill=tk.X, pady=(14, 14))
+
+        tk.Label(body, text="Built for the Helldivers 2 community \U0001f985",
+                 font=('Segoe UI', 9, 'italic'), bg=bg, fg="#888").pack(anchor='w')
+
+        ttk.Button(dialog, text="Close",
+                   command=lambda: (setattr(self, '_about_window', None), dialog.destroy())
+                   ).pack(pady=(0, 16))
+
     def _setup_ui(self):
         flag = " [DEBUG]" if self.debug_mode else ""
         self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}{flag}")
@@ -5946,6 +6017,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         top = ttk.Frame(self.left)
         top.pack(fill=tk.X, pady=(0, 10))
         ttk.Label(top, text="DASHBOARD", font=('Segoe UI', 12, 'bold')).pack(side=tk.LEFT)
+        ttk.Button(top, text="ℹ", command=self._open_about).pack(side=tk.RIGHT, padx=(0, 4))
         ttk.Button(top, text="Theme", command=self._open_theme_editor).pack(side=tk.RIGHT)
         ttk.Button(top, text="⟳", command=self._manual_update_check, width=3).pack(side=tk.RIGHT, padx=(0, 4))
         self._tooltip_btn = ttk.Button(top, text="Tooltip: ON" if getattr(self, "_tooltip_enabled", True) else "Tooltip: OFF", width=16,
