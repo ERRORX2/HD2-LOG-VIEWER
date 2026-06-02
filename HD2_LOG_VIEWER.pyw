@@ -216,7 +216,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.5.9-2"
+CURRENT_VERSION = "1.5.9-3"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -8331,11 +8331,37 @@ if __name__ == "__main__":
     except Exception:
         _resolved_icon = None
 
-    if _resolved_icon:
+    def _apply_icon(window):
+        """Apply icon via both Tk and ctypes HWND to ensure taskbar shows it."""
+        if not _resolved_icon:
+            return
         try:
-            root.iconbitmap(_resolved_icon)
+            window.iconbitmap(_resolved_icon)
         except Exception:
             pass
+        try:
+            import ctypes
+            GCL_HICON      = -14
+            GCL_HICONSM    = -34
+            WM_SETICON     = 0x0080
+            ICON_SMALL     = 0
+            ICON_BIG       = 1
+            IMAGE_ICON     = 1
+            LR_LOADFROMFILE    = 0x00000010
+            LR_DEFAULTSIZE     = 0x00000040
+
+            hwnd = ctypes.windll.user32.GetParent(window.winfo_id())
+            hicon = ctypes.windll.user32.LoadImageW(
+                None, _resolved_icon, IMAGE_ICON,
+                0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE
+            )
+            if hicon:
+                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG,   hicon)
+                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+        except Exception:
+            pass
+
+    _apply_icon(root)
 
     if _resolved_icon:
         _orig_toplevel_init = tk.Toplevel.__init__
@@ -8343,6 +8369,10 @@ if __name__ == "__main__":
             _orig_toplevel_init(self, *args, **kwargs)
             try:
                 self.iconbitmap(_resolved_icon)
+            except Exception:
+                pass
+            try:
+                self.after(0, lambda: _apply_icon(self))
             except Exception:
                 pass
         tk.Toplevel.__init__ = _patched_toplevel_init
