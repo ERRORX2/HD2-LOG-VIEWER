@@ -1,5 +1,5 @@
+![HD2 Log Viewer Logo](assets/icon.ico) 
 # HD2 LOG VIEWER
-
 ![Build Status](https://github.com/ERRORX2/HD2-LOG-VIEWER/actions/workflows/build.yml/badge.svg)
 ![Latest Release](https://img.shields.io/github/v/release/ERRORX2/HD2-LOG-VIEWER?color=blue&label=Latest%20Version)
 
@@ -7,41 +7,9 @@
 
 ---
 
-## 🛡️ Security & Transparency
-
-Because this utility is packaged using PyInstaller, some antivirus engines may flag the executable as a false positive.
-
-Previously, automated VirusTotal scanning was integrated into the CI pipeline. This has been removed for the following technical and operational reasons:
-
-- **Binary size constraints:** The compiled executable is large due to bundled dependencies, which makes repeated API uploads inefficient and prone to request failures or rate limiting.
-- **API cost / quota limitations:** Continuous scanning of every build consumes VirusTotal API quota. For a free and frequently built project, this introduces unnecessary operational cost.
-- **CI overhead:** Uploading and polling external scan results significantly increases build time without affecting runtime functionality or binary correctness.
-
-### 🔍 Current security model
-
-- Each release includes a **SHA256 checksum** for integrity verification of the distributed archive.
-- The project is built deterministically via **GitHub Actions**, with artifacts generated directly from source.
-- Manual VirusTotal scans may still be performed selectively on major releases when required.
-
-This approach prioritizes build stability, reproducibility, and cost efficiency while maintaining basic integrity validation.
-
----
-
 ## 🚀 Installation & Deployment
-<!-- LATEST_RELEASE_START -->
-### 🚀 Latest Release: v1.5.9.2 (2026-06-04)
 
-- Download: [release_release_v1.5.9.2.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.5.9.2/release_v1.5.9.2.zip)
-
-### 🔐 Integrity
-
-- EXE SHA256: 9415D1DF015BB47B031CEE051EF44E612E7A68054B9DDE42942A375AA1356E2E
-- Groups JSON SHA256: 3AFEBEF1816D52DF9849EA545282A25887A6B0016D655836E4C7E3C1CAFD1A92
-- Manifest SHA256: E4417B7A2949E5F74921DBF22F416095701BDBA3B6FADB2DA9DF3155981F94FF
-- ZIP SHA256: 536732E450F946CFDB4D41709891060EA800923DA7B3205C66F72880E4AFDAAB
-<!-- LATEST_RELEASE_END -->
-
-### 📦 Option 1: Compiled Executable (Recommended for Users)
+### 📦 Option 1: Latest Windows Release (Recommended for Most Users)
 1. Go to the **[Latest Release](../../releases/latest)** page.
 2. Download the `HD2_LOG_VIEWER_latest.zip` archive.
 3. **Extract the ZIP fully** to a folder of your choice.
@@ -49,20 +17,51 @@ This approach prioritizes build stability, reproducibility, and cost efficiency 
 
 *Ensure `groups.json` stays in the same folder as the EXE to load your presets.*
 
+### 🔐 Integrity
+
+<details>
+
+<summary>Cryptographic Hashes</summary>
+  
+* EXE SHA256: ``9415D1DF015BB47B031CEE051EF44E612E7A68054B9DDE42942A375AA1356E2E``
+* Groups JSON SHA256: ``3AFEBEF1816D52DF9849EA545282A25887A6B0016D655836E4C7E3C1CAFD1A92``
+* Manifest SHA256: ``E4417B7A2949E5F74921DBF22F416095701BDBA3B6FADB2DA9DF3155981F94FF``
+* ZIP SHA256: ``536732E450F946CFDB4D41709891060EA800923DA7B3205C66F72880E4AFDAAB``
+
+</details>
+
 ---
 
-### 🛠️ Option 2: Running from Source (For Developers)
+### 🛠️ Option 2: Running on Linux (Arch/CachyOS)
+1. Install dependencies 
+```sudo pacman -S git python tk python-pandas python-matplotlib python-numpy python-pip```
+2. git clone ``https://github.com/ERRORX2/HD2-LOG-VIEWER.git``
+3. cd ``HD2-LOG-VIEWER``
+4. python ``HD2_LOG_VIEWER.pyw``
+
+---
+
+### 🛠️ Option 3: Running from Source (For Developers)
 
 **Prerequisites:**
 * Python 3.12
 * pip
 
-```bash
-git clone https://github.com/ERRORX2/HD2-LOG-VIEWER.git
-cd HD2-LOG-VIEWER
-pip install pandas matplotlib numpy
-pythonw HD2_LOG_VIEWER.pyw
-```
+1. git clone ``https://github.com/ERRORX2/HD2-LOG-VIEWER.git``
+2. cd ``HD2-LOG-VIEWER``
+3. pip install ``pandas matplotlib numpy``
+4. pythonw ``HD2_LOG_VIEWER.pyw``
+
+---
+
+## 📖 Usage
+
+1. **Load a Log:** Launch the app and select your HWiNFO64 CSV. A spinner dialog loads it in the background.
+2. **Select Sensors:** Use the categorized sidebar to toggle sensors, or apply a saved preset. Use the search box to filter by name.
+3. **Analyze:** Hover over the chart for a live synchronized readout. Use Multi-Plot, Heatmap, Delta, or Time mode to change the view.
+4. **Diagnose:** Click **🔬 Diagnose Hardware Signatures** to run the full analysis and review any findings. Use **📋 Copy Discord Summary** to share results instantly.
+5. **Save Presets:** Type a name and click Save to store the current sensor selection. Share it via the clipboard icon next to each preset.
+6. **Export:** Save a PNG of the current chart or generate a full HTML report for offline sharing or archiving.
 
 ---
 
@@ -170,22 +169,27 @@ HD2 LOG VIEWER includes an advanced signature detection system that analyzes sys
 
 ---
 
-## 📖 Usage
+## 🛡️ Security & Transparency
 
-1. **Load a Log:** Launch the app and select your HWiNFO64 CSV. A spinner dialog loads it in the background.
-2. **Select Sensors:** Use the categorized sidebar to toggle sensors, or apply a saved preset. Use the search box to filter by name.
-3. **Analyze:** Hover over the chart for a live synchronized readout. Use Multi-Plot, Heatmap, Delta, or Time mode to change the view.
-4. **Diagnose:** Click **🔬 Diagnose Hardware Signatures** to run the full analysis and review any findings. Use **📋 Copy Discord Summary** to share results instantly.
-5. **Save Presets:** Type a name and click Save to store the current sensor selection. Share it via the clipboard icon next to each preset.
-6. **Export:** Save a PNG of the current chart or generate a full HTML report for offline sharing or archiving.
+Because this utility is packaged using PyInstaller, some antivirus engines may flag the executable as a false positive.
+
+Previously, automated VirusTotal scanning was integrated into the CI pipeline. This has been removed for the following technical and operational reasons:
+
+- **Binary size constraints:** The compiled executable is large due to bundled dependencies, which makes repeated API uploads inefficient and prone to request failures or rate limiting.
+- **API cost / quota limitations:** Continuous scanning of every build consumes VirusTotal API quota. For a free and frequently built project, this introduces unnecessary operational cost.
+- **CI overhead:** Uploading and polling external scan results significantly increases build time without affecting runtime functionality or binary correctness.
+
+### 🔍 Current security model
+
+- Each release includes a **SHA256 checksum** for integrity verification of the distributed archive.
+- The project is built deterministically via **GitHub Actions**, with artifacts generated directly from source.
+- Manual VirusTotal scans may still be performed selectively on major releases when required.
+
+This approach prioritizes build stability, reproducibility, and cost efficiency while maintaining basic integrity validation.
 
 ---
+
 
 ## ⚖️ License
 
 MIT License - Developed for the hardware enthusiast and troubleshooting community.
-
-
-
-
-
