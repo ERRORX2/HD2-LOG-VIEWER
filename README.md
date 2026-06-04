@@ -10,12 +10,11 @@
 ## 🚀 Installation & Deployment
 
 ### 📦 Option 1: Latest Windows Release (Recommended for Most Users)
-1. Go to the **[Latest Release](../../releases/latest)** page.
-2. Download the `HD2_LOG_VIEWER_latest.zip` archive.
-3. **Extract the ZIP fully** to a folder of your choice.
-4. Run `HD2_LOG_VIEWER.exe`.
 
-*Ensure `groups.json` stays in the same folder as the EXE to load your presets.*
+<!-- LATEST_RELEASE_START -->
+### 🚀 Latest Windows Release: v1.5.9.2 (2026-06-04)
+
+- Download: [release_release_v1.5.9.2.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.5.9.2/release_v1.5.9.2.zip)
 
 ### 🔐 Integrity
 
@@ -29,6 +28,14 @@
 * ZIP SHA256: ``536732E450F946CFDB4D41709891060EA800923DA7B3205C66F72880E4AFDAAB``
 
 </details>
+<!-- LATEST_RELEASE_END -->
+
+1. Download the **[Latest Release](../../releases/latest)**.
+2. Download the `HD2_LOG_VIEWER_latest.zip` archive.
+3. **Extract the ZIP fully** to a folder of your choice.
+4. Run `HD2_LOG_VIEWER.exe`.
+
+*Ensure `groups.json` stays in the same folder as the EXE to load your presets.*
 
 ---
 
