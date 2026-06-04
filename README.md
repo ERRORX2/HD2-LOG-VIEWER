@@ -12,20 +12,20 @@
 ### 📦 Option 1: Latest Windows Release (Recommended for Most Users)
 
 <!-- LATEST_RELEASE_START -->
-### 🚀 Latest Windows Release: v1.6 (2026-06-04)
+### 🚀 Latest Windows Release: v1.5.9.2 (2026-06-04)
 
-- Download: [release_release_v1.6.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.6/release_v1.6.zip)
+- Download: [release_release_v1.5.9.2.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.5.9.2/release_v1.5.9.2.zip)
 
 ### 🔐 Integrity
 
 <details>
 
 <summary>Cryptographic Hashes</summary>
-
-* EXE SHA256: `CB7204C65C4C59259E61F110EF8263CE3016D9580C0A168847F048AA66B34FDF`
-* Groups JSON SHA256: `3AFEBEF1816D52DF9849EA545282A25887A6B0016D655836E4C7E3C1CAFD1A92`
-* Manifest SHA256: `F7D8A16C4E3FDAF03C036EAEBE14A7E8674E57F49FAE4B8F35BC1BA92671597C`
-* ZIP SHA256: `A130D9A91B0C6A2155EA9494CD21F0630AF4D3D0B4CC02F4906BAB8736EDAB5C`
+  
+* EXE SHA256: ``9415D1DF015BB47B031CEE051EF44E612E7A68054B9DDE42942A375AA1356E2E``
+* Groups JSON SHA256: ``3AFEBEF1816D52DF9849EA545282A25887A6B0016D655836E4C7E3C1CAFD1A92``
+* Manifest SHA256: ``E4417B7A2949E5F74921DBF22F416095701BDBA3B6FADB2DA9DF3155981F94FF``
+* ZIP SHA256: ``536732E450F946CFDB4D41709891060EA800923DA7B3205C66F72880E4AFDAAB``
 
 </details>
 <!-- LATEST_RELEASE_END -->
@@ -200,4 +200,3 @@ This approach prioritizes build stability, reproducibility, and cost efficiency 
 ## ⚖️ License
 
 MIT License - Developed for the hardware enthusiast and troubleshooting community.
-
