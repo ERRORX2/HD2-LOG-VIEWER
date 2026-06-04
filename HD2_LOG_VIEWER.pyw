@@ -216,7 +216,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.5.9.1"
+CURRENT_VERSION = "1.5.9.2"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -375,12 +375,41 @@ class TelemetryAnalyzer:
     TIME_FORMATS = ['%H:%M:%S', '%H:%M:%S.%f', '%Y-%m-%d %H:%M:%S',
                     '%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S', '%H:%M']
 
+
+    MANGOHUD_COL_MAP = {
+        'fps':              'FPS [FPS]',
+        'frametime':        'Frame Time [ms]',
+        'cpu_load':         'CPU Usage [%]',
+        'cpu_power':        'CPU Package Power [W]',
+        'gpu_load':         'GPU Usage [%]',
+        'cpu_temp':         'CPU Temperature [°C]',
+        'gpu_temp':         'GPU Temperature [°C]',
+        'gpu_core_clock':   'GPU Clock [MHz]',
+        'gpu_mem_clock':    'GPU Memory Clock [MHz]',
+        'gpu_vram_used':    'GPU VRAM Used [MB]',
+        'gpu_power':        'GPU Power [W]',
+        'ram_used':         'RAM Used [GB]',
+        'swap_used':        'Swap Used [GB]',
+        'process_rss':      'Process RSS [GB]',
+        'cpu_mhz':          'CPU Clock [MHz]',
+        'elapsed':          'elapsed',
+        'gpu_voltage':      'GPU Voltage [V]',
+        'gpu_mem_temp':     'GPU Memory Temperature [°C]',
+        'cpu_power_limit':  'CPU Power Limit [W]',
+        'fan_speed':        'Fan Speed [RPM]',
+        'gpu_fan_speed':    'GPU Fan Speed [RPM]',
+        'battery':          'Battery [%]',
+        'gpu_load_change':  'GPU Load Change [%]',
+    }
+
     def __init__(self, file_path: str):
         self.path = Path(file_path)
         self.df: pd.DataFrame = pd.DataFrame()
         self.time_col: str = ""
         self.time_series = None
         self.aliases: dict = {}
+        self.is_mangohud: bool = False
+        self.mangohud_sysinfo: dict = {}
 
     @staticmethod
     def load_aliases() -> dict:
@@ -414,7 +443,94 @@ class TelemetryAnalyzer:
                 return c
         return None
 
+    def _is_mangohud_file(self) -> bool:
+        """Return True if this CSV is a MangoHud log."""
+        try:
+            with open(self.path, 'r', encoding='utf-8', errors='ignore') as f:
+                first = f.readline().strip()
+            return first == 'v1'
+        except Exception:
+            return False
+
+    def _load_mangohud(self) -> None:
+        """Parse a MangoHud log file into self.df with HWiNFO-style column names."""
+        sysinfo = {}
+        header_row = None
+        data_start = 0
+
+        with open(self.path, 'r', encoding='utf-8', errors='ignore') as f:
+            lines = f.readlines()
+
+
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            if line.startswith('-----') and 'SYSTEM INFO' in line:
+
+                if i + 2 < len(lines):
+                    keys   = lines[i + 1].strip().split(',')
+                    values = lines[i + 2].strip().split(',')
+                    sysinfo = dict(zip(keys, values))
+                i += 3
+                continue
+            if line.startswith('-----') and 'FRAME METRICS' in line:
+
+                header_row = i + 1
+                data_start = i + 2
+                break
+            i += 1
+
+        if header_row is None:
+            raise ValueError("MangoHud format not recognised - missing FRAME METRICS section")
+
+        self.mangohud_sysinfo = sysinfo
+        self.is_mangohud = True
+
+
+        col_line = lines[header_row].strip()
+        raw_cols = col_line.split(',')
+        data_lines = [l for l in lines[data_start:] if l.strip() and not l.startswith('-')]
+
+        import io
+        data_str = col_line + '\n' + ''.join(data_lines)
+        df = pd.read_csv(io.StringIO(data_str), on_bad_lines='skip')
+
+
+        if 'elapsed' in df.columns:
+            elapsed_ns = pd.to_numeric(df['elapsed'], errors='coerce')
+            elapsed_ns = elapsed_ns - elapsed_ns.iloc[0]
+            elapsed_s  = elapsed_ns / 1e9
+            import pandas as pd_inner
+            self.time_series = pd_inner.to_timedelta(elapsed_s, unit='s').reset_index(drop=True)
+            self.time_col = 'elapsed'
+
+
+        rename_map = {}
+        for raw, display in self.MANGOHUD_COL_MAP.items():
+            if raw in df.columns and raw != 'elapsed':
+                rename_map[raw] = display
+        df = df.rename(columns=rename_map)
+
+
+        if 'elapsed' in df.columns:
+            df = df.drop(columns=['elapsed'])
+
+
+        for col in df.columns:
+            try:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            except Exception:
+                pass
+
+        df = df.ffill().reset_index(drop=True)
+        self.df = df
+
     def load(self) -> None:
+
+        if self._is_mangohud_file():
+            self._load_mangohud()
+            self.aliases = self.load_aliases()
+            return
         success = False
         try:
             with open(self.path, 'r', encoding='latin-1', errors='ignore') as f:
@@ -476,6 +592,29 @@ class TelemetryAnalyzer:
         self.aliases = self.load_aliases()
 
     def extract_hardware_names(self) -> dict:
+
+        if self.is_mangohud and self.mangohud_sysinfo:
+            result = {}
+            si = self.mangohud_sysinfo
+            if si.get('cpu'):
+                result.setdefault('CPU', []).append(si['cpu'])
+            if si.get('gpu'):
+                result.setdefault('GPU', []).append(si['gpu'])
+            if si.get('ram'):
+                try:
+                    ram_mb = int(si['ram'])
+                    result.setdefault('Memory (RAM)', []).append(f"{ram_mb // 1024} GB")
+                except Exception:
+                    result.setdefault('Memory (RAM)', []).append(si['ram'])
+            if si.get('os'):
+                result.setdefault('System / Motherboard', []).append(si['os'])
+            if si.get('driver'):
+                result.setdefault('GPU', []).append(f"Driver: {si['driver']}")
+            if si.get('kernel'):
+                result.setdefault('System / Motherboard', []).append(f"Kernel: {si['kernel']}")
+            return result
+
+
         """
         Extract unique hardware device names from a HWiNFO64 CSV.
 
@@ -2136,7 +2275,35 @@ class TelemetryApp:
         wl(f"  Rows      : {len(df):,}   Columns: {len(df.columns):,}", 'header')
         wl(f"  RAM in use: {mem_in_use}  (this process)", 'header')
         wl(f"  Disabled  : {sorted(self.disabled_sigs) or 'none'}", 'header')
+        wl(f"  Format    : {'MangoHud' if self.analyzer.is_mangohud else 'HWiNFO64 / Generic CSV'}", 'header')
         wl('=' * 72, 'header')
+
+        if self.analyzer.is_mangohud:
+            section("MANGOHUD FILE DETECTED")
+            si = self.analyzer.mangohud_sysinfo
+            if si:
+                for k, v in si.items():
+                    if v:
+                        w(f"  {k:20s} = ")
+                        wl(v, 'val')
+            else:
+                wl("  No system info block found.", 'muted')
+            wl()
+            wl("  Columns resolved from MangoHud short names:", 'section')
+            for short, display in self.analyzer.MANGOHUD_COL_MAP.items():
+                if display in df.columns:
+                    s = df[display].dropna()
+                    tag = 'ok'
+                    sym = '✓'
+                else:
+                    s = None
+                    tag = 'miss'
+                    sym = '✗'
+                w(f"  [{sym}] {short:25s} → {display:40s}", tag)
+                if s is not None and not s.empty:
+                    wl(f"  min={s.min():.2f}  avg={s.mean():.2f}  max={s.max():.2f}", 'val')
+                else:
+                    wl("  not present", 'muted')
 
         cpu_temp      = self._col('TCTL') or self._col('TDIE') or self._col_excl(['CPU'], excl=['USAGE','UTIL','LOAD','THREAD','W]','%]','MHz','RPM'])
         cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col('CLOCK')
@@ -5950,10 +6117,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         y = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
         dialog.geometry(f"{pw}x{ph}+{x}+{y}")
 
+
         tk.Frame(dialog, bg=accent, height=4).pack(fill=tk.X)
 
         body = tk.Frame(dialog, bg=bg, padx=30, pady=22)
         body.pack(fill=tk.BOTH, expand=True)
+
 
         tk.Label(body, text="RESYNC.ERR",
                  font=('Segoe UI', 20, 'bold'), bg=bg, fg=accent).pack(anchor='w')
@@ -5961,6 +6130,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                  font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w', pady=(0, 16))
 
         tk.Frame(body, bg=bg3, height=1).pack(fill=tk.X, pady=(0, 14))
+
 
         tk.Label(body, text="DEVELOPER",
                  font=('Segoe UI', 8, 'bold'), bg=bg, fg="#888").pack(anchor='w')
@@ -5974,6 +6144,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         gh.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/ERRORX2"))
 
         tk.Frame(body, bg=bg3, height=1).pack(fill=tk.X, pady=(14, 14))
+
 
         tk.Label(body, text="SPECIAL THANKS",
                  font=('Segoe UI', 8, 'bold'), bg=bg, fg="#888").pack(anchor='w')
@@ -6008,6 +6179,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.root.minsize(1000, 700)
         for widget in self.root.winfo_children():
             widget.destroy()
+
 
         try:
             import sys as _sys, os as _os
@@ -6639,11 +6811,11 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 setattr(self, attr, None)
 
     def _apply_new_csv(self, new_analyzer):
-        self._invalidate_x_cache()
         """Called on the main thread once a new CSV has loaded successfully."""
         self._teardown()
         self.analyzer = new_analyzer
         self.df = self.analyzer.df
+        self._invalidate_x_cache()
         new_cols = set(self.df.columns)
         for col, var in list(self.vars.items()):
             if col not in new_cols:
@@ -7922,6 +8094,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         if hasattr(self, '_legend_panel'):
             self._legend_panel.pack(side=tk.RIGHT, fill=tk.Y)
         x_vals, ts, use_time = self._get_x_axis()
+
+        if len(x_vals) != len(self.df):
+            self._invalidate_x_cache()
+            x_vals, ts, use_time = self._get_x_axis()
         self._last_x_vals = x_vals
         ref_x = self._get_ref_x_axis()
 
@@ -8322,6 +8498,8 @@ if __name__ == "__main__":
     import threading
     import sys, os
 
+
+
     try:
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
@@ -8332,6 +8510,9 @@ if __name__ == "__main__":
 
     root = tk.Tk()
     root.withdraw()
+
+
+
 
     try:
         if getattr(sys, 'frozen', False):
@@ -8351,8 +8532,12 @@ if __name__ == "__main__":
         except Exception:
             pass
 
+
     _apply_icon(root)
+
+
     root.bind("<Map>", lambda e: _apply_icon(root) if e.widget is root else None)
+
 
     if _resolved_icon:
         _orig_toplevel_init = tk.Toplevel.__init__
