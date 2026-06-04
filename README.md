@@ -29,16 +29,16 @@ This approach prioritizes build stability, reproducibility, and cost efficiency 
 
 ## 🚀 Installation & Deployment
 <!-- LATEST_RELEASE_START -->
-### 🚀 Latest Release: v1.5.9.1 (2026-06-02)
+### 🚀 Latest Release: v1.5.9.2 (2026-06-04)
 
-- Download: [release_release_v1.5.9.1.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.5.9.1/release_v1.5.9.1.zip)
+- Download: [release_release_v1.5.9.2.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.5.9.2/release_v1.5.9.2.zip)
 
 ### 🔐 Integrity
 
-- EXE SHA256: 62DD92011F562EAFD4C54F94F11415B12A367CE41A64493E0531469747625964
+- EXE SHA256: 9415D1DF015BB47B031CEE051EF44E612E7A68054B9DDE42942A375AA1356E2E
 - Groups JSON SHA256: 3AFEBEF1816D52DF9849EA545282A25887A6B0016D655836E4C7E3C1CAFD1A92
-- Manifest SHA256: 1FB4A1FBDA060AADF4CF5512BA51DBC9CD64864C60FF769818C4E396B5E006D2
-- ZIP SHA256: 62943CDC226908AFD6FFC0D59CEDE67C77F37425F3F7813BACEDECB242526BC3
+- Manifest SHA256: E4417B7A2949E5F74921DBF22F416095701BDBA3B6FADB2DA9DF3155981F94FF
+- ZIP SHA256: 536732E450F946CFDB4D41709891060EA800923DA7B3205C66F72880E4AFDAAB
 <!-- LATEST_RELEASE_END -->
 
 ### 📦 Option 1: Compiled Executable (Recommended for Users)
@@ -184,6 +184,7 @@ HD2 LOG VIEWER includes an advanced signature detection system that analyzes sys
 ## ⚖️ License
 
 MIT License - Developed for the hardware enthusiast and troubleshooting community.
+
 
 
 
