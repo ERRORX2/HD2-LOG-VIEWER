@@ -216,7 +216,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.5.8"
+CURRENT_VERSION = "1.6"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -1752,52 +1752,51 @@ class TelemetryApp:
             return analyzer.time_series.dt.total_seconds().values
         return df.index.values
 
-    def _toggle_compare(self):
-        if self.ref_df is None:
-            messagebox.showinfo("Comparison", "Please set a reference first by clicking 'Set Ref'")
-            return
-        self.compare_mode = not self.compare_mode
-        self.compare_btn.config(text="🔍 Compare: ON" if self.compare_mode else "🔍 Compare: OFF")
-        self.update_plot()
+#     def _toggle_compare(self):
+#         if self.ref_df is None:
+#             messagebox.showinfo("Comparison", "Please set a reference first by clicking 'Set Ref'")
+#             return
+#         self.compare_mode = not self.compare_mode
+#         self.compare_btn.config(text="🔍 Compare: ON" if self.compare_mode else "🔍 Compare: OFF")
+#         self.update_plot()
 
-    def _set_reference(self):
-        self.ref_df = self.df.copy()
-        self.ref_analyzer = self.analyzer
-        self.show_toast("Current log saved as Reference")
-        self.compare_btn.config(state="normal")
-        if hasattr(self, 'swap_ref_btn'):
-            self.swap_ref_btn.config(state="normal")
+#     def _set_reference(self):
+#         self.ref_df = self.df.copy()
+#         self.ref_analyzer = self.analyzer
+#         self.show_toast("Current log saved as Reference")
+#         self.compare_btn.config(state="normal")
+#         if hasattr(self, 'swap_ref_btn'):
+#             self.swap_ref_btn.config(state="normal")
 
-    def _set_reference_from_file(self):
-        path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
-        if not path:
-            return
-        def _on_success(analyzer):
-            self.ref_df = analyzer.df.copy()
-            self.ref_analyzer = analyzer
-            self.show_toast(f"Reference set: {analyzer.path.name}")
-            self.compare_btn.config(state="normal")
-            if hasattr(self, 'swap_ref_btn'):
-                self.swap_ref_btn.config(state="normal")
-            if self.compare_mode:
-                self.update_plot()
-        def _on_error(exc):
-            messagebox.showerror("Reference Load Error", str(exc))
-        self._load_csv_threaded(path, on_success=_on_success, on_error=_on_error)
+#     def _set_reference_from_file(self):
+#         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
+#         if not path:
+#             return
+#         def _on_success(analyzer):
+#             self.ref_df = analyzer.df.copy()
+#             self.ref_analyzer = analyzer
+#             self.show_toast(f"Reference set: {analyzer.path.name}")
+#             self.compare_btn.config(state="normal")
+#             if hasattr(self, 'swap_ref_btn'):
+#                 self.swap_ref_btn.config(state="normal")
+#             if self.compare_mode:
+#                 self.update_plot()
+#         def _on_error(exc):
+#             messagebox.showerror("Reference Load Error", str(exc))
+#         self._load_csv_threaded(path, on_success=_on_success, on_error=_on_error)
 
-    def _swap_reference(self):
-        if self.ref_df is None or self.ref_analyzer is None:
-            return
-        self.df, self.ref_df = self.ref_df, self.df.copy()
-        self.analyzer, self.ref_analyzer = self.ref_analyzer, self.analyzer
-        self._sig_hits  = []
-        self._sig_dirty = True
-        self._setup_ui()
-        self._apply_theme_colors()
-        self.update_plot()
+#     def _swap_reference(self):
+#         if self.ref_df is None or self.ref_analyzer is None:
+#             return
+#         self.df, self.ref_df = self.ref_df, self.df.copy()
+#         self.analyzer, self.ref_analyzer = self.ref_analyzer, self.analyzer
+#         self._sig_hits  = []
+#         self._sig_dirty = True
+#         self._setup_ui()
+#         self._apply_theme_colors()
+#         self.update_plot()
 
     def _open_session_compare(self):
-        """Open the multi-session compare panel in the plot area."""
         self.session_compare_active = True
         if not self.sessions:
             self.sessions = [{'label': self.analyzer.path.stem,
@@ -1808,27 +1807,40 @@ class TelemetryApp:
 
     def _close_session_compare(self):
         self.session_compare_active = False
-        self.sessions = []
         cmp_widget = getattr(self, '_cmp_widget', None)
         if cmp_widget and cmp_widget.winfo_exists():
             cmp_widget.destroy()
         self._cmp_widget = None
+        self._cmp_fig    = None
+        self._cmp_canvas = None
+        self.root.bind('<Control-c>', lambda e: self._copy_png_to_clipboard())
         if hasattr(self, '_legend_panel'):
-            self._legend_panel.pack(side=tk.RIGHT, fill=tk.Y)
+            self._legend_panel.pack(side='right', fill='y')
         self.update_plot()
 
     def _draw_session_compare(self):
-        """Render the session compare view into the plot area."""
+        """Session compare: uses normal sensor checklist, multi-mode aware,
+        crosshair tooltip, Ctrl+C support, no redundant exit button."""
+        import numpy as np
+        import matplotlib.ticker as _ticker
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
         if not self.session_compare_active:
             return
 
-        _t         = self._get_theme()
-        bg         = _t['bg']
-        bg2        = _t['bg2']
-        bg3        = _t['bg3']
-        fg         = _t['fg']
-        accent     = _t['accent']
-        is_dark    = self.is_dark
+        _t     = self._get_theme()
+        bg     = _t['bg'];  bg2 = _t['bg2'];  bg3 = _t['bg3']
+        fg     = _t['fg'];  accent = _t['accent']
+
+        WIN_COLOR  = '#2ecc71'
+        LOSE_COLOR = '#e74c3c'
+
+        BASE6 = [_t.get(f'plot_c{i}', '#888') for i in range(6)]
+        def _assign_colors():
+            for i, s in enumerate(self.sessions):
+                s['color'] = BASE6[i % len(BASE6)]
+        _assign_colors()
 
         self.fig.clear()
         self._clear_cursors()
@@ -1844,452 +1856,863 @@ class TelemetryApp:
         plot_widget = self.canvas_widget.get_tk_widget()
         parent = plot_widget.master
 
-        self._cmp_widget = tk.Frame(parent, bg=bg)
-        self._cmp_widget.place(relx=0, rely=0, relwidth=1.0, relheight=1.0)
-        cw = self._cmp_widget
+        root_f = tk.Frame(parent, bg=bg)
+        root_f.place(relx=0, rely=0, relwidth=1.0, relheight=1.0)
+        self._cmp_widget = root_f
 
-        _tc   = self._get_theme()
-        _base6 = [_tc.get(f'plot_c{i}', '#888888') for i in range(6)]
-        SESSION_COLORS = [
-            _base6[0], _base6[1], _base6[2],
-            _base6[3], _base6[4], _base6[5],
-        ]
+        top_bar = tk.Frame(root_f, bg=bg2, pady=5, padx=10)
+        top_bar.pack(fill='x', side='top')
 
-        def _assign_colors():
-            for i, s in enumerate(self.sessions):
-                s['color'] = SESSION_COLORS[i % len(SESSION_COLORS)]
+        tk.Label(top_bar, text='📊  Session Compare',
+                 font=('Segoe UI', 11, 'bold'), bg=bg2, fg=accent).pack(side='left')
 
-        _assign_colors()
+        ttk.Button(top_bar, text='📄  Export Report',
+                   command=self._export_compare_report).pack(side='right', padx=4)
 
-        top_bar = tk.Frame(cw, bg=bg2, pady=6, padx=8)
-        top_bar.pack(fill=tk.X)
+        chart_mode_var = tk.StringVar(value='overlay')
+        mode_f = tk.Frame(top_bar, bg=bg2)
+        mode_f.pack(side='right', padx=12)
+        tk.Label(mode_f, text='Chart:', bg=bg2, fg=fg,
+                 font=('Segoe UI', 9)).pack(side='left', padx=(0, 4))
+        for val, lbl in [('overlay', 'Overlay'), ('normalized', 'Normalized 0–100%')]:
+            tk.Radiobutton(mode_f, text=lbl, variable=chart_mode_var, value=val,
+                           bg=bg2, fg=fg, selectcolor=bg3, activebackground=bg2,
+                           font=('Segoe UI', 9),
+                           command=lambda: _refresh()).pack(side='left', padx=3)
 
-        tk.Label(top_bar, text="📊 Session Compare",
-                 font=('Segoe UI', 11, 'bold'), bg=bg2, fg=accent).pack(side=tk.LEFT)
 
-        ttk.Button(top_bar, text="✕ Exit Compare",
-                   command=self._close_session_compare).pack(side=tk.RIGHT, padx=(4, 0))
-        ttk.Button(top_bar, text="📄 Export Report",
-                   command=self._export_compare_report).pack(side=tk.RIGHT, padx=4)
+        sess_bar = tk.Frame(root_f, bg=bg3, padx=10, pady=5)
+        sess_bar.pack(fill='x', side='top')
 
-        mode_var = tk.StringVar(value='single' if self._cmp_single_mode else 'multi')
-        def _toggle_mode():
-            self._cmp_single_mode = (mode_var.get() == 'single')
-            _refresh()
-        tk.Radiobutton(top_bar, text="Single Sensor", variable=mode_var, value='single',
-                       command=_toggle_mode, bg=bg2, fg=fg, selectcolor=bg3,
-                       activebackground=bg2, font=('Segoe UI', 9)).pack(side=tk.RIGHT, padx=4)
-        tk.Radiobutton(top_bar, text="Multi Sensor", variable=mode_var, value='multi',
-                       command=_toggle_mode, bg=bg2, fg=fg, selectcolor=bg3,
-                       activebackground=bg2, font=('Segoe UI', 9)).pack(side=tk.RIGHT, padx=4)
-
-        session_bar = tk.Frame(cw, bg=bg3, pady=4, padx=8)
-        session_bar.pack(fill=tk.X)
-
-        def _rebuild_session_bar():
-            for w in session_bar.winfo_children():
+        def _rebuild_session_chips():
+            for w in sess_bar.winfo_children():
                 w.destroy()
             for i, sess in enumerate(self.sessions):
-                sf = tk.Frame(session_bar, bg=bg3)
-                sf.pack(side=tk.LEFT, padx=(0, 8))
-                dot = tk.Frame(sf, bg=sess['color'], width=12, height=12)
-                dot.pack(side=tk.LEFT, padx=(0, 4))
-                tk.Label(sf, text=sess['label'], font=('Segoe UI', 8, 'bold'),
-                         bg=bg3, fg=fg).pack(side=tk.LEFT)
+                chip = tk.Frame(sess_bar, bg=sess['color'], padx=8, pady=3)
+                chip.pack(side='left', padx=(0, 6))
+                tk.Label(chip, text=sess['label'][:22],
+                         bg=sess['color'], fg='#000',
+                         font=('Segoe UI', 8, 'bold')).pack(side='left')
                 if i > 0:
-                    def _make_remove(idx):
-                        def _rm():
-                            self.sessions.pop(idx)
-                            _assign_colors()
-                            _rebuild_session_bar()
-                            _refresh()
-                        return _rm
-                    tk.Button(sf, text='✕', font=('Segoe UI', 7), bg=bg3, fg='#ff5555',
-                              relief='flat', cursor='hand2', padx=2,
-                              command=_make_remove(i)).pack(side=tk.LEFT, padx=(2, 0))
+                    def _rm(idx=i):
+                        self.sessions.pop(idx)
+                        _assign_colors()
+                        _rebuild_session_chips()
+                        _refresh()
+                    tk.Button(chip, text=' ✕', bg=sess['color'], fg='#000',
+                              relief='flat', font=('Segoe UI', 8, 'bold'),
+                              cursor='hand2', padx=0, pady=0,
+                              command=_rm).pack(side='left')
 
-            def _add_session():
-                path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
+            def _add():
+                if len(self.sessions) >= 6:
+                    self.show_toast('Maximum 6 sessions')
+                    return
+                path = filedialog.askopenfilename(filetypes=[('CSV', '*.csv')])
                 if not path:
                     return
-                if len(self.sessions) >= 6:
-                    self.show_toast("Maximum 6 sessions")
-                    return
                 def _on_load(analyzer):
-                    label = analyzer.path.stem[:20]
-                    self.sessions.append({'label': label, 'analyzer': analyzer,
-                                          'df': analyzer.df, 'color': '#888'})
+                    self.sessions.append({'label': analyzer.path.stem[:22],
+                                          'analyzer': analyzer,
+                                          'df': analyzer.df,
+                                          'color': '#888'})
                     _assign_colors()
-                    _rebuild_session_bar()
+                    _rebuild_session_chips()
                     _refresh()
                 self._load_csv_threaded(path, on_success=_on_load)
-            ttk.Button(session_bar, text="＋ Add Session",
-                       command=_add_session).pack(side=tk.LEFT)
 
-        _rebuild_session_bar()
+            ttk.Button(sess_bar, text='＋  Add Session',
+                       command=_add).pack(side='left')
 
-        sensor_bar = tk.Frame(cw, bg=bg2, pady=4, padx=8)
-        sensor_bar.pack(fill=tk.X)
+        _rebuild_session_chips()
 
-        all_cols = sorted(set(
-            c for s in self.sessions for c in s['df'].columns
-            if s['df'][c].dtype.kind in 'fi'
-        ))
+        hint_bar = tk.Frame(root_f, bg=bg2, padx=10, pady=4)
+        hint_bar.pack(fill='x', side='top')
+        tk.Label(hint_bar,
+                 text='Select sensors using the checklist on the left  •  Multi mode applies here too',
+                 bg=bg2, fg='#888', font=('Segoe UI', 8)).pack(side='left')
 
-        if self._cmp_sensor_var is None or self._cmp_sensor_var.get() not in all_cols:
-            self._cmp_sensor_var = tk.StringVar(value=all_cols[0] if all_cols else '')
+        paned = tk.PanedWindow(root_f, orient='vertical',
+                               bg=bg, sashwidth=6, sashrelief='flat', sashpad=2)
+        paned.pack(fill='both', expand=True)
 
-        sensor_lbl = tk.Label(sensor_bar, text="Sensor:", font=('Segoe UI', 9),
-                              bg=bg2, fg=fg)
-        sensor_dd  = ttk.Combobox(sensor_bar, textvariable=self._cmp_sensor_var,
-                                   values=all_cols, width=50, state='readonly')
-        sensor_dd.bind('<<ComboboxSelected>>', lambda e: _refresh())
+        chart_f = tk.Frame(paned, bg=bg)
+        table_f = tk.Frame(paned, bg=bg)
+        paned.add(chart_f, stretch='always', minsize=140)
+        paned.add(table_f, stretch='always', minsize=100)
 
-        def _show_sensor_bar():
-            sensor_lbl.pack(side=tk.LEFT, padx=(0, 6))
-            sensor_dd.pack(side=tk.LEFT)
-
-        def _hide_sensor_bar():
-            sensor_lbl.pack_forget()
-            sensor_dd.pack_forget()
-
-        main_area = tk.Frame(cw, bg=bg)
-        main_area.pack(fill=tk.BOTH, expand=True)
-
-        plot_f = tk.Frame(main_area, bg=bg)
-        plot_f.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
-
-        table_f = tk.Frame(main_area, bg=bg, height=180)
-        table_f.pack(fill=tk.X, side=tk.BOTTOM)
-        table_f.pack_propagate(False)
-
-        from matplotlib.figure import Figure
-        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-        import matplotlib.ticker as _ticker
-        import numpy as _np
+        def _set_initial_sash(event=None):
+            h = paned.winfo_height()
+            if h > 10:
+                paned.sash_place(0, 0, int(h * 0.35))
+                paned.unbind('<Map>')
+        paned.bind('<Map>', _set_initial_sash)
 
         cmp_fig    = Figure(figsize=(10, 4))
-        cmp_canvas = FigureCanvasTkAgg(cmp_fig, master=plot_f)
-        cmp_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        cmp_canvas = FigureCanvasTkAgg(cmp_fig, master=chart_f)
+        cmp_canvas.get_tk_widget().pack(fill='both', expand=True)
+        self._cmp_fig    = cmp_fig
+        self._cmp_canvas = cmp_canvas
 
-        lower_is_better = ['TEMP', '°C', 'FRAME TIME', 'FRAMETIME', '[MS]',
-                            'LATENCY', 'POWER', 'VRAM USED', 'RAM USED']
-
-        def _is_lower_better(col):
-            u = col.upper()
-            return any(k in u for k in lower_is_better) and 'FPS' not in u
-
-        def _refresh():
-            cmp_fig.clear()
-            cmp_fig.patch.set_facecolor(bg)
-            ax = cmp_fig.add_subplot(111)
-            ax.set_facecolor(bg2)
-            ax.tick_params(colors=fg, labelsize=8)
-            ax.grid(True, ls=':', alpha=0.4, color=bg3)
-            for spine in ax.spines.values():
-                spine.set_edgecolor(bg3)
-
-            single = (mode_var.get() == 'single')
-            if single:
-                _show_sensor_bar()
-                chosen = self._cmp_sensor_var.get()
-                sensors = [chosen] if chosen else []
-            else:
-                _hide_sensor_bar()
-                sensors = [c for c, v in self.vars.items() if v.get()]
-
-            if not sensors or not self.sessions:
-                ax.text(0.5, 0.5, 'No sensors selected', ha='center', va='center',
-                        color='gray', transform=ax.transAxes)
-                cmp_canvas.draw_idle()
-                _build_table(sensors)
-                return
-
-            use_time = self.time_mode
-
-            for sess in self.sessions:
-                df_s = sess['df']
-                x    = self._session_x_vals(sess)
-                col  = sess['color']
-                lbl  = sess['label']
-                n    = len(sensors)
-                for si, sensor in enumerate(sensors):
-                    if sensor not in df_s.columns:
-                        continue
-                    line_lbl = f"{lbl}" if n == 1 else f"{lbl} – {sensor[:30]}"
-                    ax.plot(x, df_s[sensor], color=col,
-                            lw=1.5 if n == 1 else 1.2,
-                            alpha=1.0 if si == 0 else 0.65,
-                            ls=['-','--',':','-.'][si % 4],
-                            label=line_lbl)
-
-            if use_time:
-                ax.xaxis.set_major_formatter(_ticker.FuncFormatter(
-                    lambda v, _: self._format_elapsed(v)))
-                ax.tick_params(axis='x', labelrotation=20)
-                ax.set_xlabel("Elapsed Time", color=fg, fontsize=8)
-            else:
-                ax.set_xlabel("Sample Index", color=fg, fontsize=8)
-
-            leg = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1),
-                            fontsize=7, frameon=False)
-            if leg:
-                for t in leg.get_texts():
-                    t.set_color(fg)
-            cmp_fig.subplots_adjust(right=0.72)
-
+        def _cmp_copy(event=None):
             try:
-                cmp_fig.tight_layout(rect=[0, 0, 0.72, 1])
-            except Exception:
-                pass
-            cmp_canvas.draw_idle()
-            _build_table(sensors)
+                import io, sys, ctypes
+                from PIL import Image, ImageGrab
 
-        def _build_table(sensors):
-            for w in table_f.winfo_children():
-                w.destroy()
-            if not sensors or not self.sessions:
-                return
+                cmp_fig.canvas.draw()
+                buf = io.BytesIO()
+                cmp_fig.savefig(buf, format='png', dpi=150,
+                                bbox_inches='tight',
+                                facecolor=cmp_fig.get_facecolor())
+                buf.seek(0)
+                chart_img = Image.open(buf).convert('RGB')
 
-            canvas_t = tk.Canvas(table_f, bg=bg, highlightthickness=0)
-            vsb = tk.Scrollbar(table_f, orient='vertical', command=canvas_t.yview,
-                                bg=bg3, troughcolor=bg, activebackground=accent)
-            hsb = tk.Scrollbar(table_f, orient='horizontal', command=canvas_t.xview,
-                                bg=bg3, troughcolor=bg, activebackground=accent)
-            canvas_t.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-            vsb.pack(side=tk.RIGHT,  fill=tk.Y)
-            hsb.pack(side=tk.BOTTOM, fill=tk.X)
-            canvas_t.pack(fill=tk.BOTH, expand=True)
+                table_img = None
+                try:
+                    if table_f.winfo_exists() and table_f.winfo_width() > 10:
+                        self.root.update_idletasks()
+                        tx = table_f.winfo_rootx()
+                        ty = table_f.winfo_rooty()
+                        tw = table_f.winfo_width()
+                        th = table_f.winfo_height()
+                        if tw > 10 and th > 10:
+                            table_img = ImageGrab.grab(bbox=(tx, ty, tx + tw, ty + th)).convert('RGB')
+                except Exception:
+                    table_img = None
 
-            tbl = tk.Frame(canvas_t, bg=bg)
-            canvas_t.create_window((0, 0), window=tbl, anchor='nw')
-            tbl.bind('<Configure>', lambda e: canvas_t.configure(
-                scrollregion=canvas_t.bbox('all')))
-
-            HDR_BG   = bg3
-            HDR_FG   = accent
-            CELL_BG  = bg2
-            CELL_FG  = fg
-            GOOD     = '#2ecc71'
-            BAD      = '#e74c3c'
-            NEUT     = fg
-
-            def cell(parent, text, row, col, bold=False, bg=CELL_BG, fg=CELL_FG, width=16):
-                tk.Label(parent, text=text, font=('Segoe UI', 8, 'bold' if bold else 'normal'),
-                         bg=bg, fg=fg, width=width, anchor='w', padx=4, pady=3,
-                         relief='flat').grid(row=row, column=col, sticky='ew', padx=1, pady=1)
-
-            col_idx = 0
-            cell(tbl, 'Sensor', 0, col_idx, bold=True, bg=HDR_BG, fg=HDR_FG, width=36)
-            col_idx += 1
-            for sess in self.sessions:
-                cell(tbl, sess['label'][:14], 0, col_idx,   bold=True, bg=HDR_BG, fg=sess['color'], width=10)
-                cell(tbl, 'avg',              0, col_idx+1, bold=True, bg=HDR_BG, fg=HDR_FG, width=8)
-                cell(tbl, 'min',              0, col_idx+2, bold=True, bg=HDR_BG, fg=HDR_FG, width=8)
-                cell(tbl, 'max',              0, col_idx+3, bold=True, bg=HDR_BG, fg=HDR_FG, width=8)
-                if len(self.sessions) > 1 and self.sessions.index(sess) > 0:
-                    cell(tbl, 'Δ avg',        0, col_idx+4, bold=True, bg=HDR_BG, fg=HDR_FG, width=8)
-                    col_idx += 5
+                if table_img is not None:
+                    scale   = chart_img.width / table_img.width
+                    new_th  = int(table_img.height * scale)
+                    table_img = table_img.resize((chart_img.width, new_th), Image.LANCZOS)
+                    total_h = chart_img.height + new_th
+                    fc      = cmp_fig.get_facecolor()
+                    bg_col  = tuple(int(fc[i] * 255) for i in range(3))
+                    composite = Image.new('RGB', (chart_img.width, total_h), bg_col)
+                    composite.paste(chart_img, (0, 0))
+                    composite.paste(table_img, (0, chart_img.height))
+                    final = composite
                 else:
-                    col_idx += 4
+                    final = chart_img
 
-            for row_i, sensor in enumerate(sensors, start=1):
-                row_bg = bg if row_i % 2 == 0 else CELL_BG
-                cell(tbl, sensor[:34], row_i, 0, bg=row_bg, fg=CELL_FG, width=36)
-                lower_better = _is_lower_better(sensor)
-                base_avg = None
-                col_idx  = 1
-                for si, sess in enumerate(self.sessions):
-                    df_s = sess['df']
-                    if sensor in df_s.columns:
-                        s   = df_s[sensor].dropna()
-                        avg = s.mean()
-                        mn  = s.min()
-                        mx  = s.max()
-                        if si == 0:
-                            base_avg = avg
-                        cell(tbl, '',           row_i, col_idx,   bg=row_bg, fg=sess['color'], width=10)
-                        cell(tbl, f'{avg:.2f}', row_i, col_idx+1, bg=row_bg, fg=CELL_FG, width=8)
-                        cell(tbl, f'{mn:.2f}',  row_i, col_idx+2, bg=row_bg, fg=CELL_FG, width=8)
-                        cell(tbl, f'{mx:.2f}',  row_i, col_idx+3, bg=row_bg, fg=CELL_FG, width=8)
-                        if si > 0 and base_avg is not None:
-                            delta = avg - base_avg
-                            better = (delta < 0) if lower_better else (delta > 0)
-                            delta_fg = GOOD if better else (BAD if delta != 0 else NEUT)
-                            sign = '+' if delta >= 0 else ''
-                            cell(tbl, f'{sign}{delta:.2f}', row_i, col_idx+4,
-                                 bg=row_bg, fg=delta_fg, width=8)
-                            col_idx += 5
-                        else:
-                            col_idx += 4
+                if sys.platform == 'win32':
+                    k32 = ctypes.windll.kernel32
+                    u32 = ctypes.windll.user32
+                    k32.GlobalAlloc.restype   = ctypes.c_void_p
+                    k32.GlobalAlloc.argtypes  = [ctypes.c_uint, ctypes.c_size_t]
+                    k32.GlobalLock.restype    = ctypes.c_void_p
+                    k32.GlobalLock.argtypes   = [ctypes.c_void_p]
+                    k32.GlobalUnlock.argtypes = [ctypes.c_void_p]
+                    u32.SetClipboardData.restype  = ctypes.c_void_p
+                    u32.SetClipboardData.argtypes = [ctypes.c_uint, ctypes.c_void_p]
+                    u32.OpenClipboard.argtypes    = [ctypes.c_void_p]
+                    u32.OpenClipboard.restype     = ctypes.c_bool
+                    hwnd = ctypes.windll.user32.GetForegroundWindow()
+                    out = io.BytesIO()
+                    final.save(out, 'BMP')
+                    data = out.getvalue()[14:]
+                    import time as _time
+                    for _attempt in range(5):
+                        if u32.OpenClipboard(hwnd):
+                            break
+                        _time.sleep(0.05)
                     else:
-                        cell(tbl, '—', row_i, col_idx,   bg=row_bg, fg='#555', width=10)
-                        cell(tbl, '—', row_i, col_idx+1, bg=row_bg, fg='#555', width=8)
-                        cell(tbl, '—', row_i, col_idx+2, bg=row_bg, fg='#555', width=8)
-                        cell(tbl, '—', row_i, col_idx+3, bg=row_bg, fg='#555', width=8)
-                        if si > 0:
-                            cell(tbl, '—', row_i, col_idx+4, bg=row_bg, fg='#555', width=8)
-                            col_idx += 5
-                        else:
-                            col_idx += 4
+                        self.show_toast('Clipboard locked – try again')
+                        return
+                    u32.EmptyClipboard()
+                    h_mem = k32.GlobalAlloc(0x0042, len(data))
+                    ptr   = k32.GlobalLock(h_mem)
+                    ctypes.memmove(ptr, data, len(data))
+                    k32.GlobalUnlock(h_mem)
+                    u32.SetClipboardData(8, h_mem)
+                    u32.CloseClipboard()
+                    self.show_toast('Compare chart + table copied to clipboard')
+                else:
+                    self.show_toast('Clipboard copy is Windows-only')
+            except Exception as e:
+                self.show_toast(f'Copy failed: {e}')
 
-        if mode_var.get() == 'single':
-            _show_sensor_bar()
-        else:
-            _hide_sensor_bar()
-        _refresh()
+        self.root.bind('<Control-c>', _cmp_copy)
 
-    def _export_compare_report(self):
-        """Export a simple HTML compare report."""
-        if not self.sessions:
-            self.show_toast("No sessions loaded")
-            return
-        import datetime, html as html_mod, io, base64
-        from matplotlib.figure import Figure
-        from matplotlib.backends.backend_agg import FigureCanvasAgg
-        import matplotlib.ticker as _ticker
-
-        f_path = filedialog.asksaveasfilename(
-            defaultextension=".html",
-            filetypes=[("HTML Report", "*.html")],
-            initialfile=f"RESYNC_Compare_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-        )
-        if not f_path:
-            return
-
-        _t  = self._get_theme()
-        bg  = _t['bg']
-        fg  = _t['fg']
-        acc = _t['accent']
-
-        sensors = [c for c, v in self.vars.items() if v.get()] or []
-        use_time = self.time_mode
-
-        def _fig_to_b64(fig):
-            FigureCanvasAgg(fig)
-            buf = io.BytesIO()
-            fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='#0d0d1a')
-            buf.seek(0)
-            return base64.b64encode(buf.read()).decode()
-
-        chart_html = ''
-        if sensors:
-            fig = Figure(figsize=(13, 4))
-            fig.patch.set_facecolor('#0d0d1a')
-            ax = fig.add_subplot(111)
-            ax.set_facecolor('#13132b')
-            colors = [s['color'] for s in self.sessions]
-            for sess in self.sessions:
-                x  = self._session_x_vals(sess)
-                df_s = sess['df']
-                for si, sensor in enumerate(sensors[:6]):
-                    if sensor not in df_s.columns:
-                        continue
-                    lbl = f"{sess['label']}" if len(sensors) == 1 else f"{sess['label']} – {sensor[:20]}"
-                    ax.plot(x, df_s[sensor], lw=1.5, color=sess['color'],
-                            ls=['-','--',':','-.'][si % 4], label=lbl, alpha=0.85)
-            if use_time:
-                ax.xaxis.set_major_formatter(_ticker.FuncFormatter(
-                    lambda v, _: self._format_elapsed(v)))
-            ax.tick_params(colors='#ccc', labelsize=7)
-            ax.grid(True, ls=':', alpha=0.3, color='#444')
-            for spine in ax.spines.values():
-                spine.set_edgecolor('#333')
-            leg = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1), fontsize=6, frameon=False)
-            if leg:
-                for t in leg.get_texts():
-                    t.set_color('#ddd')
-            fig.subplots_adjust(right=0.72)
-            chart_html = f'<img src="data:image/png;base64,{_fig_to_b64(fig)}" style="width:100%;border-radius:8px;">'
-            fig.clf()
-
-        rows_html = ''
         lower_is_better_kw = ['TEMP', '°C', 'FRAME TIME', 'FRAMETIME', '[MS]',
                                'LATENCY', 'POWER', 'VRAM USED', 'RAM USED']
         def _lib(col):
             u = col.upper()
             return any(k in u for k in lower_is_better_kw) and 'FPS' not in u
 
-        for sensor in sensors:
-            row = f'<tr><td>{html_mod.escape(sensor)}</td>'
-            base_avg = None
-            for si, sess in enumerate(self.sessions):
-                df_s = sess['df']
-                if sensor in df_s.columns:
-                    s   = df_s[sensor].dropna()
-                    avg = s.mean()
-                    mn  = s.min()
-                    mx  = s.max()
+        def _pct(series, p):
+            try:    return float(np.percentile(series.dropna(), p))
+            except: return float('nan')
+
+        STAT_COLS = [
+            ('Min',  lambda s: float(s.min())),
+            ('Avg',  lambda s: float(s.mean())),
+            ('Max',  lambda s: float(s.max())),
+            ('P1',   lambda s: _pct(s, 1)),
+            ('P95',  lambda s: _pct(s, 95)),
+            ('P99',  lambda s: _pct(s, 99)),
+            ('σ',    lambda s: float(s.std())),
+        ]
+
+        def _build_table(sensors):
+            try:
+                if not table_f.winfo_exists():
+                    return
+                for w in table_f.winfo_children():
+                    w.destroy()
+            except Exception:
+                return
+            if not sensors or not self.sessions:
+                return
+
+            canv = tk.Canvas(table_f, bg=bg, highlightthickness=0)
+            vsb  = tk.Scrollbar(table_f, orient='vertical', command=canv.yview,
+                                bg=bg3, troughcolor=bg, activebackground=accent)
+            canv.configure(yscrollcommand=vsb.set)
+            vsb.pack(side='right', fill='y')
+            canv.pack(fill='both', expand=True)
+
+            tbl = tk.Frame(canv, bg=bg)
+            win_id = canv.create_window((0, 0), window=tbl, anchor='nw')
+            tbl.bind('<Configure>',
+                     lambda e: canv.configure(scrollregion=canv.bbox('all')))
+            canv.bind('<Configure>',
+                      lambda e: canv.itemconfig(win_id, width=e.width))
+
+            n_cols = len(STAT_COLS) + 3
+            tbl.columnconfigure(0, weight=3)
+            for _ci in range(1, n_cols):
+                tbl.columnconfigure(_ci, weight=1)
+
+            def _scroll(e):
+                try:
+                    canv.yview_scroll(int(-1 * (e.delta / 120)), 'units')
+                except Exception:
+                    pass
+
+            canv.bind('<MouseWheel>', _scroll)
+            tbl.bind('<MouseWheel>',  _scroll)
+            canv.bind('<Enter>', lambda _: canv.bind_all('<MouseWheel>', _scroll))
+            canv.bind('<Leave>', lambda _: canv.unbind_all('<MouseWheel>'))
+
+            def _cell(parent, text, r, c,
+                      bold=False, bg_=bg2, fg_=fg, anchor_='center'):
+                lbl = tk.Label(parent, text=text,
+                               font=('Segoe UI', 8, 'bold' if bold else 'normal'),
+                               bg=bg_, fg=fg_, anchor=anchor_,
+                               padx=4, pady=4, relief='flat')
+                lbl.grid(row=r, column=c, sticky='ew', padx=1, pady=1)
+                lbl.bind('<MouseWheel>', _scroll)
+
+            _cell(tbl, 'Sensor / Session', 0, 0,
+                  bold=True, bg_=bg3, fg_=accent, anchor_='w')
+            for ci, (sn, _) in enumerate(STAT_COLS, start=1):
+                _cell(tbl, sn, 0, ci, bold=True, bg_=bg3, fg_=accent)
+            _cell(tbl, 'Δ Avg vs S1', 0, len(STAT_COLS)+1,
+                  bold=True, bg_=bg3, fg_=accent)
+            _cell(tbl, 'Δ Avg %',     0, len(STAT_COLS)+2,
+                  bold=True, bg_=bg3, fg_=accent)
+
+            row_idx = 1
+
+            for sensor in sensors:
+                lib = _lib(sensor)
+
+                stat_rows = []
+                base_avg  = None
+                for sess in self.sessions:
+                    df_s = sess['df']
+                    if sensor not in df_s.columns:
+                        stat_rows.append(None)
+                        continue
+                    s = df_s[sensor].dropna()
+                    d = {fn: func(s) for fn, func in STAT_COLS}
+                    if base_avg is None:
+                        base_avg = d['Avg']
+                    stat_rows.append(d)
+
+                short = sensor[:40] + ('…' if len(sensor) > 40 else '')
+                tk.Label(tbl, text=f'  {short}',
+                         font=('Segoe UI', 8, 'bold'),
+                         bg=bg3, fg=accent,
+                         anchor='w', padx=4, pady=3
+                         ).grid(row=row_idx, column=0,
+                                columnspan=len(STAT_COLS)+3,
+                                sticky='ew', padx=1, pady=(4, 0))
+                row_idx += 1
+
+                for si, (sess, d) in enumerate(zip(self.sessions, stat_rows)):
+                    row_bg = bg if si % 2 == 0 else bg2
+
+                    name_f = tk.Frame(tbl, bg=sess['color'], padx=3)
+                    name_f.grid(row=row_idx, column=0, sticky='ew', padx=1, pady=1)
+                    name_lbl = tk.Label(name_f, text=sess['label'][:24],
+                                        bg=sess['color'], fg='#000',
+                                        font=('Segoe UI', 8, 'bold'),
+                                        anchor='w', padx=4)
+                    name_lbl.pack(fill='x')
+                    name_f.bind('<MouseWheel>',   _scroll)
+                    name_lbl.bind('<MouseWheel>', _scroll)
+
+                    if d is None:
+                        for ci in range(1, len(STAT_COLS)+3):
+                            _cell(tbl, '—', row_idx, ci, bg_=row_bg, fg_='#555')
+                        row_idx += 1
+                        continue
+
+                    for ci, (sn, _) in enumerate(STAT_COLS, start=1):
+                        val = d[sn]
+                        if val != val:
+                            _cell(tbl, '—', row_idx, ci, bg_=row_bg, fg_='#555')
+                            continue
+                        other_vals = [stat_rows[j][sn] for j in range(len(self.sessions))
+                                      if stat_rows[j] is not None]
+                        if len(other_vals) > 1:
+                            is_best  = val == (min(other_vals) if (lib or sn == 'σ') else max(other_vals))
+                            is_worst = val == (max(other_vals) if (lib or sn == 'σ') else min(other_vals))
+                        else:
+                            is_best = is_worst = False
+                        badge_fg = WIN_COLOR if is_best else (LOSE_COLOR if is_worst else fg)
+                        prefix   = '▲ ' if is_best else ('▼ ' if is_worst else '')
+                        _cell(tbl, f'{prefix}{val:.2f}', row_idx, ci,
+                              bold=is_best, bg_=row_bg, fg_=badge_fg)
+
+                    d_col = len(STAT_COLS)+1
                     if si == 0:
-                        base_avg = avg
-                    row += f'<td>{avg:.2f}</td><td>{mn:.2f}</td><td>{mx:.2f}</td>'
-                    if si > 0 and base_avg is not None:
-                        delta  = avg - base_avg
-                        better = (delta < 0) if _lib(sensor) else (delta > 0)
-                        col_s  = '#2ecc71' if better else ('#e74c3c' if delta != 0 else '#aaa')
+                        _cell(tbl, 'baseline', row_idx, d_col,   bg_=row_bg, fg_='#888')
+                        _cell(tbl, '—',        row_idx, d_col+1, bg_=row_bg, fg_='#888')
+                    else:
+                        delta  = d['Avg'] - base_avg
+                        better = (delta < 0) if lib else (delta > 0)
+                        d_fg   = WIN_COLOR if better else (LOSE_COLOR if delta != 0 else fg)
                         sign   = '+' if delta >= 0 else ''
-                        row   += f'<td style="color:{col_s};font-weight:bold">{sign}{delta:.2f}</td>'
+                        pct_d  = (delta / abs(base_avg) * 100) if base_avg else float('nan')
+                        pct_s  = f'{sign}{pct_d:.1f}%' if pct_d == pct_d else '—'
+                        _cell(tbl, f'{sign}{delta:.2f}', row_idx, d_col,
+                              bold=abs(delta) > 0, bg_=row_bg, fg_=d_fg)
+                        _cell(tbl, pct_s, row_idx, d_col+1,
+                              bold=abs(delta) > 0, bg_=row_bg, fg_=d_fg)
+
+                    row_idx += 1
+
+        _cmp_cursor_lines = []
+        _cmp_tooltip      = [None]
+        _cmp_last_idx     = [-1]
+
+        def _cmp_on_move(event):
+            if event.inaxes is None:
+                for ln in _cmp_cursor_lines: ln.remove()
+                _cmp_cursor_lines.clear()
+                if _cmp_tooltip[0]:
+                    _cmp_tooltip[0].set_visible(False)
+                cmp_canvas.draw_idle()
+                _cmp_last_idx[0] = -1
+                return
+
+            sensors = [c for c, v in self.vars.items() if v.get()]
+            if not sensors or not self.sessions:
+                return
+
+            x0 = self._session_x_vals(self.sessions[0])
+            raw_x = event.xdata
+            idx = int(np.argmin(np.abs(x0 - raw_x))) if raw_x is not None else 0
+
+            if idx == _cmp_last_idx[0]:
+                return
+            _cmp_last_idx[0] = idx
+
+            for ln in _cmp_cursor_lines: ln.remove()
+            _cmp_cursor_lines.clear()
+            if _cmp_tooltip[0]:
+                try: _cmp_tooltip[0].remove()
+                except Exception: pass
+                _cmp_tooltip[0] = None
+
+            ax = event.inaxes
+            cursor_col = 'white' if self.is_dark else 'gray'
+            _cmp_cursor_lines.append(ax.axvline(x=raw_x, color=cursor_col,
+                                                ls='--', alpha=0.5, lw=1))
+
+            _t2 = self._get_theme()
+            fc  = _t2['bg2']
+            tc  = _t2['fg']
+
+            lines_txt = []
+            use_time  = self.time_mode
+            x_label   = self._format_elapsed(raw_x) if use_time else f'Rec: {idx}'
+            lines_txt.append(x_label)
+
+            for sensor in sensors[:6]:
+                for sess in self.sessions:
+                    y_arr = sess['df'].get(sensor, None)
+                    if y_arr is None:
+                        continue
+                    y_arr = y_arr.ffill().values.astype(float)
+                    yi = min(idx, len(y_arr)-1)
+                    lines_txt.append(f"{sess['label'][:16]}  {sensor[:24]}: {y_arr[yi]:.2f}")
+
+            txt = '\n'.join(lines_txt)
+            _cmp_tooltip[0] = cmp_fig.text(
+                0.01, 0.99, txt, va='top', ha='left',
+                bbox=dict(boxstyle='round', facecolor=fc, alpha=0.85, edgecolor='#555'),
+                fontsize=7.5, color=tc, zorder=10)
+            cmp_canvas.draw_idle()
+
+        cmp_canvas.mpl_connect('motion_notify_event', _cmp_on_move)
+        cmp_canvas.mpl_connect('axes_leave_event',
+            lambda e: (
+                [ln.remove() for ln in _cmp_cursor_lines],
+                _cmp_cursor_lines.clear(),
+                _cmp_tooltip[0].set_visible(False) if _cmp_tooltip[0] else None,
+                cmp_canvas.draw_idle()
+            ))
+
+        def _refresh():
+            cmp_fig.clear()
+            cmp_fig.patch.set_facecolor(bg)
+
+            sensors = [c for c, v in self.vars.items()
+                       if v.get() and any(c in s['df'].columns for s in self.sessions)]
+
+            if not sensors or not self.sessions:
+                ax = cmp_fig.add_subplot(111)
+                ax.set_facecolor(bg2)
+                ax.tick_params(colors=fg, labelsize=8)
+                ax.text(0.5, 0.5, 'No sensors selected — use the left panel',
+                        ha='center', va='center', color='#888',
+                        transform=ax.transAxes)
+                cmp_canvas.draw_idle()
+                _build_table([])
+                return
+
+            use_time = self.time_mode
+            mode     = chart_mode_var.get()
+            multi    = self.multi_mode
+
+            if multi and len(sensors) > 1:
+                from matplotlib.gridspec import GridSpec
+                n_plots = len(sensors)
+                gs = GridSpec(n_plots, 1, figure=cmp_fig, hspace=0.15)
+                axes = []
+                for pi, sensor in enumerate(sensors):
+                    ax = cmp_fig.add_subplot(gs[pi], sharex=axes[0] if axes else None)
+                    axes.append(ax)
+                    ax.set_facecolor(bg2)
+                    ax.tick_params(colors=fg, labelsize=7)
+                    ax.grid(True, ls=':', alpha=0.4, color=bg3)
+                    for spine in ax.spines.values():
+                        spine.set_edgecolor(bg3)
+                    lib = _lib(sensor)
+                    session1_vals = None
+                    for si, sess in enumerate(self.sessions):
+                        if sensor not in sess['df'].columns:
+                            continue
+                        x = self._session_x_vals(sess)
+                        y = sess['df'][sensor].ffill().values.astype(float)
+                        if mode == 'normalized':
+                            mn, mx = np.nanmin(y), np.nanmax(y)
+                            y_plot = (y - mn) / (mx - mn) * 100 if mx > mn else np.zeros_like(y)
+                        else:
+                            y_plot = y
+                        ax.plot(x, y_plot, color=sess['color'], lw=1.6,
+                                label=sess['label'], alpha=0.92, zorder=3)
+                        if mode == 'overlay' and si == 0:
+                            session1_vals = (x, y_plot)
+                        elif mode == 'overlay' and session1_vals is not None:
+                            x1a, y1a = session1_vals
+                            ml = min(len(x1a), len(x), len(y1a), len(y_plot))
+                            if ml > 1:
+                                better = (y_plot[:ml] < y1a[:ml]) if lib else (y_plot[:ml] > y1a[:ml])
+                                ax.fill_between(x1a[:ml], y1a[:ml], y_plot[:ml],
+                                                where=better,  alpha=0.12, color=WIN_COLOR, zorder=2)
+                                ax.fill_between(x1a[:ml], y1a[:ml], y_plot[:ml],
+                                                where=~better, alpha=0.12, color=LOSE_COLOR, zorder=2)
+                    short = sensor.split('[')[0].strip()[:30]
+                    ax.set_ylabel(short, color=fg, fontsize=7, labelpad=2)
+                    if use_time:
+                        ax.xaxis.set_major_formatter(
+                            _ticker.FuncFormatter(lambda v, _: self._format_elapsed(v)))
+                    if pi < n_plots - 1:
+                        for lbl in ax.get_xticklabels():
+                            lbl.set_visible(False)
+                    ax.legend_.remove() if ax.get_legend() else None
+
+            else:
+                ax = cmp_fig.add_subplot(111)
+                ax.set_facecolor(bg2)
+                ax.tick_params(colors=fg, labelsize=8)
+                ax.grid(True, ls=':', alpha=0.4, color=bg3)
+                for spine in ax.spines.values():
+                    spine.set_edgecolor(bg3)
+
+                sensor = sensors[0]
+                lib = _lib(sensor)
+                session1_vals = None
+
+                for si, sess in enumerate(self.sessions):
+                    if sensor not in sess['df'].columns:
+                        continue
+                    x = self._session_x_vals(sess)
+                    y = sess['df'][sensor].ffill().values.astype(float)
+                    if mode == 'normalized':
+                        mn, mx = np.nanmin(y), np.nanmax(y)
+                        y_plot = (y - mn) / (mx - mn) * 100 if mx > mn else np.zeros_like(y)
+                    else:
+                        y_plot = y
+                    ax.plot(x, y_plot, color=sess['color'], lw=1.8,
+                            label=sess['label'], alpha=0.92, zorder=3)
+                    if mode == 'overlay' and si == 0:
+                        session1_vals = (x, y_plot)
+                    elif mode == 'overlay' and session1_vals is not None:
+                        x1a, y1a = session1_vals
+                        ml = min(len(x1a), len(x), len(y1a), len(y_plot))
+                        if ml > 1:
+                            better = (y_plot[:ml] < y1a[:ml]) if lib else (y_plot[:ml] > y1a[:ml])
+                            ax.fill_between(x1a[:ml], y1a[:ml], y_plot[:ml],
+                                            where=better,  alpha=0.12, color=WIN_COLOR, zorder=2)
+                            ax.fill_between(x1a[:ml], y1a[:ml], y_plot[:ml],
+                                            where=~better, alpha=0.12, color=LOSE_COLOR, zorder=2)
+
+                if use_time:
+                    ax.xaxis.set_major_formatter(
+                        _ticker.FuncFormatter(lambda v, _: self._format_elapsed(v)))
+                    ax.tick_params(axis='x', labelrotation=20)
+                    ax.set_xlabel('Elapsed Time', color=fg, fontsize=8)
                 else:
-                    row += '<td>—</td><td>—</td><td>—</td>'
+                    ax.set_xlabel('Sample Index', color=fg, fontsize=8)
+
+                y_label = '% of range' if mode == 'normalized' else sensor[:50]
+                ax.set_ylabel(y_label, color=fg, fontsize=8)
+                title_sfx = '  (normalized 0–100%)' if mode == 'normalized' else ''
+                ax.set_title(f'{sensor[:60]}{title_sfx}', color=fg, fontsize=9, pad=4)
+
+            try:
+                cmp_fig.tight_layout()
+            except Exception:
+                pass
+
+            _seen_labels = set()
+            _leg_handles = []
+            _leg_labels  = []
+            for _ax in cmp_fig.axes:
+                for _line in _ax.get_lines():
+                    _lbl = _line.get_label()
+                    if _lbl and not _lbl.startswith('_') and _lbl not in _seen_labels:
+                        _seen_labels.add(_lbl)
+                        _leg_handles.append(_line)
+                        _leg_labels.append(_lbl)
+            if _leg_handles:
+                _ncol = max(1, len(_leg_handles))
+                _fig_leg = cmp_fig.legend(
+                    _leg_handles, _leg_labels,
+                    loc='upper center',
+                    bbox_to_anchor=(0.5, 1.0),
+                    ncol=_ncol,
+                    fontsize=8,
+                    frameon=True,
+                    framealpha=0.85,
+                    facecolor=bg2,
+                    edgecolor=bg3,
+                    borderpad=0.5,
+                    columnspacing=1.2,
+                )
+                for _t in _fig_leg.get_texts():
+                    _t.set_color(fg)
+                try:
+                    cmp_fig.subplots_adjust(top=0.88)
+                except Exception:
+                    pass
+
+            cmp_canvas.draw_idle()
+            _build_table(sensors)
+
+        def _on_var_change(*_):
+            try:
+                if self.session_compare_active and root_f.winfo_exists():
+                    _refresh()
+            except Exception:
+                pass
+
+        for v in self.vars.values():
+            v.trace_add('write', _on_var_change)
+
+        _refresh()
+
+    def _export_compare_report(self):
+        """Export compare report with loading bar spinner."""
+        import datetime, html as html_mod, io, base64, threading, traceback
+        import numpy as np
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+        import matplotlib.ticker as _ticker
+
+        f_path = filedialog.asksaveasfilename(
+            defaultextension='.html',
+            filetypes=[('HTML Report', '*.html')],
+            initialfile=(f"RESYNC_Compare_"
+                         f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.html")
+        )
+        if not f_path:
+            return
+
+        is_dark = self.is_dark
+        _t = self._get_theme(); bg = _t['bg']; fg = _t['fg']; accent = _t['accent']
+
+        wait_win = tk.Toplevel(self.root)
+        wait_win.title('Generating Report')
+        wait_win.resizable(False, False)
+        wait_win.protocol('WM_DELETE_WINDOW', lambda: None)
+        wait_win.configure(bg=bg)
+        self.root.update_idletasks()
+        pw, ph = 340, 120
+        rx = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
+        ry = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
+        wait_win.geometry(f'{pw}x{ph}+{rx}+{ry}')
+        wait_win.transient(self.root)
+        wait_win.grab_set()
+
+        outer = tk.Frame(wait_win, bg=accent, padx=2, pady=2)
+        outer.pack(fill='both', expand=True)
+        inner = tk.Frame(outer, bg=bg, padx=20, pady=16)
+        inner.pack(fill='both', expand=True)
+
+        title_row = tk.Frame(inner, bg=bg)
+        title_row.pack(anchor='w')
+        tk.Label(title_row, text='📄  Generating Compare Report',
+                 font=('Segoe UI', 10, 'bold'), bg=bg, fg=accent).pack(side='left')
+        spin_var = tk.StringVar(value=' ⠋')
+        tk.Label(title_row, textvariable=spin_var,
+                 font=('Segoe UI', 10), bg=bg, fg=accent).pack(side='left', padx=(6, 0))
+
+        status_var = tk.StringVar(value='Preparing data…')
+        tk.Label(inner, textvariable=status_var,
+                 font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(6, 0))
+
+        bar_frame = tk.Frame(inner, bg=bg)
+        bar_frame.pack(fill='x', pady=(8, 0))
+        bar_bg = tk.Frame(bar_frame, bg='#2a2a2a' if is_dark else '#dee2e6', height=4)
+        bar_bg.pack(fill='x')
+        bar_fg = tk.Frame(bar_bg, bg=accent, height=4)
+        bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
+
+        _SPIN = [' ⠋',' ⠙',' ⠹',' ⠸',' ⠼',' ⠴',' ⠦',' ⠧',' ⠇',' ⠏']
+        _si = [0]
+        def _tick():
+            if not wait_win.winfo_exists(): return
+            _si[0] = (_si[0] + 1) % len(_SPIN)
+            spin_var.set(_SPIN[_si[0]])
+            wait_win.after(80, _tick)
+        _tick()
+
+        def _set_status(msg, prog=None):
+            def _do():
+                if not wait_win.winfo_exists(): return
+                status_var.set(msg)
+                if prog is not None:
+                    bar_fg.place(relwidth=min(prog, 1.0))
+            self.root.after(0, _do)
+
+        def _close_wait():
+            def _do():
+                if wait_win.winfo_exists():
+                    wait_win.grab_release()
+                    wait_win.destroy()
+            self.root.after(0, _do)
+
+        def _generate():
+            try:
+                sensors  = [c for c, v in self.vars.items() if v.get()] or []
+                use_time = self.time_mode
+
+                lower_is_better_kw = ['TEMP', '°C', 'FRAME TIME', 'FRAMETIME', '[MS]',
+                                       'LATENCY', 'POWER', 'VRAM USED', 'RAM USED']
+                def _lib(col):
+                    u = col.upper()
+                    return any(k in u for k in lower_is_better_kw) and 'FPS' not in u
+
+                def _pct2(series, p):
+                    try:    return float(np.percentile(series.dropna(), p))
+                    except: return float('nan')
+
+                STAT_COLS = [
+                    ('Min',  lambda s: float(s.min())),
+                    ('Avg',  lambda s: float(s.mean())),
+                    ('Max',  lambda s: float(s.max())),
+                    ('P1',   lambda s: _pct2(s, 1)),
+                    ('P95',  lambda s: _pct2(s, 95)),
+                    ('P99',  lambda s: _pct2(s, 99)),
+                    ('σ',    lambda s: float(s.std())),
+                ]
+
+                def _fig_to_b64(fig):
+                    FigureCanvasAgg(fig)
+                    buf = io.BytesIO()
+                    fig.savefig(buf, format='png', dpi=150,
+                                bbox_inches='tight', facecolor='#0d0d1a')
+                    buf.seek(0)
+                    return base64.b64encode(buf.read()).decode()
+
+                _set_status('Rendering charts…', 0.15)
+
+                chart_blocks = []
+                for sensor in sensors[:8]:
+                    fig = Figure(figsize=(13, 3.5))
+                    fig.patch.set_facecolor('#0d0d1a')
+                    ax = fig.add_subplot(111)
+                    ax.set_facecolor('#13132b')
+                    lib = _lib(sensor)
+                    session1_vals = None
+                    for si, sess in enumerate(self.sessions):
+                        if sensor not in sess['df'].columns:
+                            continue
+                        x = self._session_x_vals(sess)
+                        y = sess['df'][sensor].ffill().values.astype(float)
+                        ax.plot(x, y, lw=1.5, color=sess['color'],
+                                label=sess['label'], alpha=0.85)
+                        if si == 0:
+                            session1_vals = (x, y)
+                        elif session1_vals is not None:
+                            x1, y1 = session1_vals
+                            ml = min(len(x1), len(x), len(y1), len(y))
+                            better = (y[:ml] < y1[:ml]) if lib else (y[:ml] > y1[:ml])
+                            ax.fill_between(x1[:ml], y1[:ml], y[:ml],
+                                            where=better,  alpha=0.10, color='#2ecc71')
+                            ax.fill_between(x1[:ml], y1[:ml], y[:ml],
+                                            where=~better, alpha=0.10, color='#e74c3c')
+                    if use_time:
+                        ax.xaxis.set_major_formatter(
+                            _ticker.FuncFormatter(lambda v, _: self._format_elapsed(v)))
+                    ax.set_title(sensor[:70], color='#a0c4ff', fontsize=8, pad=3)
+                    ax.tick_params(colors='#ccc', labelsize=7)
+                    ax.grid(True, ls=':', alpha=0.3, color='#444')
+                    for spine in ax.spines.values():
+                        spine.set_edgecolor('#333')
+                    leg = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1),
+                                    fontsize=6, frameon=False)
+                    if leg:
+                        for t in leg.get_texts():
+                            t.set_color('#ddd')
+                    fig.subplots_adjust(right=0.72)
+                    b64 = _fig_to_b64(fig)
+                    fig.clf()
+                    chart_blocks.append(
+                        f'<h3 style="color:#a78bfa;margin-top:18px">{html_mod.escape(sensor)}</h3>'
+                        f'<figure><img src="data:image/png;base64,{b64}" '
+                        f'style="width:100%;border-radius:8px;"></figure>'
+                    )
+
+                _set_status('Building stats table…', 0.70)
+
+                hdr_sess = ''.join(
+                    f'<th colspan="{len(STAT_COLS) + (2 if si > 0 else 0)}" '
+                    f'style="color:{s["color"]}">{html_mod.escape(s["label"])}</th>'
+                    for si, s in enumerate(self.sessions)
+                )
+                sub_hdr = '<tr><th></th>'
+                for si in range(len(self.sessions)):
+                    for sn, _ in STAT_COLS:
+                        sub_hdr += f'<th>{sn}</th>'
                     if si > 0:
-                        row += '<td>—</td>'
-            rows_html += row + '</tr>'
+                        sub_hdr += '<th>Δ Avg</th><th>Δ%</th>'
+                sub_hdr += '</tr>'
 
-        hdr_cols = '<th>Sensor</th>'
-        for si, sess in enumerate(self.sessions):
-            hdr_cols += f'<th colspan="{4 if si > 0 else 3}" style="color:{sess["color"]}">{html_mod.escape(sess["label"])}</th>'
+                rows_html = ''
+                for sensor in sensors:
+                    lib = _lib(sensor)
+                    stat_rows = []
+                    base_avg  = None
+                    for sess in self.sessions:
+                        df_s = sess['df']
+                        if sensor not in df_s.columns:
+                            stat_rows.append(None)
+                            continue
+                        s = df_s[sensor].dropna()
+                        d = {fn: func(s) for fn, func in STAT_COLS}
+                        if base_avg is None:
+                            base_avg = d['Avg']
+                        stat_rows.append(d)
 
-        sub_hdr = '<tr><th></th>'
-        for si, sess in enumerate(self.sessions):
-            sub_hdr += '<th>avg</th><th>min</th><th>max</th>'
-            if si > 0:
-                sub_hdr += '<th>Δ avg</th>'
-        sub_hdr += '</tr>'
+                    row = f'<tr><td>{html_mod.escape(sensor)}</td>'
+                    for si, (sess, d) in enumerate(zip(self.sessions, stat_rows)):
+                        if d is None:
+                            row += (f'<td colspan="{len(STAT_COLS)+(2 if si>0 else 0)}">—</td>')
+                            continue
+                        for sn, _ in STAT_COLS:
+                            vals = [stat_rows[j][sn] for j in range(len(self.sessions))
+                                    if stat_rows[j] is not None]
+                            if len(vals) > 1:
+                                best  = min(vals) if (lib or sn == 'σ') else max(vals)
+                                worst = max(vals) if (lib or sn == 'σ') else min(vals)
+                                style = ('color:#2ecc71;font-weight:bold' if d[sn] == best
+                                         else 'color:#e74c3c' if d[sn] == worst else '')
+                            else:
+                                style = ''
+                            row += f'<td style="{style}">{d[sn]:.2f}</td>'
+                        if si > 0 and base_avg is not None:
+                            delta  = d['Avg'] - base_avg
+                            better = (delta < 0) if lib else (delta > 0)
+                            col_s  = '#2ecc71' if better else ('#e74c3c' if delta != 0 else '#aaa')
+                            sign   = '+' if delta >= 0 else ''
+                            pct_d  = (delta / abs(base_avg) * 100) if base_avg else float('nan')
+                            pct_s  = f'{sign}{pct_d:.1f}%' if pct_d == pct_d else '—'
+                            row += (f'<td style="color:{col_s};font-weight:bold">'
+                                    f'{sign}{delta:.2f}</td>'
+                                    f'<td style="color:{col_s}">{pct_s}</td>')
+                    rows_html += row + '</tr>'
 
-        generated_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        html = f"""<!DOCTYPE html>
+                _set_status('Writing file…', 0.90)
+
+                generated_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                charts_html  = '\n'.join(chart_blocks) if chart_blocks \
+                               else "<p style='color:#64748b'>No sensors selected.</p>"
+                sess_list    = ''.join(
+                    '<li style="color:' + s['color'] + '">' + html_mod.escape(s['label']) + '</li>'
+                    for s in self.sessions)
+
+                html = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8">
-<title>RESYNC.ERR Session Compare Report</title>
+<title>RESYNC.ERR Session Compare</title>
 <style>
 body{{background:#0d0d1a;color:#e2e8f0;font-family:'Segoe UI',sans-serif;padding:32px;}}
-h1{{color:#4f8ef7;}} h2{{color:#a78bfa;border-bottom:1px solid #1e1e3a;padding-bottom:6px;}}
+h1{{color:#4f8ef7;}}
+h2{{color:#a78bfa;border-bottom:1px solid #1e1e3a;padding-bottom:6px;margin-top:28px;}}
+h3{{color:#a78bfa;margin-top:10px;}}
 table{{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;}}
 th{{background:#1a1a38;color:#4f8ef7;padding:6px 10px;text-align:left;}}
 td{{padding:5px 10px;border-bottom:1px solid #1e1e3a;}}
 tr:hover td{{background:#13132b;}}
 .footer{{color:#64748b;font-size:11px;margin-top:32px;}}
+figure{{margin:0 0 8px;}}
+figure img{{border-radius:8px;}}
 </style></head><body>
 <h1>RESYNC.ERR — Session Compare Report</h1>
-<p style="color:#64748b">Generated {generated_at} &nbsp;·&nbsp; {len(self.sessions)} sessions &nbsp;·&nbsp; {len(sensors)} sensors selected</p>
-<h2>Sessions</h2>
-<ul>{''.join(f'<li style="color:{s["color"]}">{html_mod.escape(s["label"])}</li>' for s in self.sessions)}</ul>
-<h2>Overlay Chart</h2>
-{chart_html if chart_html else '<p style="color:#64748b">No sensors selected.</p>'}
-<h2>Statistics</h2>
-<table><thead><tr>{hdr_cols}</tr>{sub_hdr}</thead><tbody>{rows_html}</tbody></table>
-<p class="footer">RESYNC.ERR v{CURRENT_VERSION} · Session Compare Report · {generated_at}</p>
+<p style="color:#64748b">Generated {generated_at} · {len(self.sessions)} sessions · {len(sensors)} sensors</p>
+<h2>Sessions</h2><ul>{sess_list}</ul>
+<h2>Charts  <small style="color:#64748b;font-size:11px">green = S2 better · red = S2 worse</small></h2>
+{charts_html}
+<h2>Statistics  <small style="color:#64748b;font-size:11px">▲ green = best · ▼ red = worst</small></h2>
+<table><thead><tr><th>Sensor</th>{hdr_sess}</tr>{sub_hdr}</thead>
+<tbody>{rows_html}</tbody></table>
+<p class="footer">RESYNC.ERR v{CURRENT_VERSION} · {generated_at}</p>
 </body></html>"""
 
-        with open(f_path, 'w', encoding='utf-8') as fh:
-            fh.write(html)
-        self.show_toast(f"Report saved: {f_path.split('/')[-1].split(chr(92))[-1]}")
+                with open(f_path, 'w', encoding='utf-8') as fh:
+                    fh.write(html)
 
+                fname = str(f_path).replace('\\', '/').split('/')[-1]
+                def _done():
+                    _close_wait()
+                    self.show_toast(f'Report saved: {fname}')
+                self.root.after(0, _done)
 
-        """Returns (x_values, x_labels, use_time) - cached until CSV or time_mode changes."""
-        cached = getattr(self, '_x_axis_cache', None)
-        if cached is not None:
-            return cached
-        if self.time_mode and self.analyzer.time_series is not None:
-            ts = self.analyzer.time_series
-            if len(ts) != len(self.df):
-                result = (self.df.index.values, None, False)
-            else:
-                x_vals = ts.dt.total_seconds().values
-                result = (x_vals, ts, True)
-        else:
-            result = (self.df.index.values, None, False)
-        self._x_axis_cache = result
-        return result
+            except Exception as e:
+                def _fail():
+                    _close_wait()
+                    from tkinter import messagebox
+                    messagebox.showerror('Export Error', f'{type(e).__name__}: {e}')
+                self.root.after(0, _fail)
+
+        threading.Thread(target=_generate, daemon=True).start()
+
 
     def _invalidate_x_cache(self):
         self._x_axis_cache = None
@@ -6673,7 +7096,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         lambda: (setattr(self, '_about_window', None), dialog.destroy()))
 
         self.root.update_idletasks()
-        pw, ph = 440, 440
+        pw, ph = 540, 540
         x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
         y = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
         dialog.geometry(f"{pw}x{ph}+{x}+{y}")
@@ -6710,12 +7133,18 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         tk.Label(body, text="SPECIAL THANKS",
                  font=('Segoe UI', 8, 'bold'), bg=bg, fg="#888").pack(anchor='w')
 
-        for name, roles in [
-            ("Birby | 418th Technical Goose",
+        for name, discord, roles in [
+            ("Birby | 418th Technical Goose",None,
              "Bug Testing  \u2022  Suggestions  \u2022  Program Icon"),
+             ("ShadyWizard",
+              "ShadyWizard | 418th LinuxAdviser",
+              "Github Contributions")
         ]:
             tk.Label(body, text=name,
                      font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(6, 0))
+            if discord:
+                tk.Label(body, text=discord, 
+                     font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w')
             tk.Label(body, text=roles,
                      font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w')
 
@@ -6782,16 +7211,17 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.delta_btn = ttk.Button(btn_row1, text="Δ Delta: ON" if self.delta_mode else "Δ Delta: OFF", command=self._toggle_delta)
         self.delta_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
-        btn_row2 = ttk.Frame(mode_f)
-        btn_row2.pack(fill=tk.X, pady=2)
-        ttk.Button(btn_row2, text="📌 Set Ref", command=self._set_reference).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        ttk.Button(btn_row2, text="📂 Ref CSV", command=self._set_reference_from_file).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        self.compare_btn = ttk.Button(btn_row2, text="🔍 Compare: OFF", command=self._toggle_compare,
-                                      state="disabled" if self.ref_df is None else "normal")
-        self.compare_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        self.swap_ref_btn = ttk.Button(btn_row2, text="⇄ Swap", command=self._swap_reference,
-                                       state="disabled" if self.ref_df is None else "normal")
-        self.swap_ref_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        # btn_row2 — old reference compare system, removed
+        # btn_row2 = ttk.Frame(mode_f)
+        # btn_row2.pack(fill=tk.X, pady=2)
+        # ttk.Button(btn_row2, text="📌 Set Ref", command=self._set_reference).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        # ttk.Button(btn_row2, text="📂 Ref CSV", command=self._set_reference_from_file).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        # self.compare_btn = ttk.Button(btn_row2, text="🔍 Compare: OFF", command=self._toggle_compare,
+        #                               state="disabled" if self.ref_df is None else "normal")
+        # self.compare_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        # self.swap_ref_btn = ttk.Button(btn_row2, text="⇄ Swap", command=self._swap_reference,
+        #                                state="disabled" if self.ref_df is None else "normal")
+        # self.swap_ref_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
 
         btn_row2b = ttk.Frame(mode_f)
         btn_row2b.pack(fill=tk.X, pady=2)
@@ -7392,6 +7822,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._sig_hits             = []
         self._sig_dirty            = True
         self._sig_timeline_x_vals  = None
+        # clear compare sessions so they don't bleed into the new file
+        self.session_compare_active = False
+        self.sessions               = []
+        self._cmp_widget            = None
+        self._cmp_fig               = None
+        self._cmp_canvas            = None
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
@@ -7502,8 +7938,11 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         threading.Thread(target=_worker, daemon=True).start()
 
     def _clear_all(self):
+        _prev = self.session_compare_active
+        self.session_compare_active = False
         for v in self.vars.values():
             v.set(False)
+        self.session_compare_active = _prev
         self.update_plot()
 
     def _render_composite_png(self, dpi=150):
@@ -7583,7 +8022,17 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
                 data = output.getvalue()[14:]
 
-                u32.OpenClipboard(0)
+                u32.OpenClipboard.argtypes = [ctypes.c_void_p]
+                u32.OpenClipboard.restype  = ctypes.c_bool
+                hwnd = ctypes.windll.user32.GetForegroundWindow()
+                import time as _time
+                for _attempt in range(5):
+                    if u32.OpenClipboard(hwnd):
+                        break
+                    _time.sleep(0.05)
+                else:
+                    self.show_toast('Clipboard locked – try again')
+                    return
                 u32.EmptyClipboard()
                 h = k32.GlobalAlloc(0x0042, len(data))
                 ptr = k32.GlobalLock(h)
