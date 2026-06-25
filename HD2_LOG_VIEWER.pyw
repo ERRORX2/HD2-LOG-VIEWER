@@ -216,7 +216,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.6"
+CURRENT_VERSION = "1.6.1"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -7486,7 +7486,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 self.group_map[cat] = []
             self.group_map[cat].append(col)
 
-        ui_order = ["Temperatures (°C)", "Utilization / Load (%)", "Clock Speeds (MHz)", "Power / Wattage (W)", "Voltage (V)", "Fan Speeds (RPM)"]
+        ui_order = ["Temperatures (°C)", "Utilization / Load (%)", "Clock Speeds (MHz)", "Power / Wattage (W)", "Voltage (V)", "Fan Speeds (RPM)", "Frame Times / Latency (ms)", "Frame Rate (FPS)"]
         self.sorted_cats = [c for c in ui_order if c in self.group_map] +\
                            sorted([c for c in self.group_map.keys() if c not in ui_order])
 
@@ -7518,12 +7518,15 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
     def _get_category(self, n: str) -> str:
         u = n.upper()
+        if 'MS' in u or 'FRAME TIME' in u or 'LATENCY' in u or 'WAIT' in u: return "Frame Times / Latency (ms)"
+        if 'FPS' in u or 'FRAME RATE' in u: return "Frame Rate (FPS)"
         if '°C' in u or 'TEMP' in u: return "Temperatures (°C)"
         if '%' in u or 'USAGE' in u or 'UTILIZATION' in u: return "Utilization / Load (%)"
         if 'MHZ' in u or 'CLOCK' in u: return "Clock Speeds (MHz)"
         if ' W' in u or 'WATT' in u or 'POWER' in u: return "Power / Wattage (W)"
         if ' V' in u or 'VOLT' in u or 'VCORE' in u: return "Voltage (V)"
         if 'RPM' in u or 'FAN' in u: return "Fan Speeds (RPM)"
+
         if any(x in u for x in ['GPU', 'NVIDIA', 'GEFORCE', 'AMD', 'RTX', 'GTX']): return "Graphics Card (GPU)"
         if any(x in u for x in ['CPU', 'CORE ', 'AMD RYZEN', 'INTEL']): return "Processor (CPU)"
         return "Other Sensors"
