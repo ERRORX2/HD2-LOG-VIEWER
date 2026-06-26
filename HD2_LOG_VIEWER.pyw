@@ -216,7 +216,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.6.1"
+CURRENT_VERSION = "1.6.2"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -3128,6 +3128,40 @@ figure img{{border-radius:8px;}}
                 return c
         return None
 
+    def _col_candidates(self, keywords, excl=()) -> list[str]:
+        kw   = [k.upper() for k in keywords]
+        skip = [e.upper() for e in excl]
+        out  = []
+        for c in self.df.columns:
+            u = c.upper()
+            if all(k in u for k in kw) and not any(e in u for e in skip):
+                out.append(c)
+        return out
+
+    def _col_active(self, keywords, excl=(), min_unique: int = 3) -> str | None:
+        candidates = self._col_candidates(keywords, excl=excl)
+        if not candidates:
+            return None
+        if len(candidates) == 1:
+            return candidates[0]
+
+        df = self.df
+        best_col   = candidates[0]
+        best_score = -1.0
+        for c in candidates:
+            s = pd.to_numeric(df[c], errors='coerce').dropna()
+            if s.empty:
+                score = -1.0
+            else:
+                nunique = s.nunique()
+                score = float(nunique)
+                if nunique < min_unique:
+                    score *= 0.001
+            if score > best_score:
+                best_score = score
+                best_col   = c
+        return best_col
+
     def _toggle_debug(self):
         """Ctrl+F8 - open/refresh the debug window."""
         self.debug_mode = not self.debug_mode
@@ -3143,68 +3177,129 @@ figure img{{border-radius:8px;}}
     def _open_debug_window(self):
         """Open (or refresh) the debug output window."""
         is_dark = self.is_dark
-        _t = self._get_theme(); bg = _t["bg"]; fg = _t["fg"]; accent = _t["accent"]
-        bg2     = "#1a1a1a" if is_dark else "#ffffff"
-        accent  = "#1f6aa5"
-        fg_ok   = "#4ec94e"
-        fg_miss = "#ff5555"
-        fg_sec  = "#4f8ef7"
-        fg_val  = "#f0c060"
+        t        = self._get_theme()
+        bg       = t["bg"]
+        bg2      = t["bg2"]
+        bg3      = t["bg3"]
+        fg       = t["fg"]
+        accent   = t["accent"]
+        fg_ok    = t.get("hm_ok",   "#4ec94e")
+        fg_miss  = t.get("hm_crit", "#ff5555")
+        fg_warn  = t.get("hm_warn", "#f59e0b")
+        fg_hot   = t.get("hm_hot",  "#ff9800")
+        fg_sec   = t.get("plot_c0", accent)
+        fg_val   = t.get("plot_c3", "#f0c060")
+        mono     = ('Cascadia Code', 9) if is_dark else ('Consolas', 9)
 
-        if hasattr(self, '_debug_win') and self._debug_win and self._debug_win.winfo_exists():
+        rebuilding = hasattr(self, '_debug_win') and self._debug_win and self._debug_win.winfo_exists()
+        if rebuilding:
             win = self._debug_win
             txt = self._debug_txt
-            txt.config(state='normal')
-            txt.delete('1.0', tk.END)
+            for w_ in win.winfo_children():
+                w_.destroy()
         else:
             win = tk.Toplevel(self.root)
-            win.title("RESYNC.ERR - Debug Dump  [Ctrl+F8 to refresh / close]")
-            win.geometry("860x700")
-            win.minsize(600, 400)
-            win.configure(bg=bg)
+            win.geometry("900x720")
+            win.minsize(640, 420)
             win.transient(self.root)
             self._debug_win = win
 
-            def _on_debug_close():
-                self.debug_mode = False
-                self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}")
-                win.destroy()
-            win.protocol("WM_DELETE_WINDOW", _on_debug_close)
+        win.title(f"RESYNC.ERR - Debug Dump  [{self.analyzer.path.name}]")
+        win.configure(bg=bg)
 
-            tb = tk.Frame(win, bg="#111" if is_dark else "#dee2e6", pady=4, padx=8)
-            tb.pack(fill=tk.X)
-            tk.Label(tb, text="🐛  Debug Dump", font=('Segoe UI', 10, 'bold'),
-                     bg=tb['bg'], fg=accent).pack(side=tk.LEFT)
-            ttk.Button(tb, text="⟳ Refresh", command=self._open_debug_window).pack(side=tk.RIGHT, padx=2)
-            ttk.Button(tb, text="📋 Copy All", command=lambda: (
-                win.clipboard_clear(),
-                win.clipboard_append(txt.get('1.0', tk.END)),
-                self.show_toast("Debug output copied to clipboard")
-            )).pack(side=tk.RIGHT, padx=2)
-            ttk.Button(tb, text="✕ Close", command=_on_debug_close).pack(side=tk.RIGHT, padx=2)
+        def _on_debug_close():
+            self.debug_mode = False
+            self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}")
+            win.destroy()
+        win.protocol("WM_DELETE_WINDOW", _on_debug_close)
 
-            frame = tk.Frame(win, bg=bg)
-            frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
-            txt = tk.Text(frame, bg=bg2, fg=fg, font=('Cascadia Code', 9) if is_dark else ('Consolas', 9),
-                          wrap='none', relief='flat', padx=10, pady=8,
-                          insertbackground=fg, selectbackground=accent)
-            sb_y = ttk.Scrollbar(frame, orient='vertical',   command=txt.yview)
-            sb_x = ttk.Scrollbar(frame, orient='horizontal',  command=txt.xview)
-            txt.configure(yscrollcommand=sb_y.set, xscrollcommand=sb_x.set)
-            sb_y.pack(side=tk.RIGHT,  fill=tk.Y)
-            sb_x.pack(side=tk.BOTTOM, fill=tk.X)
-            txt.pack(fill=tk.BOTH, expand=True)
-            self._debug_txt = txt
+        tk.Frame(win, bg=accent, height=3).pack(fill=tk.X)
 
-            txt.tag_config('header',  foreground='#a78bfa', font=('Consolas', 9, 'bold'))
-            txt.tag_config('section', foreground=fg_sec,    font=('Consolas', 9, 'bold'))
-            txt.tag_config('ok',      foreground=fg_ok)
-            txt.tag_config('miss',    foreground=fg_miss)
-            txt.tag_config('val',     foreground=fg_val)
-            txt.tag_config('crit',    foreground='#ff4d4d', font=('Consolas', 9, 'bold'))
-            txt.tag_config('warn',    foreground='#f59e0b', font=('Consolas', 9, 'bold'))
-            txt.tag_config('info',    foreground='#38bdf8')
-            txt.tag_config('muted',   foreground='#555' if is_dark else '#999')
+        toolbar = ttk.Frame(win, padding=(8, 6))
+        toolbar.pack(fill=tk.X)
+        ttk.Label(toolbar, text="🐛  Debug Dump", font=('Segoe UI', 11, 'bold')).pack(side=tk.LEFT)
+        ttk.Label(toolbar, text=f"Ctrl+F8 to refresh / close",
+                  foreground=t.get("fg", fg)).pack(side=tk.LEFT, padx=(10, 0))
+
+        ttk.Button(toolbar, text="✕ Close", command=_on_debug_close).pack(side=tk.RIGHT, padx=2)
+        ttk.Button(toolbar, text="⟳ Refresh", command=self._open_debug_window).pack(side=tk.RIGHT, padx=2)
+
+        def _copy_all():
+            win.clipboard_clear()
+            win.clipboard_append(txt.get('1.0', tk.END))
+            self.show_toast("Debug output copied to clipboard")
+        ttk.Button(toolbar, text="📋 Copy All", command=_copy_all).pack(side=tk.RIGHT, padx=2)
+
+        def _save_to_file():
+            from tkinter import filedialog as _fd
+            path = _fd.asksaveasfilename(defaultextension=".txt",
+                                          initialfile=f"{self.analyzer.path.stem}_debug.txt",
+                                          filetypes=[("Text file", "*.txt")])
+            if path:
+                try:
+                    with open(path, 'w', encoding='utf-8') as f:
+                        f.write(txt.get('1.0', tk.END))
+                    self.show_toast("Debug dump saved")
+                except Exception as e:
+                    messagebox.showerror("Save Failed", str(e), parent=win)
+        ttk.Button(toolbar, text="💾 Save…", command=_save_to_file).pack(side=tk.RIGHT, padx=2)
+
+        search_row = ttk.Frame(win, padding=(8, 0, 8, 6))
+        search_row.pack(fill=tk.X)
+        ttk.Label(search_row, text="🔍 Filter:").pack(side=tk.LEFT, padx=(0, 5))
+        search_var = tk.StringVar()
+        search_entry = ttk.Entry(search_row, textvariable=search_var)
+        search_entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        match_lbl = ttk.Label(search_row, text="")
+        match_lbl.pack(side=tk.LEFT, padx=(8, 0))
+
+        frame = tk.Frame(win, bg=bg)
+        frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+        txt = tk.Text(frame, bg=bg2, fg=fg, font=mono,
+                      wrap='none', relief='flat', padx=10, pady=8,
+                      insertbackground=fg, selectbackground=accent,
+                      highlightthickness=1, highlightbackground=bg3, highlightcolor=accent)
+        sb_y = ttk.Scrollbar(frame, orient='vertical',   command=txt.yview)
+        sb_x = ttk.Scrollbar(frame, orient='horizontal',  command=txt.xview)
+        txt.configure(yscrollcommand=sb_y.set, xscrollcommand=sb_x.set)
+        sb_y.pack(side=tk.RIGHT,  fill=tk.Y)
+        sb_x.pack(side=tk.BOTTOM, fill=tk.X)
+        txt.pack(fill=tk.BOTH, expand=True)
+        self._debug_txt = txt
+
+        txt.tag_config('header',  foreground=accent,   font=(mono[0], 9, 'bold'))
+        txt.tag_config('section', foreground=fg_sec,    font=(mono[0], 9, 'bold'))
+        txt.tag_config('ok',      foreground=fg_ok)
+        txt.tag_config('miss',    foreground=fg_miss)
+        txt.tag_config('val',     foreground=fg_val)
+        txt.tag_config('crit',    foreground=fg_miss, font=(mono[0], 9, 'bold'))
+        txt.tag_config('warn',    foreground=fg_warn,  font=(mono[0], 9, 'bold'))
+        txt.tag_config('info',    foreground=t.get("plot_c5", "#38bdf8"))
+        txt.tag_config('muted',   foreground=bg3 if is_dark else "#999")
+        txt.tag_config('search_hit', background=fg_hot, foreground="#000000")
+
+        def _apply_filter(*_):
+            txt.tag_remove('search_hit', '1.0', tk.END)
+            query = search_var.get().strip()
+            if not query:
+                match_lbl.config(text="")
+                return
+            count = 0
+            start = '1.0'
+            while True:
+                pos = txt.search(query, start, stopindex=tk.END, nocase=True)
+                if not pos:
+                    break
+                end = f"{pos}+{len(query)}c"
+                txt.tag_add('search_hit', pos, end)
+                start = end
+                count += 1
+            match_lbl.config(text=f"{count} match{'es' if count != 1 else ''}" if count else "no matches")
+            if count:
+                first = txt.tag_ranges('search_hit')[0]
+                txt.see(first)
+        search_var.trace_add('write', _apply_filter)
+        search_entry.bind('<Return>', lambda e: _apply_filter())
 
         df   = self.df
         MISS = "<not found>"
@@ -3323,9 +3418,9 @@ figure img{{border-radius:8px;}}
         wl(f"  Effective clock cols ({len(eff_cols)}): {eff_cols[:5] or MISS}")
 
         gpu_hotspot       = self._col_excl(('GPU', 'HOT'),  excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
-        gpu_usage_col     = self._col('GPU', 'USAGE') or self._col('GPU', 'LOAD')
-        gpu_clock         = self._col('GPU', 'CLOCK') or self._col('GPU', 'FREQUENCY')
-        gpu_power         = self._col('GPU', 'POWER')
+        gpu_usage_col     = self._col_active(('GPU', 'USAGE')) or self._col_active(('GPU', 'LOAD'))
+        gpu_clock         = self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col_active(('GPU', 'FREQUENCY'))
+        gpu_power         = self._col_active(('GPU', 'POWER'))
         gpu_throttle      = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
         gpu_pwr_limit     = self._col('Performance Limit - Power [Yes/No]') or self._col('PERFCAP', 'PWR')
         gpu_eff_clock     = self._col('GPU Effective Clock [MHz]')
@@ -3334,9 +3429,14 @@ figure img{{border-radius:8px;}}
         gpu_mem_dynamic   = self._col('GPU D3D Memory Dynamic')
         gpu_bus_col       = self._col('GPU Bus Load') or self._col('Bus Load')
         vram_junc         = self._col('GPU Memory Junction Temperature [°C]')
+        gpu_edge          = self._col('GPU Temperature') or self._col_excl(
+                                ('GPU', 'TEMP'),
+                                excl=('HOTSPOT', 'MEMORY', 'CPU', 'VR', 'VRM', 'JUNCTION', 'SOC')
+                            )
 
         section("GPU COLUMNS")
         col("gpu_hotspot",        gpu_hotspot)
+        col("gpu_edge",           gpu_edge)
         col("gpu_usage_col",      gpu_usage_col)
         col("gpu_clock",          gpu_clock)
         col("gpu_eff_clock",      gpu_eff_clock)
@@ -3349,11 +3449,61 @@ figure img{{border-radius:8px;}}
         col("gpu_bus_col",        gpu_bus_col)
         col("vram_junction_temp", vram_junc)
 
+        gpu_temp_candidates = [c for c in df.columns
+                                if 'GPU' in c.upper() and ('TEMP' in c.upper() or 'HOT' in c.upper())]
+        if gpu_temp_candidates:
+            wl()
+            wl("  All GPU temperature-like columns found in this CSV (in header order):", 'section')
+            for c in gpu_temp_candidates:
+                picked = []
+                if c == gpu_hotspot: picked.append('gpu_hotspot')
+                if c == gpu_edge:    picked.append('gpu_edge')
+                tag = 'ok' if picked else 'muted'
+                marker = f"  <- used as {', '.join(picked)}" if picked else ""
+                w(f"    {'[*]' if picked else '[ ]'} ", tag)
+                wl(f"{c}{marker}", tag)
+
         if gpu_hotspot:
             section("GPU THERMAL VALUES")
             val("Max hotspot",   mx(gpu_hotspot))
             val("Mean hotspot",  avg(gpu_hotspot))
             val("Hotspot limit", self.temp_limits.get('GPU_HOTSPOT', 110.0))
+
+            if gpu_edge:
+                section("GPU THERMAL DELTA  (hotspot - edge, used by alert logic)")
+                delta_series = df[gpu_hotspot] - df[gpu_edge]
+                val("Edge column used",       gpu_edge, "")
+                val("Max delta",              delta_series.max())
+                val("Mean delta",             delta_series.mean())
+                val("Warning threshold",      21.0)
+                if delta_series.max() >= 21.0:
+                    wl(f"  ⚠ Max delta exceeds warning threshold - verify gpu_edge above is "
+                       f"a real die/edge sensor, not a VRM/SoC/junction sensor.", 'warn')
+            else:
+                wl()
+                wl("  ⚠ No gpu_edge column resolved - thermal delta warning is skipped entirely.", 'warn')
+
+        clk_candidates   = self._col_candidates(('GPU', 'CLOCK'))
+        usage_candidates = self._col_candidates(('GPU', 'USAGE')) + self._col_candidates(('GPU', 'LOAD'))
+        if clk_candidates or usage_candidates:
+            wl()
+            wl("  All GPU clock/usage-like columns found in this CSV (in header order):", 'section')
+            for c in clk_candidates + usage_candidates:
+                s = pd.to_numeric(df[c], errors='coerce').dropna()
+                flat = s.empty or s.nunique() <= 1
+                picked = []
+                if c == gpu_clock:     picked.append('gpu_clock')
+                if c == gpu_usage_col: picked.append('gpu_usage_col')
+                tag = 'ok' if picked else ('muted' if not flat else 'warn')
+                marker = f"  <- used as {', '.join(picked)}" if picked else ""
+                flat_note = "  [flat/constant - likely idle/decoy]" if flat and not picked else ""
+                w(f"    {'[*]' if picked else '[ ]'} ", tag)
+                wl(f"{c}{marker}{flat_note}", tag)
+            if gpu_clock:
+                s = pd.to_numeric(df[gpu_clock], errors='coerce').dropna()
+                if not s.empty and s.nunique() <= 1:
+                    wl("  ⚠ The selected gpu_clock is flat/constant for the entire log - if another "
+                       "candidate above shows real variance, that one is likely the active GPU.", 'warn')
 
         if gpu_clock and gpu_usage_col:
             section("GPU CLOCK / TDR VALUES")
@@ -3553,7 +3703,13 @@ figure img{{border-radius:8px;}}
         w(f"       {'is_laptop':44s} = ")
         wl(str(is_laptop), 'val')
         if pcie_errors and pcie_errors in df.columns:
+            pcie_s = pd.to_numeric(df[pcie_errors], errors='coerce').dropna()
             val("Max PCIe errors", mx(pcie_errors))
+            is_live_gauge = '(AVG' in pcie_errors.upper()
+            alert_value = pcie_s.max() if (is_live_gauge or pcie_s.empty) else pcie_s.sum()
+            val("Naive sum (NOT used by alert)", pcie_s.sum() if not pcie_s.empty else 0)
+            wl(f"       Alert logic uses: {'max (live gauge, per column name)' if is_live_gauge else 'sum (cumulative counter)'}"
+               f" -> {alert_value:g}", 'val')
 
         section("ACTIVE THRESHOLDS  (limits editor)")
         val("CPU thermal samples",  self.sig_cpu_thermal_samples, "d")
@@ -3918,11 +4074,11 @@ figure img{{border-radius:8px;}}
         cpu_utility   = self._col('CPU USAGE') or self._col('CPU UTILIZATION') or self._col('CPU AUSLASTUNG') or self._col('TOTAL CPU USAGE')
 
         gpu_hotspot   = _a('gpu_temp') or self._col_excl(('GPU', 'HOT'), excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
-        gpu_usage_col = _a('gpu_usage') or self._col('GPU', 'USAGE') or self._col('GPU', 'LOAD') or self._col('GPU', 'AUSLASTUNG') or self._col('GPU USAGE')
-        gpu_clock     = _a('gpu_clock') or self._col('GPU', 'CLOCK') or self._col('GPU', 'FREQUENCY') or self._col('GPU', 'TAKT')
+        gpu_usage_col = _a('gpu_usage') or self._col_active(('GPU', 'USAGE')) or self._col_active(('GPU', 'LOAD')) or self._col_active(('GPU', 'AUSLASTUNG')) or self._col('GPU USAGE')
+        gpu_clock     = _a('gpu_clock') or self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col_active(('GPU', 'FREQUENCY')) or self._col_active(('GPU', 'TAKT'))
         gpu_throttle  = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
-        gpu_power     = _a('gpu_power') or self._col('GPU', 'POWER') or self._col('BOARD', 'POWER') or self._col('TOTAL', 'BOARD') or self._col('TGP') or self._col('TBP') or self._col('ASIC') or self._col('NVVDD') or self._col('PCIe') or self._col('LEISTUNG') or self._col('EINGANGSLEISTUNG') or self._col('POWER')
-        gpu_clk_col   = self._col('GPU Clock [MHz]')
+        gpu_power     = _a('gpu_power') or self._col_active(('GPU', 'POWER')) or self._col('BOARD', 'POWER') or self._col('TOTAL', 'BOARD') or self._col('TGP') or self._col('TBP') or self._col('ASIC') or self._col('NVVDD') or self._col('PCIe') or self._col('LEISTUNG') or self._col('EINGANGSLEISTUNG') or self._col('POWER')
+        gpu_clk_col   = self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col('GPU Clock [MHz]')
 
         gpu_12v_input_v = self._col('GPU 12VHPWR Voltage') or self._col('GPU PCIe +12V Input Voltage') or self._col('GPU 12V Input Voltage')
         gpu_12v_input_w = self._col('GPU 12VHPWR Power') or self._col('GPU Power [W]') or self._col('GPU Board Power')
@@ -3985,7 +4141,10 @@ figure img{{border-radius:8px;}}
             hs_max = mx(gpu_hotspot)
             hs_limit = self.temp_limits.get('HOTSPOT', 95.0)
 
-            gpu_edge = self._col_excl(('GPU', 'TEMP'), excl=('HOTSPOT', 'MEMORY', 'CPU'))
+            gpu_edge = self._col('GPU Temperature') or self._col_excl(
+                ('GPU', 'TEMP'),
+                excl=('HOTSPOT', 'MEMORY', 'CPU', 'VR', 'VRM', 'JUNCTION', 'SOC')
+            )
 
             delta_val = 0
             if gpu_edge:
@@ -4169,8 +4328,15 @@ figure img{{border-radius:8px;}}
 
         life_cols = [c for c in df.columns if 'REMAINING LIFE' in c.upper() or 'DRIVE HEALTH' in c.upper()]
 
+        def _flag_active(col) -> bool:
+            s = df[col]
+            s_num = pd.to_numeric(s, errors='coerce')
+            if s_num.notna().any() and s_num.max() >= 1.0:
+                return True
+            return s.astype(str).str.strip().str.upper().eq('YES').any()
+
         for f_col in fail_cols:
-            if mx(f_col) >= 1.0:
+            if _flag_active(f_col):
                 add(
                     name="S.M.A.R.T. Hardware Failure",
                     severity="CRITICAL",
@@ -4753,7 +4919,14 @@ figure img{{border-radius:8px;}}
                 )
 
         if pcie_errors:
-            total_pcie_errors = df[pcie_errors].sum()
+            pcie_series = pd.to_numeric(df[pcie_errors], errors='coerce').dropna()
+            is_live_gauge = '(AVG' in pcie_errors.upper()
+            if is_live_gauge:
+                total_pcie_errors = pcie_series.max() if not pcie_series.empty else 0
+                pcie_label = "Peak PCIe Errors (per-sample gauge)"
+            else:
+                total_pcie_errors = pcie_series.sum() if not pcie_series.empty else 0
+                pcie_label = "Total PCIe Errors (lifetime counter)"
             if total_pcie_errors > 0:
                 add(
                     name="PCIe Bus Signal Instability",
@@ -4762,7 +4935,7 @@ figure img{{border-radius:8px;}}
                         "Detected hardware-level PCIe errors. This is usually caused by a "
                         "faulty PCIe Riser cable, a loose GPU seating, or an unstable PCIe Gen 4/5 link."
                     ),
-                    evidence=[f"Total PCIe Errors: {total_pcie_errors}", "ADVICE: Reseat GPU or replace Riser."]
+                    evidence=[f"{pcie_label}: {total_pcie_errors:g}", "ADVICE: Reseat GPU or replace Riser."]
                 )
 
         if gpu_wait_ms and ft_col:
@@ -4930,18 +5103,30 @@ figure img{{border-radius:8px;}}
                     ]
                 )
 
-        drive_activity = self._col('Total Activity [%]') or self._col('Read Activity [%]')
-        drive_warning  = self._col('Drive Warning [Yes/No]')
+        drive_activity   = self._col('Total Activity [%]') or self._col('Read Activity [%]')
+        drive_warn_cols  = self._col_candidates(('DRIVE', 'WARNING'))
+        drive_fail_cols  = self._col_candidates(('DRIVE', 'FAILURE'))
+
+        def _any_drive_flag(flag_cols):
+            for c in flag_cols:
+                if (df[c].astype(str).str.strip().str.upper() == 'YES').any():
+                    return c
+            return None
+
+        warned_drive_col = _any_drive_flag(drive_warn_cols)
+        failed_drive_col = _any_drive_flag(drive_fail_cols)
+        drive_warning     = warned_drive_col or (drive_warn_cols[0] if drive_warn_cols else None)
 
         if drive_activity:
             is_pinned = (df[drive_activity] > 98).sum() > 3
 
-            if is_pinned or (drive_warning and (df[drive_warning] == 'Yes').any()):
+            if is_pinned or warned_drive_col or failed_drive_col:
+                flagged_col = failed_drive_col or warned_drive_col
                 add(
                     name="Storage I/O Bottleneck / Hitching",
-                    severity="CRITICAL" if (drive_warning and (df[drive_warning] == 'Yes').any()) else "WARNING",
+                    severity="CRITICAL" if (warned_drive_col or failed_drive_col) else "WARNING",
                     description="The system drive is maxed out or reporting hardware warnings, causing asset-loading hitches.",
-                    evidence=["Drive at 100% activity" if is_pinned else "Hardware Warning Flag Detected",
+                    evidence=["Drive at 100% activity" if is_pinned else f"Hardware Warning Flag Detected ({flagged_col})",
                               "ADVICE: Check SSD health or move game to a faster drive."],
                 )
 
@@ -8171,14 +8356,14 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             lbl_text = ('📌 ' if is_pinned else '') + name_line
             lbl = tk.Label(row, text=lbl_text,
                            font=('Segoe UI', 8, 'bold' if is_pinned else 'normal'),
-                           bg=bg2, fg=fg, anchor='w', wraplength=150, justify='left')
+                           bg=bg2, fg=fg, anchor='w', wraplength=120, justify='left')
             lbl.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
             if stats_parts:
                 stats_lbl = tk.Label(cell, text=stats_parts[0].strip(),
                                      font=('Segoe UI', 8, 'bold'), bg=bg2,
                                      fg=accent if is_pinned else fg,
-                                     anchor='w', padx=20)
+                                     anchor='w', padx=20, wraplength=135, justify='left')
                 stats_lbl.pack(fill=tk.X)
 
             hover_widgets = [cell, row, lbl] + ([stats_lbl] if stats_parts else [])
