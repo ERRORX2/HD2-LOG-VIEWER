@@ -1,5 +1,37 @@
 # Change Log
 
+## 📝 Changelog: v1.6.2 (2026-06-26)
+
+#### 🛠️ Debug Window Redesign
+
+* **Modernized UI:** Overhauled the debug window to include a responsive toolbar and text filtering/search capabilities.
+* **Export Options:** Added dedicated buttons to easily copy debug logs to the clipboard or save them directly to a `.txt` file.
+* **Enhanced Diagnostics:** The debug dump now lists all candidate GPU temperature, clock, and usage columns, explicitly showing the selection rationale and highlighting flat-note warnings.
+
+#### 🧠 Smarter Telemetry & Sensor Detection
+
+* **Improved GPU Column Selection:** Introduced data variability tracking via `_col_candidates` and `_col_active` methods to dynamically pick the best GPU telemetry columns based on the number of unique values.
+* **Refined Edge Temp Tracking:** Enhanced GPU edge temperature detection logic by explicitly excluding VRM, Junction, SOC, and CPU zones to prevent accidental misidentification.
+* **PCIe Error Distinctions:** Refined the logic to clearly distinguish between live gauge readings and cumulative counter columns in alerts.
+* **Multi-Drive Alerts:** Added support for scanning multiple drive warning and failure columns simultaneously. Alerts now explicitly report which specific drive flag triggered the warning.
+
+#### 🎨 UI Refinements
+
+* **Layout Polish:** Adjusted label `wraplengths` (reduced to 120 and 135) to improve stats label wrapping and maintain a cleaner layout.
+
+### 💡 Notes
+
+* Keep `groups.json` and `theme.json` when updating to preserve your custom sensor presets, aliases, themes, and saved configurations.
+
+## 📝 Changelog: v1.6.1 (2026-06-25)
+
+### ✨ New Features
+
+* **New Sensor Categories:** Added dedicated categories for **Frame Time** and **FPS** sensors to improve automatic grouping and filtering in the sensor selector.
+
+### 💡 Notes
+
+* Keep `groups.json` and `theme.json` when updating to preserve your custom sensor presets, aliases, themes, and saved configurations.
 
 ## v1.6 (2026-06-07)
 
