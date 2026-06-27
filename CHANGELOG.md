@@ -3,7 +3,7 @@
 
 #### 🛠️ Debuger
 
-* **Improved
+* **Improved**
 
 #### 🎨 Toolbar Theming
 
