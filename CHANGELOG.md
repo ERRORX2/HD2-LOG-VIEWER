@@ -2,6 +2,7 @@
 
 ## 📝 Changelog: v1.6.4 (2026-06-28)
 
+###🎨 New Themes
 * **New Theme Presets:** Added 6 new theme presets to the theme editor.
 
 ### 🐛 Bug Fixes
