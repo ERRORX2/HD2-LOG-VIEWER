@@ -1,4 +1,18 @@
 # Change Log
+
+## 📝 Changelog: v1.6.4 (2026-06-28)
+
+* **New Theme Presets:** Added 6 new theme presets to the theme editor.
+
+### 🐛 Bug Fixes
+
+* **Error Handler Stability:** Fixed crashes occurring when displaying error dialogs for report exports, loading new CSVs, and initial program startup. This was resolved by fixing an issue where an exception variable was going out of scope before the UI could render the message.
+
+
+### 💡 Notes
+
+* Keep `groups.json` and `theme.json` when updating to preserve your custom sensor presets, aliases, themes, and saved configurations.
+
 ## 📝 Changelog: v1.6.3 (2026-06-27)
 
 #### 🛠️ Debuger
