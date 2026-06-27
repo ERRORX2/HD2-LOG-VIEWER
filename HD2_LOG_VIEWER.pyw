@@ -6,6 +6,14 @@ import matplotlib.colors as mcolors
 import matplotlib.cm as mcm
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+
+
+class _NoHistoryToolbar(NavigationToolbar2Tk):
+    toolitems = tuple(
+        item for item in NavigationToolbar2Tk.toolitems
+        if item[0] not in ('Back', 'Forward')
+    )
+
 from pathlib import Path
 from typing import List, Optional, Dict, Set, Tuple
 import tkinter as tk
@@ -216,7 +224,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.6.2"
+CURRENT_VERSION = "1.6.3"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -1751,51 +1759,6 @@ class TelemetryApp:
         if self.time_mode and analyzer.time_series is not None and len(analyzer.time_series) == len(df):
             return analyzer.time_series.dt.total_seconds().values
         return df.index.values
-
-#     def _toggle_compare(self):
-#         if self.ref_df is None:
-#             messagebox.showinfo("Comparison", "Please set a reference first by clicking 'Set Ref'")
-#             return
-#         self.compare_mode = not self.compare_mode
-#         self.compare_btn.config(text="🔍 Compare: ON" if self.compare_mode else "🔍 Compare: OFF")
-#         self.update_plot()
-
-#     def _set_reference(self):
-#         self.ref_df = self.df.copy()
-#         self.ref_analyzer = self.analyzer
-#         self.show_toast("Current log saved as Reference")
-#         self.compare_btn.config(state="normal")
-#         if hasattr(self, 'swap_ref_btn'):
-#             self.swap_ref_btn.config(state="normal")
-
-#     def _set_reference_from_file(self):
-#         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
-#         if not path:
-#             return
-#         def _on_success(analyzer):
-#             self.ref_df = analyzer.df.copy()
-#             self.ref_analyzer = analyzer
-#             self.show_toast(f"Reference set: {analyzer.path.name}")
-#             self.compare_btn.config(state="normal")
-#             if hasattr(self, 'swap_ref_btn'):
-#                 self.swap_ref_btn.config(state="normal")
-#             if self.compare_mode:
-#                 self.update_plot()
-#         def _on_error(exc):
-#             messagebox.showerror("Reference Load Error", str(exc))
-#         self._load_csv_threaded(path, on_success=_on_success, on_error=_on_error)
-
-#     def _swap_reference(self):
-#         if self.ref_df is None or self.ref_analyzer is None:
-#             return
-#         self.df, self.ref_df = self.ref_df, self.df.copy()
-#         self.analyzer, self.ref_analyzer = self.ref_analyzer, self.analyzer
-#         self._sig_hits  = []
-#         self._sig_dirty = True
-#         self._setup_ui()
-#         self._apply_theme_colors()
-#         self.update_plot()
-
     def _open_session_compare(self):
         self.session_compare_active = True
         if not self.sessions:
@@ -1804,7 +1767,6 @@ class TelemetryApp:
                               'df': self.df,
                               'color': '#4f8ef7'}]
         self._draw_session_compare()
-
     def _close_session_compare(self):
         self.session_compare_active = False
         cmp_widget = getattr(self, '_cmp_widget', None)
@@ -2662,7 +2624,7 @@ class TelemetryApp:
                 _set_status('Writing file…', 0.90)
 
                 generated_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                charts_html  = '\n'.join(chart_blocks) if chart_blocks \
+                charts_html  = '\n'.join(chart_blocks) if chart_blocks\
                                else "<p style='color:#64748b'>No sensors selected.</p>"
                 sess_list    = ''.join(
                     '<li style="color:' + s['color'] + '">' + html_mod.escape(s['label']) + '</li>'
@@ -2859,6 +2821,58 @@ figure img{{border-radius:8px;}}
         if hasattr(self, 'preset_scroll'):
             try: self.preset_scroll.configure(bg=bg3, troughcolor=bg, activebackground=accent)
             except Exception: pass
+
+        self._style_mpl_toolbar()
+
+    def _style_mpl_toolbar(self):
+        """Recolor the matplotlib NavigationToolbar2Tk (plain Tk widgets, not
+        ttk) so it doesn't show up as OS-default white/gray against a dark
+        theme. Safe to call repeatedly (e.g. on every theme switch)."""
+        toolbar = getattr(self, 'toolbar', None)
+        if not toolbar or not toolbar.winfo_exists():
+            return
+        t   = self._get_theme()
+        bg  = t["bg"]
+        bg3 = t["bg3"]
+        fg  = t["fg"]
+        accent = t["accent"]
+        try:
+            toolbar.configure(background=bg)
+        except Exception:
+            pass
+        for child in toolbar.winfo_children():
+            cls = child.winfo_class()
+            try:
+                if cls in ('Button', 'Checkbutton'):
+                    child.configure(
+                        background=bg, foreground=fg,
+                        activebackground=bg3, activeforeground=fg,
+                        highlightbackground=bg, highlightcolor=accent,
+                        relief='flat', bd=0
+                    )
+                    if cls == 'Checkbutton':                        
+                        child.configure(
+                            selectcolor=bg3,
+                            indicatoron=False
+                        )
+                elif cls == 'Label':
+                    child.configure(background=bg, foreground=fg)
+                elif cls == 'Frame':
+                    child.configure(background=bg)
+                else:
+                    child.configure(background=bg)
+            except Exception:
+                pass                                
+        try:
+            for button in getattr(toolbar, '_buttons', {}).values():
+                if button is not None and button.winfo_exists():
+                    toolbar._set_image_for_button(button)
+        except Exception:
+            pass
+        try:
+            toolbar.update_idletasks()
+        except Exception:
+            pass
     def _is_critical(self, col: str) -> bool:
         raw  = col.upper()
         name = raw.replace(' ', '')
@@ -3250,11 +3264,50 @@ figure img{{border-radius:8px;}}
         search_var = tk.StringVar()
         search_entry = ttk.Entry(search_row, textvariable=search_var)
         search_entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        ttk.Button(search_row, text="▲", width=3,
+                   command=lambda: _jump_match(-1)).pack(side=tk.LEFT, padx=(6, 0))
+        ttk.Button(search_row, text="▼", width=3,
+                   command=lambda: _jump_match(1)).pack(side=tk.LEFT, padx=(2, 0))
         match_lbl = ttk.Label(search_row, text="")
         match_lbl.pack(side=tk.LEFT, padx=(8, 0))
 
-        frame = tk.Frame(win, bg=bg)
-        frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+        problems_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(search_row, text="⚠ Problems only", variable=problems_var,
+                         command=lambda: _apply_problems_filter()).pack(side=tk.RIGHT)
+
+        body = tk.Frame(win, bg=bg)
+        body.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+
+                                          
+        nav_frame = tk.Frame(body, bg=bg, width=190)
+        nav_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 6))
+        nav_frame.pack_propagate(False)
+        ttk.Label(nav_frame, text="📑 Sections", font=('Segoe UI', 9, 'bold')).pack(anchor='w')
+        nav_list_holder = tk.Frame(nav_frame, bg=bg)
+        nav_list_holder.pack(fill=tk.BOTH, expand=True, pady=(4, 0))
+        nav_list = tk.Listbox(nav_list_holder, bg=bg2, fg=fg, font=('Segoe UI', 9),
+                               relief='flat', selectbackground=accent, selectforeground="#ffffff",
+                               highlightthickness=1, highlightbackground=bg3, highlightcolor=accent,
+                               activestyle='none')
+        nav_sb = ttk.Scrollbar(nav_list_holder, orient='vertical', command=nav_list.yview)
+        nav_list.configure(yscrollcommand=nav_sb.set)
+        nav_sb.pack(side=tk.RIGHT, fill=tk.Y)
+        nav_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self._debug_nav_marks = []                              
+
+        def _on_nav_select(event=None):
+            sel = nav_list.curselection()
+            if not sel:
+                return
+            _title, mark = self._debug_nav_marks[sel[0]]
+            txt.see(mark)
+            txt.see(f"{mark} + 1 line")                                                
+            txt.mark_set('insert', mark)
+        nav_list.bind('<<ListboxSelect>>', _on_nav_select)
+
+                                     
+        frame = tk.Frame(body, bg=bg)
+        frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         txt = tk.Text(frame, bg=bg2, fg=fg, font=mono,
                       wrap='none', relief='flat', padx=10, pady=8,
                       insertbackground=fg, selectbackground=accent,
@@ -3266,7 +3319,6 @@ figure img{{border-radius:8px;}}
         sb_x.pack(side=tk.BOTTOM, fill=tk.X)
         txt.pack(fill=tk.BOTH, expand=True)
         self._debug_txt = txt
-
         txt.tag_config('header',  foreground=accent,   font=(mono[0], 9, 'bold'))
         txt.tag_config('section', foreground=fg_sec,    font=(mono[0], 9, 'bold'))
         txt.tag_config('ok',      foreground=fg_ok)
@@ -3277,14 +3329,21 @@ figure img{{border-radius:8px;}}
         txt.tag_config('info',    foreground=t.get("plot_c5", "#38bdf8"))
         txt.tag_config('muted',   foreground=bg3 if is_dark else "#999")
         txt.tag_config('search_hit', background=fg_hot, foreground="#000000")
+        txt.tag_config('search_cur', background=accent, foreground="#ffffff")
+        txt.tag_config('hidden_line', elide=True)
+
+        self._debug_matches = []
+        self._debug_match_idx = -1
 
         def _apply_filter(*_):
             txt.tag_remove('search_hit', '1.0', tk.END)
+            txt.tag_remove('search_cur', '1.0', tk.END)
             query = search_var.get().strip()
+            self._debug_matches = []
+            self._debug_match_idx = -1
             if not query:
                 match_lbl.config(text="")
                 return
-            count = 0
             start = '1.0'
             while True:
                 pos = txt.search(query, start, stopindex=tk.END, nocase=True)
@@ -3292,14 +3351,54 @@ figure img{{border-radius:8px;}}
                     break
                 end = f"{pos}+{len(query)}c"
                 txt.tag_add('search_hit', pos, end)
+                self._debug_matches.append((pos, end))
                 start = end
-                count += 1
+            count = len(self._debug_matches)
             match_lbl.config(text=f"{count} match{'es' if count != 1 else ''}" if count else "no matches")
             if count:
-                first = txt.tag_ranges('search_hit')[0]
-                txt.see(first)
+                _jump_match(1)
+
+        def _jump_match(direction):
+            if not self._debug_matches:
+                return
+            if self._debug_match_idx >= 0:
+                old_pos, old_end = self._debug_matches[self._debug_match_idx]
+                txt.tag_remove('search_cur', old_pos, old_end)
+            self._debug_match_idx = (self._debug_match_idx + direction) % len(self._debug_matches)
+            pos, end = self._debug_matches[self._debug_match_idx]
+            txt.tag_add('search_cur', pos, end)
+            txt.see(pos)
+            query = search_var.get().strip()
+            count = len(self._debug_matches)
+            match_lbl.config(text=f"{self._debug_match_idx + 1} of {count} matches")
+
+        def _apply_problems_filter():
+            """Hide everything except lines tagged crit / warn / miss / header / section when enabled."""
+            keep_tags = ('crit', 'warn', 'miss', 'header', 'section')
+            if not problems_var.get():
+                txt.tag_remove('hidden_line', '1.0', tk.END)
+                return
+            total_lines = int(txt.index('end-1c').split('.')[0])
+            keep_lines = set()
+            for t in keep_tags:
+                start = '1.0'
+                while True:
+                    rng = txt.tag_nextrange(t, start, tk.END)
+                    if not rng:
+                        break
+                    line_no = int(str(rng[0]).split('.')[0])
+                    keep_lines.add(line_no)
+                    start = rng[1]
+            for ln in range(1, total_lines + 1):
+                line_start = f"{ln}.0"
+                line_end_plus = f"{ln}.end+1c"
+                if ln in keep_lines:
+                    txt.tag_remove('hidden_line', line_start, line_end_plus)
+                else:
+                    txt.tag_add('hidden_line', line_start, line_end_plus)
         search_var.trace_add('write', _apply_filter)
-        search_entry.bind('<Return>', lambda e: _apply_filter())
+        search_entry.bind('<Return>', lambda e: _jump_match(1))
+        search_entry.bind('<Shift-Return>', lambda e: _jump_match(-1))
 
         df   = self.df
         MISS = "<not found>"
@@ -3325,6 +3424,11 @@ figure img{{border-radius:8px;}}
 
         def section(title):
             wl()
+            mark_name = f"sec_{len(self._debug_nav_marks)}"
+            txt.mark_set(mark_name, tk.INSERT)
+            txt.mark_gravity(mark_name, 'left')
+            self._debug_nav_marks.append((title, mark_name))
+            nav_list.insert(tk.END, title)
             wl(SEP, 'section')
             wl(f"  {title}", 'section')
             wl(SEP, 'section')
@@ -3878,8 +3982,8 @@ figure img{{border-radius:8px;}}
             wl("  No signatures triggered.", 'ok')
 
         section("MCLK / XMP DETECTION")
-        mclk_debug = self._col_excl(['MCLK'],        excl=['GPU','VRAM','GDDR','VIDEO']) \
-                  or self._col_excl(['MEMORY CLOCK'], excl=['GPU','VRAM','GDDR','VIDEO']) \
+        mclk_debug = self._col_excl(['MCLK'],        excl=['GPU','VRAM','GDDR','VIDEO'])\
+                  or self._col_excl(['MEMORY CLOCK'], excl=['GPU','VRAM','GDDR','VIDEO'])\
                   or self._col_excl(['DRAM CLOCK'],   excl=['GPU','VRAM','GDDR','VIDEO'])
         col("mclk_col (excl GPU)", mclk_debug)
         if mclk_debug and mclk_debug in df.columns:
@@ -7350,8 +7454,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
     def _setup_ui(self):
         flag = " [DEBUG]" if self.debug_mode else ""
         self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}{flag}")
-        self.root.geometry("1600x950")
-        self.root.minsize(1000, 700)
+        self.root.geometry("1440x900")
+        self.root.minsize(1440, 900)                                                        
+        _prev_left_width = getattr(self, '_user_left_width', None)
+
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -7366,15 +7472,17 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     self.root.iconbitmap(_p)
         except Exception:
             pass
-
         self.root.bind("<Control-F8>", lambda e: self._toggle_debug())
         self.root.bind("<Control-c>", lambda e: self._copy_png_to_clipboard())
         self.root.bind("<Control-h>", lambda e: self._launch_stratagem_hero())
-
         self.paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        self.paned.pack(fill=tk.BOTH, expand=True)
-
-        self.left = ttk.Frame(self.paned, padding="10")
+        self.paned.pack(fill=tk.BOTH, expand=True)                     
+        _left_width = 370
+        if _prev_left_width and 150 <= _prev_left_width <= 900:
+            _left_width = _prev_left_width
+        self._pending_left_width = _left_width
+        self.left = ttk.Frame(self.paned, padding="10", width=_left_width)
+        self.left.pack_propagate(False)
         self.paned.add(self.left, weight=1)
 
         top = ttk.Frame(self.left)
@@ -7385,29 +7493,14 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._tooltip_btn = ttk.Button(top, text="Tooltip: ON" if getattr(self, "_tooltip_enabled", True) else "Tooltip: OFF", width=16,
                                        command=self._toggle_tooltip)
         self._tooltip_btn.pack(side=tk.RIGHT, padx=(0, 4))
-
         mode_f = ttk.LabelFrame(self.left, text=" View Settings ", padding=8)
         mode_f.pack(fill=tk.X, pady=5)
-
         btn_row1 = ttk.Frame(mode_f)
         btn_row1.pack(fill=tk.X, pady=2)
         self.multi_btn = ttk.Button(btn_row1, text="📊 Multi: ON" if self.multi_mode else "📊 Multi: OFF", command=self._toggle_multi)
         self.multi_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
         self.delta_btn = ttk.Button(btn_row1, text="Δ Delta: ON" if self.delta_mode else "Δ Delta: OFF", command=self._toggle_delta)
         self.delta_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-
-        # btn_row2 — old reference compare system, removed
-        # btn_row2 = ttk.Frame(mode_f)
-        # btn_row2.pack(fill=tk.X, pady=2)
-        # ttk.Button(btn_row2, text="📌 Set Ref", command=self._set_reference).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        # ttk.Button(btn_row2, text="📂 Ref CSV", command=self._set_reference_from_file).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        # self.compare_btn = ttk.Button(btn_row2, text="🔍 Compare: OFF", command=self._toggle_compare,
-        #                               state="disabled" if self.ref_df is None else "normal")
-        # self.compare_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        # self.swap_ref_btn = ttk.Button(btn_row2, text="⇄ Swap", command=self._swap_reference,
-        #                                state="disabled" if self.ref_df is None else "normal")
-        # self.swap_ref_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-
         btn_row2b = ttk.Frame(mode_f)
         btn_row2b.pack(fill=tk.X, pady=2)
         self.session_cmp_btn = ttk.Button(btn_row2b,
@@ -7428,10 +7521,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         if not has_time:
             ttk.Label(mode_f, text="No time column detected", foreground="gray",
                       font=('Segoe UI', 7)).pack(pady=(0, 2))
-
         preset_master_f = ttk.LabelFrame(self.left, text=" Presets ", padding=5)
         preset_master_f.pack(fill=tk.X, pady=5)
-
         self.preset_canvas = tk.Canvas(preset_master_f, height=140, highlightthickness=0)
         _t_ps = self._get_theme()
         self.preset_scroll = tk.Scrollbar(preset_master_f, orient="vertical", command=self.preset_canvas.yview,
@@ -7537,8 +7628,24 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 self.canvas_checklist.after_cancel(self._sash_after_id)
             self._sash_after_id = self.canvas_checklist.after(100, _refresh_scrollregion)
 
+        self._sash_press_pos = None
+        def _on_sash_press(e):
+            try:
+                self._sash_press_pos = self.paned.sashpos(0)
+            except Exception:
+                self._sash_press_pos = None
+
         def _on_sash_release(e):
-            self.canvas_checklist.after(50, _refresh_scrollregion)
+            self.canvas_checklist.after(50, _refresh_scrollregion)                   
+            try:
+                new_pos = self.paned.sashpos(0)
+            except Exception:
+                return
+            if self._sash_press_pos is not None and new_pos != self._sash_press_pos:
+                self._user_left_width = new_pos
+            self._sash_press_pos = None
+
+        self.paned.bind("<ButtonPress-1>", _on_sash_press, add="+")
 
         self.scroll_frame.bind("<Configure>", lambda e: _refresh_scrollregion())
         self.canvas_checklist.bind("<Configure>", _on_checklist_canvas_configure)
@@ -7549,14 +7656,25 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             self.canvas_checklist.yview_scroll(int(-1 * (event.delta / 120)), "units")
         self.canvas_checklist.bind("<Enter>", lambda _: self.canvas_checklist.bind_all("<MouseWheel>", _on_checklist_mw))
         self.canvas_checklist.bind("<Leave>", lambda _: self.canvas_checklist.unbind_all("<MouseWheel>"))
-
         self.canvas_checklist.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.sc_checklist.pack(side=tk.RIGHT, fill=tk.Y)
         self._build_checklist()
-
         self.right = ttk.Frame(self.paned, padding="5")
-        self.paned.add(self.right, weight=4)
-
+        self.paned.add(self.right, weight=4)                                         
+        self.root.update_idletasks()
+        try:
+            self.paned.sashpos(0, self._pending_left_width)
+        except Exception:
+            pass                                           
+        def _on_paned_configure(event):
+            try:
+                target = self._pending_left_width
+                current = self.paned.sashpos(0)
+                if current < target:
+                    self.paned.sashpos(0, target)
+            except Exception:
+                pass
+        self.paned.bind("<Configure>", _on_paned_configure, add="+")
         if hasattr(self, 'canvas_widget') and self.canvas_widget:
             for cid in (getattr(self, '_cid_move', None), getattr(self, '_cid_leave', None)):
                 if cid is not None:
@@ -7641,9 +7759,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._cid_pick   = self.canvas_widget.mpl_connect('pick_event',          self._on_legend_pick)
         self._pinned_line = None
 
-        toolbar = NavigationToolbar2Tk(self.canvas_widget, toolbar_f, pack_toolbar=False)
-        toolbar.update()
-        toolbar.pack(side=tk.LEFT)
+        self.toolbar = _NoHistoryToolbar(self.canvas_widget, toolbar_f, pack_toolbar=False)
+        self.toolbar.update()
+        self.toolbar.pack(side=tk.LEFT)
+        self._style_mpl_toolbar()
 
         self.canvas_widget.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -8010,7 +8129,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._sig_hits             = []
         self._sig_dirty            = True
         self._sig_timeline_x_vals  = None
-        # clear compare sessions so they don't bleed into the new file
+                                                                      
         self.session_compare_active = False
         self.sessions               = []
         self._cmp_widget            = None
@@ -8108,10 +8227,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             try:
                 analyzer = TelemetryAnalyzer(path)
                 analyzer.load()
-                def _done():
-                    _close()
-                    _release_tk_refs()
-                    on_success(analyzer)
+                def _done():                       
+                    try:
+                        on_success(analyzer)
+                    finally:
+                        _close()
+                        _release_tk_refs()
                 self.root.after(0, _done)
             except Exception as exc:
                 def _fail():
@@ -8132,7 +8253,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             v.set(False)
         self.session_compare_active = _prev
         self.update_plot()
-
     def _render_composite_png(self, dpi=150):
         import io
         from PIL import Image, ImageGrab
@@ -9714,13 +9834,18 @@ if __name__ == "__main__":
             f"ERRORX2.RESYNC.ERR.{CURRENT_VERSION}"
         )
     except Exception:
+        pass                                         
+    try:
+        import ctypes
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)                          
+        except Exception:
+            ctypes.windll.user32.SetProcessDPIAware()                                   
+    except Exception:
         pass
 
     root = tk.Tk()
     root.withdraw()
-
-
-
 
     try:
         if getattr(sys, 'frozen', False):
@@ -9730,7 +9855,6 @@ if __name__ == "__main__":
             _resolved_icon = _p if os.path.exists(_p) else None
     except Exception:
         _resolved_icon = None
-
     def _apply_icon(window):
         """Apply icon to window title bar. Safe to call multiple times."""
         if not _resolved_icon:
@@ -9827,11 +9951,22 @@ if __name__ == "__main__":
                 a.load()
                 refs = _tk_refs[:]
                 def _done():
-                    refs.clear()
-                    splash.grab_release()
-                    splash.destroy()
-                    root.deiconify()
-                    TelemetryApp(root, a)
+                    try:
+                        app = TelemetryApp(root, a)
+                        app.canvas_widget.draw()                            
+                        root.update()                                                   
+                    finally:
+                        root.deiconify()
+                        def _refix_sash():
+                            try:
+                                app.paned.sashpos(0, app._pending_left_width)
+                            except Exception:
+                                pass
+                        root.after_idle(_refix_sash)
+                        root.after(150, _refix_sash)
+                        refs.clear()
+                        splash.grab_release()
+                        splash.destroy()
                     root.after(100, lambda: _apply_icon(root))
                 root.after(0, _done)
             except Exception as exc:
@@ -9843,6 +9978,5 @@ if __name__ == "__main__":
                     messagebox.showerror("Error", str(exc))
                     root.destroy()
                 root.after(0, _fail)
-
         threading.Thread(target=_worker, daemon=True).start()
         root.mainloop()
