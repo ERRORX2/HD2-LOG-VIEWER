@@ -1,4 +1,24 @@
 # Change Log
+## 📝 Changelog: v1.6.3 (2026-06-27)
+
+#### 🛠️ Debuger
+
+* **Improved
+
+#### 🎨 Toolbar Theming
+
+* **Themed Plot Toolbar:** The matplotlib pan/zoom/save toolbar now perfectly matches the active app theme instead of defaulting to the OS white/gray.
+* **Dynamic Icon Recoloring:** Toolbar icons (including Pan and Zoom toggle buttons) now dynamically recolor to display correctly in dark themes.
+* **Toolbar Cleanup:** Removed the unused Back/Forward history buttons from the toolbar for a cleaner layout.
+
+#### 📏 Window & Layout Adjustments
+
+* **Updated Dimensions:** Adjusted the default window size and minimum size to **1440×900**.
+* **Left Panel Scaling:** The left dashboard panel now defaults to a width of **370px**. It maintains this minimum width (or your last manually-dragged width) regardless of how the main window is scaled, preventing it from getting squeezed.
+
+### 💡 Notes
+
+* Keep `groups.json` and `theme.json` when updating to preserve your custom sensor presets, aliases, themes, and saved configurations.
 
 ## 📝 Changelog: v1.6.2 (2026-06-26)
 
