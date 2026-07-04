@@ -1,6 +1,6 @@
 ﻿import pandas as pd
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('TkAgg')
 import matplotlib.ticker as ticker
 import matplotlib.colors as mcolors
 import matplotlib.cm as mcm
@@ -2893,7 +2893,7 @@ figure img{{border-radius:8px;}}
                         highlightbackground=bg, highlightcolor=accent,
                         relief='flat', bd=0
                     )
-                    if cls == 'Checkbutton':                 
+                    if cls == 'Checkbutton':
                         child.configure(
                             selectcolor=bg3,
                             indicatoron=False
@@ -7847,12 +7847,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.sc_checklist.pack(side=tk.RIGHT, fill=tk.Y)
         self._build_checklist()
         self.right = ttk.Frame(self.paned, padding="5")
-        self.paned.add(self.right, weight=4)
+        self.paned.add(self.right, weight=4)                            
         self.root.update_idletasks()
         try:
             self.paned.sashpos(0, self._pending_left_width)
         except Exception:
-            pass
+            pass                           
         def _on_paned_configure(event):
             try:
                 target = self._pending_left_width
@@ -10043,7 +10043,7 @@ if __name__ == "__main__":
         )
     except Exception:
         pass
-
+                                
     try:
         import ctypes
         try:
@@ -10159,7 +10159,7 @@ if __name__ == "__main__":
                 a = TelemetryAnalyzer(path)
                 a.load()
                 refs = _tk_refs[:]
-                def _done():                
+                def _done():                           
                     try:
                         app = TelemetryApp(root, a)
                         app.canvas_widget.draw()                            
