@@ -2893,7 +2893,7 @@ figure img{{border-radius:8px;}}
                         highlightbackground=bg, highlightcolor=accent,
                         relief='flat', bd=0
                     )
-                    if cls == 'Checkbutton':     
+                    if cls == 'Checkbutton':                                       
                         child.configure(
                             selectcolor=bg3,
                             indicatoron=False
@@ -3510,6 +3510,57 @@ figure img{{border-radius:8px;}}
         wl(f"  Disabled  : {sorted(self.disabled_sigs) or 'none'}", 'header')
         wl(f"  Format    : {'MangoHud' if self.analyzer.is_mangohud else 'HWiNFO64 / Generic CSV'}", 'header')
         wl('=' * 72, 'header')
+
+        section("DEPENDENCY CHECK")
+        _deps = [
+            ("pandas",                  "pd",          "1.3.0"),
+            ("numpy",                   "np",          "1.21.0"),
+            ("matplotlib",              "matplotlib",  "3.4.0"),
+            ("matplotlib.backends.backend_tkagg", None, None),
+            ("tkinter",                 "tk",          None),
+            ("PIL",                     None,          None),
+            ("psutil",                  None,          None),
+            ("scipy",                   None,          None),
+            ("urllib.request",          None,          None),
+            ("pathlib",                 None,          None),
+            ("csv",                     None,          None),
+            ("json",                    None,          None),
+            ("threading",               None,          None),
+        ]
+        _all_ok = True
+        for _mod, _alias, _min_ver in _deps:
+            try:
+                import importlib
+                _m = importlib.import_module(_mod)
+                _ver = getattr(_m, '__version__', None) or getattr(_m, 'version', None)
+                if _ver:
+                    _ver_str = str(_ver)
+                    if _min_ver:
+                        try:
+                            _parts_have = [int(x) for x in _ver_str.split('.')[:3]]
+                            _parts_need = [int(x) for x in _min_ver.split('.')[:3]]
+                            if _parts_have < _parts_need:
+                                wl(f"  [!] {_mod:45s} v{_ver_str}  (min: {_min_ver}) - OUTDATED", 'warn')
+                                _all_ok = False
+                                continue
+                        except Exception:
+                            pass
+                    wl(f"  [✓] {_mod:45s} v{_ver_str}", 'ok')
+                else:
+                    wl(f"  [✓] {_mod:45s} (no version info)", 'ok')
+            except ImportError:
+                _critical = _mod in ("pandas", "numpy", "matplotlib",
+                                     "matplotlib.backends.backend_tkagg", "tkinter")
+                _tag = 'crit' if _critical else 'warn'
+                _label = "MISSING - REQUIRED" if _critical else "not installed (optional)"
+                wl(f"  [✗] {_mod:45s} {_label}", _tag)
+                _all_ok = False
+        wl()
+        if _all_ok:
+            wl("  All dependencies satisfied.", 'ok')
+        else:
+            wl("  Some dependencies are missing or outdated.", 'warn')
+            wl("  Install missing packages with:  pip install pandas numpy matplotlib pillow psutil scipy", 'warn')
 
         if self.analyzer.is_mangohud:
             section("MANGOHUD FILE DETECTED")
@@ -7505,17 +7556,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         flag = " [DEBUG]" if self.debug_mode else ""
         self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}{flag}")
         self.root.geometry("1440x900")
-        self.root.minsize(1440, 900)
-
-                                                                         
-                                                                            
-                                                            
-                                                                   
-                                                                            
-                                                                          
-                                                                        
-                                                                      
-                                                                      
+        self.root.minsize(1440, 900)        
         _prev_left_width = getattr(self, '_user_left_width', None)
 
         for widget in self.root.winfo_children():
@@ -7536,7 +7577,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.root.bind("<Control-c>", lambda e: self._copy_png_to_clipboard())
         self.root.bind("<Control-h>", lambda e: self._launch_stratagem_hero())
         self.paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        self.paned.pack(fill=tk.BOTH, expand=True)
+        self.paned.pack(fill=tk.BOTH, expand=True)            
         _left_width = 370
         if _prev_left_width and 150 <= _prev_left_width <= 900:
             _left_width = _prev_left_width
@@ -7696,7 +7737,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 self._sash_press_pos = None
 
         def _on_sash_release(e):
-            self.canvas_checklist.after(50, _refresh_scrollregion)
+            self.canvas_checklist.after(50, _refresh_scrollregion)                        
             try:
                 new_pos = self.paned.sashpos(0)
             except Exception:
@@ -7720,12 +7761,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.sc_checklist.pack(side=tk.RIGHT, fill=tk.Y)
         self._build_checklist()
         self.right = ttk.Frame(self.paned, padding="5")
-        self.paned.add(self.right, weight=4)
+        self.paned.add(self.right, weight=4)                                        
         self.root.update_idletasks()
         try:
             self.paned.sashpos(0, self._pending_left_width)
         except Exception:
-            pass                           
+            pass                                              
         def _on_paned_configure(event):
             try:
                 target = self._pending_left_width
@@ -8287,7 +8328,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             try:
                 analyzer = TelemetryAnalyzer(path)
                 analyzer.load()
-                def _done():  
+                def _done():                                             
                     try:
                         on_success(analyzer)
                     finally:
@@ -8591,8 +8632,18 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 w.bind('<Button-1>',   _on_click)
                 w.bind('<MouseWheel>', _on_scroll)
 
-        self._legend_canvas.yview_moveto(0)
-        self._legend_canvas.configure(scrollregion=self._legend_canvas.bbox('all'))
+        def _finalize_legend():
+            try:
+                self._legend_canvas.yview_moveto(0)
+                bbox = self._legend_canvas.bbox('all')
+                if bbox:
+                    self._legend_canvas.configure(scrollregion=bbox)
+                    self._legend_canvas.itemconfig(
+                        self._legend_inner_id,
+                        width=self._legend_canvas.winfo_width() or 185)
+            except Exception:
+                pass
+        self._legend_canvas.after_idle(_finalize_legend)
 
     def _on_legend_pick(self, event):
         """Click a legend entry to pin/unpin that sensor."""
@@ -10025,7 +10076,7 @@ if __name__ == "__main__":
                 a = TelemetryAnalyzer(path)
                 a.load()
                 refs = _tk_refs[:]
-                def _done():                                                 
+                def _done():
                     try:
                         app = TelemetryApp(root, a)
                         app.canvas_widget.draw()                            
