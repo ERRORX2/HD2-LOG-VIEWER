@@ -2893,7 +2893,7 @@ figure img{{border-radius:8px;}}
                         highlightbackground=bg, highlightcolor=accent,
                         relief='flat', bd=0
                     )
-                    if cls == 'Checkbutton':                                       
+                    if cls == 'Checkbutton':                 
                         child.configure(
                             selectcolor=bg3,
                             indicatoron=False
@@ -3561,6 +3561,92 @@ figure img{{border-radius:8px;}}
         else:
             wl("  Some dependencies are missing or outdated.", 'warn')
             wl("  Install missing packages with:  pip install pandas numpy matplotlib pillow psutil scipy", 'warn')
+
+        section("RUNTIME ENVIRONMENT")
+        import sys as _sys, platform as _platform, os as _os2
+
+        _frozen = getattr(_sys, 'frozen', False)
+        _frozen_tag = 'warn' if _frozen else 'ok'
+        wl(f"  Frozen (compiled exe)  : {_frozen}", _frozen_tag)
+        wl(f"  Executable             : {_sys.executable}", 'val')
+        wl(f"  Script / entry point   : {getattr(_sys, '_MEIPASS', __file__ if '__file__' in dir() else 'N/A')}", 'val')
+        try:
+            import __main__ as _main
+            wl(f"  __main__.__file__      : {getattr(_main, '__file__', 'N/A')}", 'val')
+        except Exception:
+            pass
+        wl()
+        wl(f"  Python version         : {_sys.version}", 'val')
+        wl(f"  Platform               : {_platform.platform()}", 'val')
+        wl(f"  Architecture           : {_platform.machine()}  {_platform.architecture()[0]}", 'val')
+        wl(f"  Windows ver            : {_platform.win32_ver()}", 'val')
+        wl()
+
+        wl("  --- sys.path ---", 'section')
+        for _p in _sys.path:
+            wl(f"  {_p}", 'val')
+        wl()
+
+        wl("  --- Matplotlib config ---", 'section')
+        try:
+            import matplotlib as _mpl
+            wl(f"  backend                : {_mpl.get_backend()}", 'val')
+            wl(f"  matplotlib data path   : {_mpl.get_data_path()}", 'val')
+            wl(f"  config dir             : {_mpl.get_configdir()}", 'val')
+            wl(f"  cache dir              : {_mpl.get_cachedir()}", 'val')
+            wl(f"  rcParams backend       : {_mpl.rcParams.get('backend', 'N/A')}", 'val')
+            wl(f"  rcParams dpi           : {_mpl.rcParams.get('figure.dpi', 'N/A')}", 'val')
+        except Exception as _e:
+            wl(f"  (error reading matplotlib config: {_e})", 'warn')
+        wl()
+
+        wl("  --- Tkinter config ---", 'section')
+        try:
+            import tkinter as _tki
+            _r = _tki.Tk()
+            _r.withdraw()
+            wl(f"  tcl version            : {_r.tk.call('info', 'patchlevel')}", 'val')
+            wl(f"  tk scaling             : {_r.tk.call('tk', 'scaling')}", 'val')
+            wl(f"  screen width x height  : {_r.winfo_screenwidth()} x {_r.winfo_screenheight()}", 'val')
+            wl(f"  screen DPI             : {_r.winfo_fpixels('1i'):.1f}", 'val')
+            _r.destroy()
+        except Exception as _e:
+            wl(f"  (error reading tkinter config: {_e})", 'warn')
+        wl()
+
+        wl("  --- Environment variables ---", 'section')
+        _env_keys = [
+            'MPLBACKEND', 'MPLCONFIGDIR', 'MATPLOTLIBDATA',
+            'TCL_LIBRARY', 'TK_LIBRARY', 'TCLLIBPATH',
+            'PATH', 'PYTHONPATH', 'PYTHONHOME',
+            'PYINSTALLER_RESET_ENVIRONMENT',
+        ]
+        for _k in _env_keys:
+            _v = _os2.environ.get(_k)
+            if _v:
+                _display = _v if len(_v) < 120 else _v[:120] + '...'
+                wl(f"  {_k:35s} = {_display}", 'val')
+            else:
+                wl(f"  {_k:35s} = (not set)", 'muted')
+        wl()
+
+        wl("  --- Key loaded modules (from sys.modules) ---", 'section')
+        _track_mods = [
+            'pandas', 'numpy', 'matplotlib', 'matplotlib.backends.backend_tkagg',
+            'matplotlib.backends._backend_tk', 'PIL', 'PIL.Image',
+            'tkinter', '_tkinter', 'scipy', 'psutil',
+            'pkg_resources', 'importlib.metadata',
+        ]
+        for _mn in _track_mods:
+            _mo = _sys.modules.get(_mn)
+            if _mo is not None:
+                _mv = getattr(_mo, '__version__', getattr(_mo, 'version', None))
+                _mf = getattr(_mo, '__file__', None)
+                _vstr = f"  v{_mv}" if _mv else ""
+                _fstr = f"  [{_mf}]" if _mf else ""
+                wl(f"  {_mn:45s}{_vstr}{_fstr}", 'ok')
+            else:
+                wl(f"  {_mn:45s}  (not in sys.modules)", 'muted')
 
         if self.analyzer.is_mangohud:
             section("MANGOHUD FILE DETECTED")
@@ -7556,7 +7642,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         flag = " [DEBUG]" if self.debug_mode else ""
         self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}{flag}")
         self.root.geometry("1440x900")
-        self.root.minsize(1440, 900)        
+        self.root.minsize(1440, 900)
         _prev_left_width = getattr(self, '_user_left_width', None)
 
         for widget in self.root.winfo_children():
@@ -7577,7 +7663,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.root.bind("<Control-c>", lambda e: self._copy_png_to_clipboard())
         self.root.bind("<Control-h>", lambda e: self._launch_stratagem_hero())
         self.paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        self.paned.pack(fill=tk.BOTH, expand=True)            
+        self.paned.pack(fill=tk.BOTH, expand=True)
         _left_width = 370
         if _prev_left_width and 150 <= _prev_left_width <= 900:
             _left_width = _prev_left_width
@@ -7737,7 +7823,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 self._sash_press_pos = None
 
         def _on_sash_release(e):
-            self.canvas_checklist.after(50, _refresh_scrollregion)                        
+            self.canvas_checklist.after(50, _refresh_scrollregion)
             try:
                 new_pos = self.paned.sashpos(0)
             except Exception:
@@ -7761,12 +7847,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.sc_checklist.pack(side=tk.RIGHT, fill=tk.Y)
         self._build_checklist()
         self.right = ttk.Frame(self.paned, padding="5")
-        self.paned.add(self.right, weight=4)                                        
+        self.paned.add(self.right, weight=4)
         self.root.update_idletasks()
         try:
             self.paned.sashpos(0, self._pending_left_width)
         except Exception:
-            pass                                              
+            pass
         def _on_paned_configure(event):
             try:
                 target = self._pending_left_width
@@ -8328,7 +8414,14 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             try:
                 analyzer = TelemetryAnalyzer(path)
                 analyzer.load()
-                def _done():                                             
+                def _done():
+                                                                             
+                                                                             
+                                                                             
+                                                                         
+                                                                    
+                                                                           
+                                                    
                     try:
                         on_success(analyzer)
                     finally:
@@ -8518,11 +8611,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         def _on_leg_configure(e):
             self._legend_canvas.configure(scrollregion=self._legend_canvas.bbox('all'))
-            self._legend_canvas.itemconfig(self._legend_inner_id,
-                                           width=self._legend_canvas.winfo_width())
+            w = self._legend_canvas.winfo_width()
+            if w > 1:
+                self._legend_canvas.itemconfig(self._legend_inner_id, width=w)
         self._legend_inner.bind('<Configure>', _on_leg_configure)
         self._legend_canvas.bind('<Configure>', lambda e: self._legend_canvas.itemconfig(
-            self._legend_inner_id, width=e.width))
+            self._legend_inner_id, width=e.width) if e.width > 1 else None)
 
         def _on_scroll(e):
             self._legend_canvas.yview_scroll(int(-1*(e.delta/120)), 'units')
@@ -8632,15 +8726,18 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 w.bind('<Button-1>',   _on_click)
                 w.bind('<MouseWheel>', _on_scroll)
 
-        def _finalize_legend():
+        def _finalize_legend(retry=3):
             try:
-                self._legend_canvas.yview_moveto(0)
-                bbox = self._legend_canvas.bbox('all')
-                if bbox:
-                    self._legend_canvas.configure(scrollregion=bbox)
-                    self._legend_canvas.itemconfig(
-                        self._legend_inner_id,
-                        width=self._legend_canvas.winfo_width() or 185)
+                canvas = self._legend_canvas
+                inner_id = self._legend_inner_id
+                w = canvas.winfo_width()
+                bbox = canvas.bbox('all')
+                if bbox and w > 1:
+                    canvas.configure(scrollregion=bbox)
+                    canvas.itemconfig(inner_id, width=w)
+                    canvas.yview_moveto(0)
+                elif retry > 0:
+                    canvas.after(50, lambda: _finalize_legend(retry - 1))
             except Exception:
                 pass
         self._legend_canvas.after_idle(_finalize_legend)
@@ -9939,7 +10036,6 @@ if __name__ == "__main__":
     import sys, os
 
 
-
     try:
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
@@ -9948,16 +10044,6 @@ if __name__ == "__main__":
     except Exception:
         pass
 
-                           
-                                                                             
-                                                                             
-                                                                              
-                                                                             
-                                                                              
-                                                                            
-                                                                               
-                                                                             
-                                                 
     try:
         import ctypes
         try:
@@ -9969,9 +10055,6 @@ if __name__ == "__main__":
 
     root = tk.Tk()
     root.withdraw()
-
-
-
 
     try:
         if getattr(sys, 'frozen', False):
@@ -10076,7 +10159,7 @@ if __name__ == "__main__":
                 a = TelemetryAnalyzer(path)
                 a.load()
                 refs = _tk_refs[:]
-                def _done():
+                def _done():                
                     try:
                         app = TelemetryApp(root, a)
                         app.canvas_widget.draw()                            
