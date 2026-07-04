@@ -8120,7 +8120,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 self.group_map[cat] = []
             self.group_map[cat].append(col)
 
-        ui_order = ["Temperatures (°C)", "Utilization / Load (%)", "Clock Speeds (MHz)", "Power / Wattage (W)", "Voltage (V)", "Fan Speeds (RPM)"]
+        ui_order = ["Temperatures (°C)", "Utilization / Load (%)", "Clock Speeds (MHz)", "Power / Wattage (W)", "Voltage (V)", "Fan Speeds (RPM)", "Frame Times / Latency (ms)", "Frame Rate (FPS)"]
         self.sorted_cats = [c for c in ui_order if c in self.group_map] +\
                            sorted([c for c in self.group_map.keys() if c not in ui_order])
 
@@ -8152,12 +8152,15 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
     def _get_category(self, n: str) -> str:
         u = n.upper()
+        if 'MS' in u or 'FRAME TIME' in u or 'LATENCY' in u or 'WAIT' in u: return "Frame Times / Latency (ms)"
+        if 'FPS' in u or 'FRAME RATE' in u: return "Frame Rate (FPS)"
         if '°C' in u or 'TEMP' in u: return "Temperatures (°C)"
         if '%' in u or 'USAGE' in u or 'UTILIZATION' in u: return "Utilization / Load (%)"
         if 'MHZ' in u or 'CLOCK' in u: return "Clock Speeds (MHz)"
         if ' W' in u or 'WATT' in u or 'POWER' in u: return "Power / Wattage (W)"
         if ' V' in u or 'VOLT' in u or 'VCORE' in u: return "Voltage (V)"
         if 'RPM' in u or 'FAN' in u: return "Fan Speeds (RPM)"
+
         if any(x in u for x in ['GPU', 'NVIDIA', 'GEFORCE', 'AMD', 'RTX', 'GTX']): return "Graphics Card (GPU)"
         if any(x in u for x in ['CPU', 'CORE ', 'AMD RYZEN', 'INTEL']): return "Processor (CPU)"
         return "Other Sensors"
@@ -8802,7 +8805,19 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             }
             _dash = _dash_map.get(linestyle, '')
             mid_y = SWATCH_H // 2
-            _kw = dict(fill=color, width=2)
+
+            def _rgb_to_hex(col):
+                if isinstance(col, str):
+                    return col
+                if isinstance(col, (tuple, list)) and len(col) >= 3:
+                    return '#{:02x}{:02x}{:02x}'.format(
+                        int(col[0] * 255) if col[0] <= 1.0 else int(col[0]),
+                        int(col[1] * 255) if col[1] <= 1.0 else int(col[1]),
+                        int(col[2] * 255) if col[2] <= 1.0 else int(col[2])
+                    )
+                return '#888888'
+
+            _kw = dict(fill=_rgb_to_hex(color), width=2)
             if _dash:
                 _kw['dash'] = _dash
             swatch.create_line(2, mid_y, SWATCH_W - 2, mid_y, **_kw)
