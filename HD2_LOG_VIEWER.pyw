@@ -2893,7 +2893,7 @@ figure img{{border-radius:8px;}}
                         highlightbackground=bg, highlightcolor=accent,
                         relief='flat', bd=0
                     )
-                    if cls == 'Checkbutton':
+                    if cls == 'Checkbutton':                
                         child.configure(
                             selectcolor=bg3,
                             indicatoron=False
@@ -2906,13 +2906,6 @@ figure img{{border-radius:8px;}}
                     child.configure(background=bg)
             except Exception:
                 pass
-
-                                                                            
-                                                                         
-                                                                              
-                                                                             
-                                                                        
-                                                
         try:
             for button in getattr(toolbar, '_buttons', {}).values():
                 if button is not None and button.winfo_exists():
@@ -4201,6 +4194,156 @@ figure img{{border-radius:8px;}}
         w(f"       {'Multi mode':44s} = ");       wl(str(self.multi_mode), 'val')
         w(f"       {'Heatmap mode':44s} = ");     wl(str(self.heatmap_mode), 'val')
         w(f"       {'Delta mode':44s} = ");       wl(str(self.delta_mode), 'val')
+
+        section("LEGEND & PLOT WIDGET STATE")
+        def _winfo(widget, label):
+            try:
+                exists  = widget.winfo_exists()
+                mapped  = widget.winfo_ismapped()
+                w_px    = widget.winfo_width()
+                h_px    = widget.winfo_height()
+                rw_px   = widget.winfo_reqwidth()
+                rh_px   = widget.winfo_reqheight()
+                x       = widget.winfo_x()
+                y       = widget.winfo_y()
+                cls     = widget.winfo_class()
+                wl(f"  {label}", 'section')
+                wl(f"    exists={exists}  mapped={mapped}  class={cls}", 'val')
+                wl(f"    size   : {w_px} x {h_px} px  (requested: {rw_px} x {rh_px})", 'val')
+                wl(f"    pos    : x={x}  y={y}", 'val')
+            except Exception as _e:
+                wl(f"  {label}  ERROR: {_e}", 'warn')
+
+        for _attr, _lbl in [
+            ('canvas_widget',    'canvas_widget (matplotlib Tk canvas)'),
+            ('fig',              'fig (matplotlib Figure)'),
+            ('toolbar',          'toolbar (_NoHistoryToolbar)'),
+            ('_legend_panel',    '_legend_panel'),
+            ('_legend_scroll_frame', '_legend_scroll_frame'),
+            ('_legend_canvas',   '_legend_canvas (Tk Canvas)'),
+            ('_legend_inner',    '_legend_inner (Tk Frame inside canvas)'),
+        ]:
+            _obj = getattr(self, _attr, None)
+            if _obj is None:
+                wl(f"  {_lbl}  : (not set)", 'muted')
+            elif _attr == 'fig':
+                try:
+                    wl(f"  fig", 'section')
+                    wl(f"    size (in)  : {self.fig.get_size_inches()}", 'val')
+                    wl(f"    dpi        : {self.fig.dpi}", 'val')
+                    wl(f"    axes count : {len(self.fig.axes)}", 'val')
+                    if self.fig.axes:
+                        _ax = self.fig.axes[0]
+                        wl(f"    ax lines   : {len(_ax.get_lines())}", 'val')
+                        for _ln in _ax.get_lines():
+                            _lbl2 = _ln.get_label()
+                            _col  = _ln.get_color()
+                            wl(f"      line: label={repr(_lbl2[:60])}  color={_col}", 'val')
+                except Exception as _e:
+                    wl(f"  fig  ERROR: {_e}", 'warn')
+            elif _attr == 'canvas_widget':
+                try:
+                    _tkw = _obj.get_tk_widget()
+                    _winfo(_tkw, _lbl)
+                except Exception as _e:
+                    wl(f"  {_lbl}  ERROR: {_e}", 'warn')
+            else:
+                _winfo(_obj, _lbl)
+
+        wl()
+        wl("  --- Legend canvas detail ---", 'section')
+        try:
+            _lc = self._legend_canvas
+            wl(f"    winfo_width()       : {_lc.winfo_width()}", 'val')
+            wl(f"    winfo_height()      : {_lc.winfo_height()}", 'val')
+            wl(f"    winfo_reqwidth()    : {_lc.winfo_reqwidth()}", 'val')
+            wl(f"    winfo_reqheight()   : {_lc.winfo_reqheight()}", 'val')
+            wl(f"    winfo_ismapped()    : {_lc.winfo_ismapped()}", 'val')
+            wl(f"    bbox('all')         : {_lc.bbox('all')}", 'val')
+            wl(f"    cget(scrollregion)  : {_lc.cget('scrollregion')}", 'val')
+            _items = _lc.find_all()
+            wl(f"    canvas items        : {len(_items)}", 'val')
+            for _item in _items:
+                _itype  = _lc.type(_item)
+                _icoords = _lc.coords(_item)
+                _ibbox  = _lc.bbox(_item)
+                wl(f"      item {_item}: type={_itype}  coords={_icoords}  bbox={_ibbox}", 'val')
+        except Exception as _e:
+            wl(f"    ERROR reading legend canvas: {_e}", 'warn')
+
+        wl()
+        wl("  --- Legend inner frame children ---", 'section')
+        try:
+            _li = self._legend_inner
+            _children = _li.winfo_children()
+            wl(f"    child count         : {len(_children)}", 'val')
+            for _i, _ch in enumerate(_children[:10]):
+                try:
+                    wl(f"    [{_i}] {_ch.winfo_class():12s}  "
+                       f"mapped={_ch.winfo_ismapped()}  "
+                       f"size={_ch.winfo_width()}x{_ch.winfo_height()}  "
+                       f"req={_ch.winfo_reqwidth()}x{_ch.winfo_reqheight()}", 'val')
+                except Exception:
+                    pass
+            if len(_children) > 10:
+                wl(f"    ... and {len(_children)-10} more", 'muted')
+        except Exception as _e:
+            wl(f"    ERROR reading legend inner: {_e}", 'warn')
+
+        wl()
+        wl("  --- Plot mode at dump time ---", 'section')
+        wl(f"    delta_mode    : {self.delta_mode}", 'val')
+        wl(f"    multi_mode    : {self.multi_mode}", 'val')
+        wl(f"    heatmap_mode  : {self.heatmap_mode}", 'val')
+        wl(f"    compare_mode  : {self.compare_mode}", 'val')
+        sel = [c for c, v in self.vars.items() if v.get() and c in df.columns]
+        wl(f"    selected cols : {sel[:5]}{'...' if len(sel)>5 else ''}", 'val')
+
+        wl()
+        wl("  --- Toolbar internals ---", 'section')
+        try:
+            _tb = self.toolbar
+            wl(f"    buttons : {list(getattr(_tb, '_buttons', {}).keys())}", 'val')
+            for _name, _btn in getattr(_tb, '_buttons', {}).items():
+                if _btn:
+                    try:
+                        wl(f"      {_name:10s}  mapped={_btn.winfo_ismapped()}  "
+                           f"size={_btn.winfo_width()}x{_btn.winfo_height()}", 'val')
+                    except Exception:
+                        pass
+            _msg = getattr(_tb, '_message_label', None) or getattr(_tb, 'message', None)
+            if _msg:
+                try:
+                    _side = _msg.pack_info().get('side', '?')
+                    wl(f"    message label  mapped={_msg.winfo_ismapped()}  "
+                       f"size={_msg.winfo_width()}x{_msg.winfo_height()}  "
+                       f"pack_side={_side}", 'val')
+                except Exception as _e:
+                    wl(f"    message label  ERROR: {_e}", 'warn')
+        except Exception as _e:
+            wl(f"    ERROR reading toolbar: {_e}", 'warn')
+
+        wl()
+        wl("  --- Root window geometry ---", 'section')
+        try:
+            wl(f"    geometry        : {self.root.winfo_geometry()}", 'val')
+            wl(f"    state           : {self.root.state()}", 'val')
+            wl(f"    winfo_width     : {self.root.winfo_width()}", 'val')
+            wl(f"    winfo_height    : {self.root.winfo_height()}", 'val')
+            wl(f"    scaling         : {self.root.tk.call('tk', 'scaling')}", 'val')
+            wl(f"    winfo_fpixels   : {self.root.winfo_fpixels('1i'):.1f} dpi", 'val')
+        except Exception as _e:
+            wl(f"    ERROR: {_e}", 'warn')
+
+        wl()
+        wl("  --- _finalize_legend retry log (last run) ---", 'section')
+        _flog = getattr(self, '_legend_finalize_log', [])
+        if _flog:
+            for _entry in _flog:
+                _tag = 'ok' if 'SUCCESS' in _entry else ('crit' if 'FAILED' in _entry or 'EXCEPTION' in _entry else 'val')
+                wl(f"    {_entry}", _tag)
+        else:
+            wl("    (no log yet - open delta mode then refresh dump)", 'muted')
 
         section("SENSOR STATS CACHE")
         cache = getattr(self, '_sensor_stats_cache', {})
@@ -7847,12 +7990,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.sc_checklist.pack(side=tk.RIGHT, fill=tk.Y)
         self._build_checklist()
         self.right = ttk.Frame(self.paned, padding="5")
-        self.paned.add(self.right, weight=4)                            
+        self.paned.add(self.right, weight=4)
         self.root.update_idletasks()
         try:
             self.paned.sashpos(0, self._pending_left_width)
         except Exception:
-            pass                           
+            pass
         def _on_paned_configure(event):
             try:
                 target = self._pending_left_width
@@ -8726,21 +8869,37 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 w.bind('<Button-1>',   _on_click)
                 w.bind('<MouseWheel>', _on_scroll)
 
-        def _finalize_legend(retry=3):
+        _legend_canvas_ref   = self._legend_canvas
+        _legend_inner_id_ref = self._legend_inner_id
+        if not hasattr(self, '_legend_finalize_log'):
+            self._legend_finalize_log = []
+        _log = self._legend_finalize_log
+        _log.clear()
+
+        def _finalize_legend(retry=5):
             try:
-                canvas = self._legend_canvas
-                inner_id = self._legend_inner_id
-                w = canvas.winfo_width()
+                canvas   = _legend_canvas_ref
+                inner_id = _legend_inner_id_ref
+                if not canvas.winfo_exists():
+                    _log.append(f"retry={retry}: canvas destroyed, giving up")
+                    return
+                w    = canvas.winfo_width()
                 bbox = canvas.bbox('all')
+                _log.append(f"retry={retry}: winfo_width={w}  bbox={bbox}  "
+                            f"items={len(canvas.find_all())}  "
+                            f"inner_children={len(self._legend_inner.winfo_children()) if hasattr(self,'_legend_inner') and self._legend_inner.winfo_exists() else '?'}")
                 if bbox and w > 1:
                     canvas.configure(scrollregion=bbox)
                     canvas.itemconfig(inner_id, width=w)
                     canvas.yview_moveto(0)
+                    _log.append(f"retry={retry}: SUCCESS - scrollregion={bbox}  width={w}")
                 elif retry > 0:
                     canvas.after(50, lambda: _finalize_legend(retry - 1))
-            except Exception:
-                pass
-        self._legend_canvas.after_idle(_finalize_legend)
+                else:
+                    _log.append(f"retry=0: FAILED - bbox={bbox}  width={w}")
+            except Exception as _fe:
+                _log.append(f"retry={retry}: EXCEPTION {_fe}")
+        _legend_canvas_ref.after_idle(_finalize_legend)
 
     def _on_legend_pick(self, event):
         """Click a legend entry to pin/unpin that sensor."""
@@ -10036,6 +10195,7 @@ if __name__ == "__main__":
     import sys, os
 
 
+
     try:
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
@@ -10043,7 +10203,17 @@ if __name__ == "__main__":
         )
     except Exception:
         pass
-                                
+
+                           
+                                                                             
+                                                                             
+                                                                              
+                                                                             
+                                                                              
+                                                                            
+                                                                               
+                                                                             
+                                                 
     try:
         import ctypes
         try:
@@ -10055,6 +10225,9 @@ if __name__ == "__main__":
 
     root = tk.Tk()
     root.withdraw()
+
+
+
 
     try:
         if getattr(sys, 'frozen', False):
@@ -10159,7 +10332,7 @@ if __name__ == "__main__":
                 a = TelemetryAnalyzer(path)
                 a.load()
                 refs = _tk_refs[:]
-                def _done():                           
+                def _done():
                     try:
                         app = TelemetryApp(root, a)
                         app.canvas_widget.draw()                            
