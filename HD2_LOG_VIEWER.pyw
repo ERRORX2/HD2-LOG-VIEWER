@@ -266,7 +266,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.6.5"
+CURRENT_VERSION = "1.6.6"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -1593,7 +1593,7 @@ class TelemetryApp:
 
         if not sel:
             if hasattr(self, '_legend_panel'):
-                self._legend_panel.pack(side=tk.RIGHT, fill=tk.Y)
+                self._legend_panel.grid(row=0, column=1, sticky='ns')
             self._update_tk_legend([])
             ax = self.fig.add_subplot(111)
             ax.set_facecolor(bg2_color)
@@ -1819,7 +1819,7 @@ class TelemetryApp:
         self._cmp_canvas = None
         self.root.bind('<Control-c>', lambda e: self._copy_png_to_clipboard())
         if hasattr(self, '_legend_panel'):
-            self._legend_panel.pack(side='right', fill='y')
+            self._legend_panel.grid(row=0, column=1, sticky='ns')
         self.update_plot()
 
     def _draw_session_compare(self):
@@ -1851,7 +1851,7 @@ class TelemetryApp:
         self.fig.patch.set_facecolor(bg)
 
         if hasattr(self, '_legend_panel'):
-            self._legend_panel.pack_forget()
+            self._legend_panel.grid_remove()
 
         cmp_widget = getattr(self, '_cmp_widget', None)
         if cmp_widget and cmp_widget.winfo_exists():
@@ -2880,6 +2880,12 @@ figure img{{border-radius:8px;}}
         fg  = t["fg"]
         accent = t["accent"]
         try:
+            _tf = getattr(self, '_toolbar_f', None)
+            if _tf and _tf.winfo_exists():
+                _tf.configure(bg=bg)
+        except Exception:
+            pass
+        try:
             toolbar.configure(background=bg)
         except Exception:
             pass
@@ -3525,7 +3531,8 @@ figure img{{border-radius:8px;}}
             try:
                 import importlib
                 _m = importlib.import_module(_mod)
-                _ver = getattr(_m, '__version__', None) or getattr(_m, 'version', None)
+                _ver_raw = getattr(_m, '__version__', None) or getattr(_m, 'version', None)
+                _ver = str(_ver_raw) if isinstance(_ver_raw, (str, int, float)) else None
                 if _ver:
                     _ver_str = str(_ver)
                     if _min_ver:
@@ -4344,6 +4351,36 @@ figure img{{border-radius:8px;}}
                 wl(f"    {_entry}", _tag)
         else:
             wl("    (no log yet - open delta mode then refresh dump)", 'muted')
+
+        wl()
+        wl("  --- Full widget hierarchy (self.right) ---", 'section')
+        def _dump_widget(w, indent=0):
+            try:
+                cls   = w.winfo_class()
+                wx    = w.winfo_x()
+                wy    = w.winfo_y()
+                ww    = w.winfo_width()
+                wh    = w.winfo_height()
+                mapped = w.winfo_ismapped()
+                try:    bg = w.cget('bg')
+                except Exception: bg = 'N/A'
+                try:    hl = w.cget('highlightthickness')
+                except Exception: hl = 'N/A'
+                try:    bd = w.cget('bd')
+                except Exception: bd = 'N/A'
+                try:    relief = w.cget('relief')
+                except Exception: relief = 'N/A'
+                prefix = '  ' * indent
+                wl(f"    {prefix}{cls}  pos=({wx},{wy})  size={ww}x{wh}  "
+                   f"mapped={mapped}  bg={bg}  hl={hl}  bd={bd}  relief={relief}", 'val')
+                for child in w.winfo_children():
+                    _dump_widget(child, indent + 1)
+            except Exception as _de:
+                wl(f"    {'  '*indent}ERROR: {_de}", 'warn')
+        try:
+            _dump_widget(self.right)
+        except Exception as _e:
+            wl(f"    ERROR dumping hierarchy: {_e}", 'warn')
 
         section("SENSOR STATS CACHE")
         cache = getattr(self, '_sensor_stats_cache', {})
@@ -7805,6 +7842,15 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.root.bind("<Control-F8>", lambda e: self._toggle_debug())
         self.root.bind("<Control-c>", lambda e: self._copy_png_to_clipboard())
         self.root.bind("<Control-h>", lambda e: self._launch_stratagem_hero())
+
+        def _on_root_configure(e):
+            if e.widget is not self.root:
+                return
+            try:
+                self.root.update_idletasks()
+            except Exception:
+                pass
+        self.root.bind("<Configure>", _on_root_configure, add="+")
         self.paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.paned.pack(fill=tk.BOTH, expand=True)
         _left_width = 370
@@ -8032,28 +8078,39 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             self.fig.clf()
             self.fig = None
 
-        toolbar_f = ttk.Frame(self.right)
+        _t_init = self._get_theme()
+        _legend_bg = _t_init.get("bg2", "#1e1e1e")
+        _legend_fg = _t_init.get("fg", "#ffffff")
+        _toolbar_bg = _t_init.get("bg", "#121212")
+
+        toolbar_f = tk.Frame(self.right, bg=_toolbar_bg, highlightthickness=0, bd=0)
         toolbar_f.pack(side=tk.TOP, fill=tk.X)
+        self._toolbar_f = toolbar_f
 
-        _plot_container = tk.Frame(self.right)
+        _plot_container = tk.Frame(self.right, bg=_legend_bg,
+                                   highlightthickness=0, bd=0)
         _plot_container.pack(fill=tk.BOTH, expand=True)
+        _plot_container.grid_rowconfigure(0, weight=1)
+        _plot_container.grid_columnconfigure(0, weight=1)
+        _plot_container.grid_columnconfigure(1, weight=0)
 
-        self._legend_panel = tk.Frame(_plot_container, width=185)
-        self._legend_panel.pack(side=tk.RIGHT, fill=tk.Y)
+        self._legend_panel = tk.Frame(_plot_container, width=185, bg=_legend_bg,
+                                      highlightthickness=0, bd=0)
+        self._legend_panel.grid(row=0, column=1, sticky='ns')
         self._legend_panel.pack_propagate(False)
 
         self._legend_title = tk.Label(self._legend_panel, text="Legend",
-                                      font=('Segoe UI', 8, 'bold'), anchor='w')
+                                      font=('Segoe UI', 8, 'bold'), anchor='w',
+                                      bg=_legend_bg, fg=_legend_fg)
         self._legend_title.pack(fill=tk.X, padx=4, pady=(4, 0))
 
-        _t_init = self._get_theme()
-        _leg_scroll_frame = tk.Frame(self._legend_panel, bg=_t_init.get("bg2","#1e1e1e"))
+        _leg_scroll_frame = tk.Frame(self._legend_panel, bg=_legend_bg,
+                                     highlightthickness=0, bd=0)
         _leg_scroll_frame.pack(fill=tk.BOTH, expand=True)
         self._legend_scroll_frame = _leg_scroll_frame
 
-        _t_init = self._get_theme()
         self._legend_canvas = tk.Canvas(_leg_scroll_frame, highlightthickness=0, bd=0,
-                                        bg=_t_init.get("bg2","#1e1e1e"))
+                                        bg=_legend_bg)
         _leg_vsb = tk.Scrollbar(_leg_scroll_frame, orient='vertical',
                                 command=self._legend_canvas.yview,
                                 bg=_t_init.get("bg3","#2a2a2a"),
@@ -8094,7 +8151,9 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.toolbar.pack(side=tk.LEFT)
         self._style_mpl_toolbar()
 
-        self.canvas_widget.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.canvas_widget.get_tk_widget().configure(
+            highlightthickness=0, bd=0, bg=_t_init.get("bg", "#121212"))
+        self.canvas_widget.get_tk_widget().grid(row=0, column=0, sticky='nsew')
 
     def _manual_update_check(self):
         """Called when the user clicks ⟳ - always gives feedback, respects ignore/disable via on_ignore/on_disable."""
@@ -8900,11 +8959,16 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 _log.append(f"retry={retry}: winfo_width={w}  bbox={bbox}  "
                             f"items={len(canvas.find_all())}  "
                             f"inner_children={len(self._legend_inner.winfo_children()) if hasattr(self,'_legend_inner') and self._legend_inner.winfo_exists() else '?'}")
-                if bbox and w > 1:
+                if bbox and w > 1 and bbox[3] > 1:
                     canvas.configure(scrollregion=bbox)
                     canvas.itemconfig(inner_id, width=w)
                     canvas.yview_moveto(0)
                     _log.append(f"retry={retry}: SUCCESS - scrollregion={bbox}  width={w}")
+                elif bbox and w > 1 and bbox[3] <= 1:
+                    canvas.configure(scrollregion=bbox)
+                    canvas.itemconfig(inner_id, width=w)
+                    canvas.yview_moveto(0)
+                    _log.append(f"retry={retry}: SUCCESS (empty legend - no sensors selected)")
                 elif retry > 0:
                     canvas.after(50, lambda: _finalize_legend(retry - 1))
                 else:
@@ -9795,12 +9859,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         if self.heatmap_mode:
             if hasattr(self, '_legend_panel'):
-                self._legend_panel.pack_forget()
+                self._legend_panel.grid_remove()
             self._draw_heatmap(sel)
             return
 
         if hasattr(self, '_legend_panel'):
-            self._legend_panel.pack(side=tk.RIGHT, fill=tk.Y)
+            self._legend_panel.grid(row=0, column=1, sticky='ns')
         x_vals, ts, use_time = self._get_x_axis()
 
         if len(x_vals) != len(self.df):
