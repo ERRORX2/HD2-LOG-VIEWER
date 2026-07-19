@@ -266,7 +266,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.6.6"
+CURRENT_VERSION = "1.6.7"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -961,6 +961,7 @@ class TelemetryApp:
             'sig_fan_hot_gpu_c': 65.0,
             'sig_drive_temp_max': 70.0,
             'sig_vrm_temp_max': 105.0,
+            'sig_chipset_temp_max': 80.0,
             'sig_ram_exhaust_pct': 95.0,
             'sig_vram_overflow_pct': 98.0,
             'sig_cpu_bn_gpu_pct': 60.0,
@@ -1010,6 +1011,7 @@ class TelemetryApp:
         self.sig_fan_hot_gpu_c      = misc['sig_fan_hot_gpu_c']
         self.sig_drive_temp_max     = misc['sig_drive_temp_max']
         self.sig_vrm_temp_max       = misc['sig_vrm_temp_max']
+        self.sig_chipset_temp_max   = misc.get('sig_chipset_temp_max', 80.0)
         self.sig_ram_exhaust_pct    = misc['sig_ram_exhaust_pct']
         self.sig_vram_overflow_pct  = misc['sig_vram_overflow_pct']
         self.sig_cpu_bn_gpu_pct     = misc['sig_cpu_bn_gpu_pct']
@@ -1190,6 +1192,7 @@ class TelemetryApp:
         row("Fan stall: GPU hot threshold",      "sig_fan_hot_gpu_c",      self.sig_fan_hot_gpu_c,      "°C")
         row("Storage overheating max",           "sig_drive_temp_max",     self.sig_drive_temp_max,     "°C")
         row("VRM overheating max",               "sig_vrm_temp_max",       self.sig_vrm_temp_max,       "°C")
+        row("Chipset overheating max",           "sig_chipset_temp_max",   self.sig_chipset_temp_max,   "°C")
         row("RAM exhaustion trigger",            "sig_ram_exhaust_pct",    self.sig_ram_exhaust_pct,    "%")
         row("VRAM overflow trigger",             "sig_vram_overflow_pct",  self.sig_vram_overflow_pct,  "%")
         row("Bottleneck: GPU below",             "sig_cpu_bn_gpu_pct",     self.sig_cpu_bn_gpu_pct,     "%")
@@ -1335,6 +1338,7 @@ class TelemetryApp:
                 self.sig_fan_hot_gpu_c       = float(entries['sig_fan_hot_gpu_c'].get())
                 self.sig_drive_temp_max      = float(entries['sig_drive_temp_max'].get())
                 self.sig_vrm_temp_max        = float(entries['sig_vrm_temp_max'].get())
+                self.sig_chipset_temp_max    = float(entries['sig_chipset_temp_max'].get())
                 self.sig_ram_exhaust_pct     = float(entries['sig_ram_exhaust_pct'].get())
                 self.sig_vram_overflow_pct   = float(entries['sig_vram_overflow_pct'].get())
                 self.sig_cpu_bn_gpu_pct      = float(entries['sig_cpu_bn_gpu_pct'].get())
@@ -1411,6 +1415,7 @@ class TelemetryApp:
                 self.sig_fan_hot_gpu_c       = misc['sig_fan_hot_gpu_c']
                 self.sig_drive_temp_max      = misc['sig_drive_temp_max']
                 self.sig_vrm_temp_max        = misc['sig_vrm_temp_max']
+                self.sig_chipset_temp_max    = misc.get('sig_chipset_temp_max', 80.0)
                 self.sig_ram_exhaust_pct     = misc['sig_ram_exhaust_pct']
                 self.sig_vram_overflow_pct   = misc['sig_vram_overflow_pct']
                 self.sig_cpu_bn_gpu_pct      = misc['sig_cpu_bn_gpu_pct']
@@ -1489,6 +1494,7 @@ class TelemetryApp:
             'sig_fan_hot_gpu_c':      self.sig_fan_hot_gpu_c,
             'sig_drive_temp_max':     self.sig_drive_temp_max,
             'sig_vrm_temp_max':       self.sig_vrm_temp_max,
+            'sig_chipset_temp_max':   self.sig_chipset_temp_max,
             'sig_ram_exhaust_pct':    self.sig_ram_exhaust_pct,
             'sig_vram_overflow_pct':  self.sig_vram_overflow_pct,
             'sig_cpu_bn_gpu_pct':     self.sig_cpu_bn_gpu_pct,
@@ -2159,14 +2165,14 @@ class TelemetryApp:
 
                     if d is None:
                         for ci in range(1, len(STAT_COLS)+3):
-                            _cell(tbl, '—', row_idx, ci, bg_=row_bg, fg_='#555')
+                            _cell(tbl, '-', row_idx, ci, bg_=row_bg, fg_='#555')
                         row_idx += 1
                         continue
 
                     for ci, (sn, _) in enumerate(STAT_COLS, start=1):
                         val = d[sn]
                         if val != val:
-                            _cell(tbl, '—', row_idx, ci, bg_=row_bg, fg_='#555')
+                            _cell(tbl, '-', row_idx, ci, bg_=row_bg, fg_='#555')
                             continue
                         other_vals = [stat_rows[j][sn] for j in range(len(self.sessions))
                                       if stat_rows[j] is not None]
@@ -2183,14 +2189,14 @@ class TelemetryApp:
                     d_col = len(STAT_COLS)+1
                     if si == 0:
                         _cell(tbl, 'baseline', row_idx, d_col,   bg_=row_bg, fg_='#888')
-                        _cell(tbl, '—',        row_idx, d_col+1, bg_=row_bg, fg_='#888')
+                        _cell(tbl, '-',        row_idx, d_col+1, bg_=row_bg, fg_='#888')
                     else:
                         delta  = d['Avg'] - base_avg
                         better = (delta < 0) if lib else (delta > 0)
                         d_fg   = WIN_COLOR if better else (LOSE_COLOR if delta != 0 else fg)
                         sign   = '+' if delta >= 0 else ''
                         pct_d  = (delta / abs(base_avg) * 100) if base_avg else float('nan')
-                        pct_s  = f'{sign}{pct_d:.1f}%' if pct_d == pct_d else '—'
+                        pct_s  = f'{sign}{pct_d:.1f}%' if pct_d == pct_d else '-'
                         _cell(tbl, f'{sign}{delta:.2f}', row_idx, d_col,
                               bold=abs(delta) > 0, bg_=row_bg, fg_=d_fg)
                         _cell(tbl, pct_s, row_idx, d_col+1,
@@ -2281,7 +2287,7 @@ class TelemetryApp:
                 ax = cmp_fig.add_subplot(111)
                 ax.set_facecolor(bg2)
                 ax.tick_params(colors=fg, labelsize=8)
-                ax.text(0.5, 0.5, 'No sensors selected — use the left panel',
+                ax.text(0.5, 0.5, 'No sensors selected - use the left panel',
                         ha='center', va='center', color='#888',
                         transform=ax.transAxes)
                 cmp_canvas.draw_idle()
@@ -2638,7 +2644,7 @@ class TelemetryApp:
                     row = f'<tr><td>{html_mod.escape(sensor)}</td>'
                     for si, (sess, d) in enumerate(zip(self.sessions, stat_rows)):
                         if d is None:
-                            row += (f'<td colspan="{len(STAT_COLS)+(2 if si>0 else 0)}">—</td>')
+                            row += (f'<td colspan="{len(STAT_COLS)+(2 if si>0 else 0)}">-</td>')
                             continue
                         for sn, _ in STAT_COLS:
                             vals = [stat_rows[j][sn] for j in range(len(self.sessions))
@@ -2657,7 +2663,7 @@ class TelemetryApp:
                             col_s  = '#2ecc71' if better else ('#e74c3c' if delta != 0 else '#aaa')
                             sign   = '+' if delta >= 0 else ''
                             pct_d  = (delta / abs(base_avg) * 100) if base_avg else float('nan')
-                            pct_s  = f'{sign}{pct_d:.1f}%' if pct_d == pct_d else '—'
+                            pct_s  = f'{sign}{pct_d:.1f}%' if pct_d == pct_d else '-'
                             row += (f'<td style="color:{col_s};font-weight:bold">'
                                     f'{sign}{delta:.2f}</td>'
                                     f'<td style="color:{col_s}">{pct_s}</td>')
@@ -2688,7 +2694,7 @@ tr:hover td{{background:#13132b;}}
 figure{{margin:0 0 8px;}}
 figure img{{border-radius:8px;}}
 </style></head><body>
-<h1>RESYNC.ERR — Session Compare Report</h1>
+<h1>RESYNC.ERR - Session Compare Report</h1>
 <p style="color:#64748b">Generated {generated_at} · {len(self.sessions)} sessions · {len(sensors)} sensors</p>
 <h2>Sessions</h2><ul>{sess_list}</ul>
 <h2>Charts  <small style="color:#64748b;font-size:11px">green = S2 better · red = S2 worse</small></h2>
@@ -3705,8 +3711,30 @@ figure img{{border-radius:8px;}}
         section("CPU CLOCK STRETCHING COLUMNS")
         req_cols = [c for c in df.columns if 'Clock (perf #' in c]
         eff_cols = [c for c in df.columns if 'Effective Clock' in c and 'GPU' not in c]
-        wl(f"  Requested clock cols ({len(req_cols)}): {req_cols[:5] or MISS}")
-        wl(f"  Effective clock cols ({len(eff_cols)}): {eff_cols[:5] or MISS}")
+
+        intel_pcore_req = sorted([c for c in df.columns
+                                   if 'P-CORE' in c.upper()
+                                   and 'CLOCK [MHZ]' in c.upper()
+                                   and 'EFFECTIVE' not in c.upper()
+                                   and 'OC RATIO' not in c.upper()])
+        intel_pcore_eff = sorted([c for c in df.columns
+                                   if 'P-CORE' in c.upper()
+                                   and 'EFFECTIVE CLOCK' in c.upper()])
+
+        if req_cols:
+            wl(f"  CPU Architecture    : AMD (Ryzen / perf# naming)", 'ok')
+            wl(f"  Detection path      : AMD - Clock (perf #N) vs Core N Effective", 'ok')
+        elif intel_pcore_req and intel_pcore_eff:
+            wl(f"  CPU Architecture    : Intel (P-core / E-core naming)", 'ok')
+            wl(f"  Detection path      : Intel - P-core N Clock vs P-core N T0 Effective", 'ok')
+        else:
+            wl(f"  CPU Architecture    : Unknown / unsupported", 'warn')
+            wl(f"  Detection path      : NONE - clock stretching will not fire", 'warn')
+
+        wl(f"  AMD req cols  ({len(req_cols)}): {req_cols[:5] or MISS}", 'val')
+        wl(f"  AMD eff cols  ({len(eff_cols)}): {eff_cols[:5] or MISS}", 'val')
+        wl(f"  Intel req cols ({len(intel_pcore_req)}): {intel_pcore_req[:3] or MISS}", 'val')
+        wl(f"  Intel eff cols ({len(intel_pcore_eff)}): {intel_pcore_eff[:3] or MISS}", 'val')
 
         gpu_hotspot       = self._col_excl(('GPU', 'HOT'),  excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
         gpu_usage_col     = self._col_active(('GPU', 'USAGE')) or self._col_active(('GPU', 'LOAD'))
@@ -4546,7 +4574,7 @@ figure img{{border-radius:8px;}}
 
         gpu_hotspot   = _a('gpu_temp') or self._col_excl(('GPU', 'HOT'), excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
         gpu_usage_col = _a('gpu_usage') or self._col_active(('GPU', 'USAGE')) or self._col_active(('GPU', 'LOAD')) or self._col_active(('GPU', 'AUSLASTUNG')) or self._col('GPU USAGE')
-        gpu_clock     = _a('gpu_clock') or self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col_active(('GPU', 'FREQUENCY')) or self._col_active(('GPU', 'TAKT'))
+        gpu_clock     = _a('gpu_clock') or self._col_active(('GPU', 'EFFECTIVE', 'CLOCK'), excl=('MEMORY', 'CROSSBAR', 'VIDEO')) or self._col_active(('GPU', 'CLOCK', 'MEASURED'), excl=('MEMORY', 'CROSSBAR')) or self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col_active(('GPU', 'FREQUENCY')) or self._col_active(('GPU', 'TAKT'))
         gpu_throttle  = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
         gpu_power     = _a('gpu_power') or self._col_active(('GPU', 'POWER')) or self._col('BOARD', 'POWER') or self._col('TOTAL', 'BOARD') or self._col('TGP') or self._col('TBP') or self._col('ASIC') or self._col('NVVDD') or self._col('PCIe') or self._col('LEISTUNG') or self._col('EINGANGSLEISTUNG') or self._col('POWER')
         gpu_clk_col   = self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col('GPU Clock [MHz]')
@@ -4668,13 +4696,45 @@ figure img{{border-radius:8px;}}
                     ],
                     mask=confirmed_tdr, cols=[gpu_usage_col, gpu_clock])
 
-        drive_temps = [c for c in df.columns if 'TEMP' in c.upper() and any(k in c.upper() for k in ['DRIVE', 'NVME', 'SSD'])]
+        _DRIVE_EXCL = ['GPU', 'CPU', 'CHIPSET', 'MOTHERBOARD', 'AMBIENT', 'ROOM',
+                       'VRM', 'MOSFet', 'WATER', 'COOLANT', 'PCH', 'CASE']
+
+        _drive_kw_cols = [
+            c for c in df.columns
+            if '[°C]' in c and 'TEMP' in c.upper()
+            and 'AIRFLOW' not in c.upper()
+            and any(k in c.upper() for k in ['DRIVE', 'NVME', 'SSD', 'HDD', 'M.2',
+                                              'SAMSUNG', 'WD', 'SEAGATE', 'TOSHIBA',
+                                              'CRUCIAL', 'KINGSTON', 'SK HYNIX',
+                                              'MICRON', 'INTEL SSD', 'PLEXTOR',
+                                              'SABRENT', 'CORSAIR SSD'])
+            and not any(e in c.upper() for e in [x.upper() for x in _DRIVE_EXCL])
+        ]
+
+        _drive_model_cols = [
+            c for c in df.columns
+            if '[°C]' in c
+            and not any(e in c.upper() for e in [x.upper() for x in _DRIVE_EXCL])
+            and not any(k in c.upper() for k in ['GPU', 'CPU', 'FAN', 'VOLTAGE',
+                                                  'POWER', 'CLOCK', 'USAGE', 'LOAD',
+                                                  'FREQUENCY', 'CURRENT', 'RPM', 'WATT'])
+            and any(c.upper().startswith(p) for p in
+                    ['ST', 'WD', 'CT', 'MZ', 'KXG', 'THNS', 'MTFD', 'VO', 'SA',
+                     'SAMSUNG', 'SEAGATE', 'WESTERN', 'CRUCIAL', 'KINGSTON'])
+        ]
+
+        drive_temps = list(dict.fromkeys(_drive_kw_cols + _drive_model_cols))
 
         for d_col in drive_temps:
             peak = mx(d_col)
             u_col = d_col.upper()
 
-            if any(k in u_col for k in ['HDD', 'HARD DRIVE', 'ST']):
+            is_hdd = any(k in u_col for k in ['HDD', 'HARD DRIVE', 'MECHANICAL']) or (
+                any(u_col.startswith(p) for p in ['ST', 'WD', 'SEAGATE', 'WESTERN'])
+                and 'SSD' not in u_col and 'NVME' not in u_col and 'NVMe' not in u_col
+            )
+
+            if is_hdd:
                 crit_limit = 55.0
                 warn_limit = 45.0
                 drive_type = "HDD (Mechanical)"
@@ -4683,20 +4743,30 @@ figure img{{border-radius:8px;}}
                 warn_limit = self.sig_drive_temp_max - 10.0
                 drive_type = "SSD/NVMe"
 
+            drive_label = d_col.replace(' [°C]', '').replace(' Temperature', '').strip()
+
             if peak >= crit_limit:
-                desc = (f"Critical heat on {drive_type} '{d_col}'. "
+                desc = (f"Critical heat on {drive_type}. "
                         "For HDDs, this can cause mechanical failure and head crashes. "
                         "For SSDs, this triggers emergency shutdowns and disconnects. "
                         "ADVICE: Power off immediately to prevent permanent data loss.")
                 add("Storage Thermal Critical", "CRITICAL", desc,
-                    [f"Peak: {peak:.1f}°C", f"Limit: {crit_limit}°C", f"Type: {drive_type}"])
+                    [f"Drive: {drive_label}",
+                     f"Peak: {peak:.1f}°C",
+                     f"Limit: {crit_limit}°C",
+                     f"Type: {drive_type}"],
+                    cols=[d_col])
 
             elif peak > warn_limit:
-                desc = (f"High temperature on {drive_type} '{d_col}'. "
+                desc = (f"High temperature on {drive_type}. "
                         "This leads to thermal throttling and reduced lifespan. "
                         "ADVICE: Improve case airflow or move the drive away from heat sources (like the GPU).")
                 add("Storage Overheating", "WARNING", desc,
-                    [f"Peak: {peak:.1f}°C", f"Warning: {warn_limit}°C", f"Type: {drive_type}"])
+                    [f"Drive: {drive_label}",
+                     f"Peak: {peak:.1f}°C",
+                     f"Warning: {warn_limit}°C",
+                     f"Type: {drive_type}"],
+                    cols=[d_col])
 
         whea = self._col('WHEA')
         if whea and mx(whea) > 0:
@@ -4875,6 +4945,94 @@ figure img{{border-radius:8px;}}
                 [f"Max: {mx(vrm_temp):.1f}°C", f"Threshold: {self.sig_vrm_temp_max}°C"], cols=[vrm_temp])
 
         req_cols = [c for c in df.columns if 'Clock (perf #' in c]
+
+        intel_pcore_req = sorted([c for c in df.columns
+                                   if 'P-CORE' in c.upper()
+                                   and 'CLOCK [MHZ]' in c.upper()
+                                   and 'EFFECTIVE' not in c.upper()
+                                   and 'OC RATIO' not in c.upper()])
+        intel_pcore_eff = sorted([c for c in df.columns
+                                   if 'P-CORE' in c.upper()
+                                   and 'EFFECTIVE CLOCK' in c.upper()])
+
+        if not req_cols and intel_pcore_req and intel_pcore_eff:
+            n_cores       = len(intel_pcore_req)
+            per_core_ratios = []
+            per_core_active = []
+
+            for i, req_col in enumerate(intel_pcore_req):
+                req = df[req_col].replace(0, np.nan)
+                valid_req = req > 300
+                core_num = req_col.split('P-core ')[-1].split(' ')[0] if 'P-core ' in req_col else str(i)
+                eff_cols_for_core = [c for c in intel_pcore_eff
+                                     if f'P-CORE {core_num} ' in c.upper()]
+                if not eff_cols_for_core:
+                    continue
+                core_ratios  = []
+                core_weights = []
+                for eff_col in eff_cols_for_core:
+                    if eff_col not in df.columns:
+                        continue
+                    eff = df[eff_col]
+                    active = valid_req & (eff > (0.35 * req + 100))
+                    if not active.any():
+                        continue
+                    ratio = (eff / req).clip(0, 1.5).where(active)
+                    weight = req.where(active)
+                    core_ratios.append(ratio)
+                    core_weights.append(weight)
+                if core_ratios:
+                    per_core_ratios.append(pd.concat(core_ratios, axis=0).groupby(level=0).mean())
+                    per_core_active.append(pd.concat(core_weights, axis=0).groupby(level=0).mean())
+
+            if per_core_ratios:
+                all_ratios   = pd.concat(per_core_ratios, axis=1)
+                all_weights  = pd.concat(per_core_active, axis=1)
+                weight_total = all_weights.sum(axis=1).replace(0, np.nan)
+                weighted_sum = (all_ratios * all_weights).sum(axis=1)
+                mean_ratio   = (weighted_sum / weight_total).replace([np.inf, -np.inf], np.nan)
+                core_weight  = all_ratios.notna().sum(axis=1)
+                active_cores = core_weight > 0
+                mean_ratio   = mean_ratio[active_cores].dropna()
+
+                if len(mean_ratio) > 0:
+                    major_event = mean_ratio < 0.60
+                    minor_event = (mean_ratio >= 0.60) & (mean_ratio < 0.80)
+
+                    if major_event.any():
+                        avg_r   = mean_ratio[major_event].mean()
+                        worst_r = mean_ratio[major_event].min()
+                        add(
+                            name="CPU Clock Stretching (Major)",
+                            severity="CRITICAL",
+                            description=(
+                                f"Intel P-cores are running at {avg_r*100:.1f}% of requested frequency "
+                                f"(worst: {worst_r*100:.1f}%). Severe thermal or power throttling "
+                                "is causing clock stretching - stutters even when FPS looks normal."
+                            ),
+                            evidence=[
+                                f"Avg ratio: {avg_r:.2f}  (target >0.90)",
+                                f"Worst: {worst_r:.2f}",
+                                f"Affected samples: {major_event.sum()}",
+                                "Check: CPU temps, PL1/PL2 limits, VRM temps"
+                            ],
+                            cols=intel_pcore_req[:4]
+                        )
+                    elif minor_event.any():
+                        avg_r = mean_ratio[minor_event].mean()
+                        add(
+                            name="CPU Clock Stretching (Minor)",
+                            severity="WARNING",
+                            description=(
+                                f"Intel P-cores running at {avg_r*100:.1f}% of requested frequency. "
+                                "Mild clock stretching - may cause occasional micro-stutters."
+                            ),
+                            evidence=[
+                                f"Avg ratio: {avg_r:.2f}  (target >0.90)",
+                                f"Affected samples: {minor_event.sum()}",
+                            ],
+                            cols=intel_pcore_req[:4]
+                        )
         if req_cols:
             n_cores        = len(req_cols)
             per_core_ratios  = []
@@ -5410,28 +5568,31 @@ figure img{{border-radius:8px;}}
                 )
 
         if gpu_wait_ms and ft_col:
-            df = df.assign(wait_ratio = df[gpu_wait_ms] / df[ft_col])
-
-            is_waiting = df['wait_ratio'] > 0.25
-
-            if is_waiting.any():
-                max_wait = df[gpu_wait_ms].max()
-                avg_ratio = df.loc[is_waiting, 'wait_ratio'].mean() * 100
-
-                add(
-                    name="GPU Engine Wait Bottleneck",
-                    severity="WARNING" if avg_ratio < 40 else "CRITICAL",
-                    description=(
-                        f"The GPU is idle for {avg_ratio:.1f}% of the frame duration. "
-                        "Even if wait times are low (e.g., 1-2ms), this ratio indicates the "
-                        "GPU is being 'starved' by the CPU or background app priority."
-                    ),
-                    evidence=[
-                        f"Max Wait: {max_wait:.2f} ms",
-                        f"Idle Ratio: {avg_ratio:.1f}% of frame",
-                        "ADVICE: Disable Discord/Browser Hardware Acceleration."
-                    ]
-                )
+            active = (df[ft_col] > 5.0)
+            if gpu_usage_col:
+                active = active & (df[gpu_usage_col] > 10)
+            if active.sum() > 10:
+                ft_active  = df.loc[active, ft_col]
+                gw_active  = df.loc[active, gpu_wait_ms]
+                wait_ratio = gw_active / ft_active
+                is_waiting = wait_ratio > 0.25
+                if is_waiting.any():
+                    max_wait  = gw_active.max()
+                    avg_ratio = wait_ratio[is_waiting].mean() * 100
+                    add(
+                        name="GPU Engine Wait Bottleneck",
+                        severity="WARNING" if avg_ratio < 40 else "CRITICAL",
+                        description=(
+                            f"The GPU is idle for {avg_ratio:.1f}% of the frame duration. "
+                            "Even if wait times are low (e.g., 1-2ms), this ratio indicates the "
+                            "GPU is being 'starved' by the CPU or background app priority."
+                        ),
+                        evidence=[
+                            f"Max Wait: {max_wait:.2f} ms",
+                            f"Idle Ratio: {avg_ratio:.1f}% of frame",
+                            "ADVICE: Disable Discord/Browser Hardware Acceleration."
+                        ]
+                    )
 
         if fclk_col and uclk_col and mclk_col:
 
@@ -5602,12 +5763,13 @@ figure img{{border-radius:8px;}}
                 )
 
         if usb_v_col or chipset_t:
-            if chipset_t and (df[chipset_t] > 80).any():
+            if chipset_t and (df[chipset_t] > self.sig_chipset_temp_max).any():
                 add(
                     name="Chipset Thermal Throttling",
                     severity="WARNING",
                     description="Motherboard chipset is overheating. This often causes USB and NVMe dropouts.",
-                    evidence=[f"Max Chipset Temp: {df[chipset_t].max():.1f}°C"],
+                    evidence=[f"Max Chipset Temp: {df[chipset_t].max():.1f}°C",
+                              f"Threshold: {self.sig_chipset_temp_max}°C"],
                     advice="Ensure GPU isn't blocking chipset airflow."
                 )
 
@@ -7695,7 +7857,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
             def _copy_discord_summary():
                 if not results:
-                    summary = "✅ No issues detected — log looks clean."
+                    summary = "✅ No issues detected - log looks clean."
                 else:
                     SEV_EMOJI = {'CRITICAL': '🔴', 'WARNING': '🟡', 'INFO': '🔵'}
                     lines = []
@@ -9757,7 +9919,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         ha="center", va="center", fontsize=11, color="#888",
                         transform=ax.transAxes)
 
-            ax.text(0.5, 0.04, "Esc — quit",
+            ax.text(0.5, 0.04, "Esc - quit",
                     ha="center", va="bottom", fontsize=8, color="#555",
                     transform=ax.transAxes)
 
