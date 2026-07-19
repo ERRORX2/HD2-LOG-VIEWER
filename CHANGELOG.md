@@ -1,5 +1,86 @@
 # Change Log
 
+## 📝 Changelog: v1.6.7 (2026-07-19)
+
+---
+
+### 🛡️ Signatures
+
+* **Intel Clock Stretching:** Added Intel P-core clock stretching detection - previously the signature only worked on AMD Ryzen systems due to different HWiNFO column naming.
+* **GPU Wait False Positives:** Fixed GPU Wait Bottleneck false positives caused by near-zero frame times recorded before or after gameplay.
+* **Drive Temperature Checks:** Fixed drive airflow temperature being incorrectly checked against drive thermal thresholds - it measures ambient air near the drive bay, not the drive itself.
+* **GPU Clock Detection:** Fixed GPU clock detection preferring raw GPU clock over effective clock - raw clock stays high during throttling while effective clock reflects actual execution speed.
+* **Chipset Threshold:** Added chipset overheating threshold to Settings.
+
+### 🛠️ Debug Window
+
+* **CPU Architecture Detection:** Added CPU architecture detection to the Clock Stretching section, showing whether the AMD or Intel detection path will be used and listing the matched columns.
+
+### 🐛 Bug Fixes
+
+* **Data Processing Crash:** Fixed a crash caused by duplicate pandas index labels when running Intel clock stretching detection on certain CSVs.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json` and `theme.json` when updating to preserve your custom sensor presets, aliases, themes, and saved configurations.
+
+## 📝 Changelog: v1.6.6 (2026-07-13)
+
+---
+
+### ✨ New Features & Improvements
+
+#### 🎨 Layout Polish
+
+* **Pixel-Perfect Legend:** Refactored the legend panel to use `grid` rather than `pack`. This ensures a seamless layout with no gaps, even when the window is aggressively resized or maximized.
+
+---
+
+### 🐛 Bug Fixes
+
+* **Compiled Build Rendering:** Fixed an issue where the matplotlib backend incorrectly defaulted to `Agg` instead of `TkAgg` in compiled `.exe` builds, causing various UI rendering failures.
+* **Legend Label Collapsing:** Fixed a bug in compiled builds where legend labels would collapse to zero size due to `wraplength` being applied before the canvas had fully realized its geometry.
+* **Toolbar Layout:** Fixed the coordinate readout appearing on the wrong side of the toolbar.
+* **Legend Border Rendering:** Fixed a white line appearing on the border of the legend when the window was maximized.
+* **Version Detection:** Fixed a dependency detection bug that incorrectly showed function references instead of the actual version strings for some packages.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json` and `theme.json` when updating to preserve your custom sensor presets, aliases, themes, and saved configurations.
+
+## 📝 Changelog: v1.6.5 (2026-06-29)
+
+---
+
+### ✨ Core & Infrastructure Updates
+
+* **Python & CI Bump:** Upgraded the CI workflow to use Python **3.13.14**.
+* **Display & Backend Handling:** Switched the matplotlib backend to `TkAgg` for more stable GUI support and introduced proper **DPI awareness for Windows**, ensuring crisp and accurately scaled rendering on high-resolution displays.
+
+### 🛠️ Diagnostics & Debugging
+
+* **Runtime Environment Logs:** Added a comprehensive runtime diagnostics section to the debug output, printing detailed environment and dependency information to simplify user troubleshooting.
+* **Detailed UI Diagnostics:** Enhanced the debug dump to include deep widget state details for the canvas, figure, toolbar, and legend panels, including explicit geometry and mapping information.
+
+### 🎨 UI & Layout Refinements
+
+* **Legend Reliability:** Refined legend canvas sizing and introduced new retry logic (alongside a dedicated retry log) during legend finalization to ensure a reliable layout.
+* **Robust Startup:** Beefed up exception handling around application startup and the main flow to prevent silent crashes.
+
+### 🐛 Bug Fixes
+
+* **Delta Mode Legend:** Fixed a bug that prevented legend entries from rendering correctly when Delta Mode was active. This was resolved by implementing an internal `_rgb_to_hex` helper to ensure strict color format compatibility during UI drawing operations.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json` and `theme.json` when updating to preserve your custom sensor presets, aliases, themes, and saved configurations.
+
 ## 📝 Changelog: v1.6.4 (2026-06-28)
 
 ###🎨 New Themes
