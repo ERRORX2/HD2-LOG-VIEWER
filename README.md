@@ -41,7 +41,7 @@
 
 ### 🛠️ Option 2: Running on Linux (Arch/CachyOS)
 1. Install dependencies 
-```sudo pacman -S git python tk python-pandas python-matplotlib python-numpy python-pip```
+```sudo pacman -S git python tk python-pandas python-matplotlib python-numpy python-pip python-scipy python-psutil```
 2. git clone ``https://github.com/ERRORX2/HD2-LOG-VIEWER.git``
 3. cd ``HD2-LOG-VIEWER``
 4. python ``HD2_LOG_VIEWER.pyw``
@@ -56,7 +56,7 @@
 
 1. git clone ``https://github.com/ERRORX2/HD2-LOG-VIEWER.git``
 2. cd ``HD2-LOG-VIEWER``
-3. pip install ``pandas matplotlib numpy``
+3. pip install ``-r requirements.txt``
 4. pythonw ``HD2_LOG_VIEWER.pyw``
 
 ---
@@ -108,7 +108,7 @@
 * **HTML Report Export:** Generates a fully self-contained HTML report including detected hardware, session summary, all signature findings, out-of-spec sensors, per-sensor charts (selected and by category), PSU rail voltages, and a full statistics table. No internet connection required to view.
 
 ### 🎨 Theming
-* **14 Built-in Themes:** Dark (Default), Light (Default), Slate, Teal, Forest Green, Crimson, Steel, Lime, Violet, Lavender, Cobalt, Neon Blue, Sand, Monochrome, and the Helldivers 2 theme.
+* **21 Built-in Themes:** Dark (Default), Light (Default), Slate, Teal, Forest Green, Crimson, Steel, Lime, Violet, Lavender, Cobalt, Neon Blue, Sand, Monochrome, Helldivers 2, Cathode, Garnet, Glacier, Vaporwave, Bunker, and Stingray Analyzer.
 * **Theme Editor:** Customize any theme's background, surface, border, text, accent, plot line colors, and heatmap band colors using a color picker. Save as a named user theme.
 * **Import / Export Themes:** Share themes as `.json` files. Import a theme file and it is immediately available in the editor.
 * **Persistent Theme:** The active theme and all customizations are saved and restored between sessions.
@@ -119,7 +119,7 @@
 * **Tooltip Toggle:** Enable or disable the hover tooltip from the top bar without restarting.
 * **Crash Recovery:** Automatically trims corrupted or zeroed rows commonly left at the end of logs after crashes or hard resets.
 * **Update Notifications:** Checks for new releases silently on startup. If an update is found, you can open the release page, ignore that specific version, or disable future notifications. A manual check is available via the ⟳ button at any time.
-* **Debug Dump:** A hidden developer panel (`Ctrl+F8`) shows all resolved sensor columns, detected values, fabric clock ratios, PSU rail analysis, and internal state - useful for diagnosing why a signature did or did not fire.
+* **Debug Dump:** A hidden developer panel (`Ctrl+F8`) shows all resolved sensor columns, detected values, CPU architecture detection, dependency status, runtime environment info, fabric clock ratios, PSU rail analysis, and internal state - useful for diagnosing why a signature did or did not fire.
 
 ---
 
@@ -136,9 +136,10 @@ HD2 LOG VIEWER includes an advanced signature detection system that analyzes sys
 * VRM and MOSFET overheating
 * Chipset / PCH thermal throttling
 * Fan stall detection during active load
+* Drive thermal throttling with separate HDD and SSD/NVMe thresholds
 
 **⚡ Power & Voltage**
-* CPU clock stretching (major and minor) - effective vs. requested clock ratio analysis per core
+* CPU clock stretching (major and minor) — effective vs. requested clock ratio analysis per core, with support for both **AMD Ryzen** and **Intel P-core / E-core** naming
 * GPU power limit saturation and oscillation
 * PSU +12V rail sag and ripple analysis
 * Multi-rail voltage out-of-spec detection (+12V, +5V, +3.3V)
@@ -179,7 +180,6 @@ HD2 LOG VIEWER includes an advanced signature detection system that analyzes sys
 ## ⚖️ License
 
 MIT License - Developed for the hardware enthusiast and troubleshooting community.
-
 
 
 
