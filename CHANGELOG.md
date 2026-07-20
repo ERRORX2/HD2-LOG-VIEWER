@@ -1,5 +1,28 @@
 # Change Log
 
+## 📝 Changelog: v1.6.8 (2026-07-20)
+
+---
+
+### ⚙️ Sensor Setup
+
+* **Fallback Detection:** Fixed sensor setup prompt not appearing when a critical sensor has no matching candidates in the CSV - it now falls back to a unit-filtered list for universally expected sensors (GPU usage, CPU usage, GPU/CPU temp, GPU/CPU power, GPU clock).
+* **Strict Matching:** Fixed `rail_33v`, `mclk`, and `gpu_clock` auto-detection silently matching wrong column types (e.g., wattage columns instead of voltage rails, GPU memory clock instead of system RAM clock).
+* **Live Stats Preview:** Added a live stats preview to the sensor picker dialog showing Min/Avg/Max for the selected column so you can immediately verify it's the right sensor.
+* **Auto-Selection:** The first candidate is now auto-selected on dialog open so the preview is populated immediately.
+* **UI Scaling:** Increased the dialog size to prevent content from being cut off at the bottom.
+
+### 🛡️ Signatures
+
+* **CPU Clock Detection:** Fixed CPU clock detection picking up GPU clock columns when no CPU-specific clock column existed.
+* **GPU Thermal Columns:** Fixed GPU hotspot and edge resolving to the same column on GPUs without a dedicated hotspot column - hotspot now picks the highest-reading GPU temperature column, while edge picks the lowest.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json` and `theme.json` when updating to preserve your custom sensor presets, aliases, themes, and saved configurations.
+
 ## 📝 Changelog: v1.6.7 (2026-07-19)
 
 ---
