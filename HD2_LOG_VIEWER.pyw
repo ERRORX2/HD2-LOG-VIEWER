@@ -266,7 +266,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.6.8"
+CURRENT_VERSION = "1.6.8.1"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -8513,7 +8513,14 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.grp_f.columnconfigure(3, weight=0)
 
         for i, g in enumerate(sorted(self.custom_groups.keys())):
-            btn = ttk.Button(self.grp_f, text=g, command=lambda n=g: self._apply_group(n))
+            count   = len(self._group_sensors(g))
+            modes   = self._group_modes(g)
+            mode_tag = ""
+            if modes.get('delta_mode'):    mode_tag = " Δ"
+            elif modes.get('heatmap_mode'): mode_tag = " 🌡"
+            elif modes.get('multi_mode'):   mode_tag = " ⊞"
+            btn_label = f"{g}  ({count}){mode_tag}"
+            btn = ttk.Button(self.grp_f, text=btn_label, command=lambda n=g: self._apply_group(n))
             btn.grid(row=i, column=0, sticky='ew', pady=1, padx=(1, 2))
             sh_btn = ttk.Button(self.grp_f, text="📋", width=3, command=lambda n=g: self._share_group(n))
             sh_btn.grid(row=i, column=1, pady=1, padx=1)
@@ -8523,7 +8530,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             del_btn.grid(row=i, column=3, pady=1, padx=(1, 4))
 
     def _share_group(self, n):
-        data = {"name": n, "sensors": self.custom_groups[n]}
+        data = {"name": n, "sensors": self._group_sensors(n), "modes": self._group_modes(n)}
         self.root.clipboard_clear()
         self.root.clipboard_append(json.dumps(data))
         self.show_toast(f"Copied '{n}'")
@@ -8600,9 +8607,11 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
             imported_name = data["name"]
             sensors = data["sensors"]
+            modes   = data.get("modes", {})
+            entry   = {"sensors": sensors, "modes": modes} if modes else sensors
 
             if imported_name not in self.custom_groups:
-                self.custom_groups[imported_name] = sensors
+                self.custom_groups[imported_name] = entry
                 self._save_config()
                 self._refresh_group_buttons()
                 self.show_toast(f"Imported: '{imported_name}'")
@@ -8635,7 +8644,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
             def _overwrite():
                 dialog.destroy()
-                self.custom_groups[imported_name] = sensors
+                self.custom_groups[imported_name] = entry
                 self._save_config()
                 self._refresh_group_buttons()
                 self.show_toast(f"Overwritten: '{imported_name}'")
@@ -8648,7 +8657,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                             f"A preset named '{new_name}' already exists.\nPlease choose a different name.")
                         _rename()
                         return
-                    self.custom_groups[new_name] = sensors
+                    self.custom_groups[new_name] = entry
                     self._save_config()
                     self._refresh_group_buttons()
                     self.show_toast(f"Imported as '{new_name}'")
@@ -8671,12 +8680,45 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 self._save_config()
                 self._refresh_group_buttons()
 
+    def _group_sensors(self, name):
+        entry = self.custom_groups.get(name, [])
+        if isinstance(entry, dict):
+            return entry.get("sensors", [])
+        return entry
+
+    def _group_modes(self, name):
+        entry = self.custom_groups.get(name, [])
+        if isinstance(entry, dict):
+            return entry.get("modes", {})
+        return {}
+
     def _apply_group(self, n):
+        sensors = self._group_sensors(n)
+        modes   = self._group_modes(n)
+
         for v in self.vars.values():
             v.set(False)
-        for s in self.custom_groups.get(n, []):
+
+        found = 0
+        for s in sensors:
             if s in self.vars:
                 self.vars[s].set(True)
+                found += 1
+
+        missing = len(sensors) - found
+        if missing > 0:
+            self.show_toast(f"⚠ {found} of {len(sensors)} sensors found - {missing} not in this CSV")
+
+        if modes:
+            if 'multi_mode' in modes and modes['multi_mode'] != self.multi_mode:
+                self._toggle_multi()
+            if 'delta_mode' in modes and modes['delta_mode'] != self.delta_mode:
+                self._toggle_delta()
+            if 'time_mode' in modes and modes['time_mode'] != self.time_mode:
+                self._toggle_time()
+            if 'heatmap_mode' in modes and modes['heatmap_mode'] != self.heatmap_mode:
+                self._toggle_heatmap()
+
         self.update_plot()
 
     def _save_group(self):
@@ -8688,7 +8730,15 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             if not messagebox.askyesno("Overwrite Preset",
                     f"A preset named '{name}' already exists.\nDo you want to overwrite it?"):
                 return
-        self.custom_groups[name] = sel
+        self.custom_groups[name] = {
+            "sensors": sel,
+            "modes": {
+                "multi_mode":    self.multi_mode,
+                "delta_mode":    self.delta_mode,
+                "time_mode":     self.time_mode,
+                "heatmap_mode":  self.heatmap_mode,
+            }
+        }
         self._save_config()
         self._refresh_group_buttons()
         self.name_var.set("")

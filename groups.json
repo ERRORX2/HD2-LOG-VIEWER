@@ -1,161 +1,177 @@
 {
-    "groups": {
-        "RAILS": [
-            "+12V [V]",
-            "+3.3V [V]",
-            "+5V [V]"
-        ],
-        "HOTSPOT": [
-            "GPU Hot Spot Temperature (Max) [\u00b0C]",
-            "GPU Temperature [\u00b0C]"
-        ],
-        "Stutter Analysis (Full)": [
-            "Frame Time Presented (99%) [ms]",
-            "GPU Utilization [%]",
-            "CPU Total Usage [%]",
-            "GPU Clock (Effective) [MHz]",
-            "Core 0 Clock (perf #4/5) [MHz]",
-            "Total Board Power (TBP) [W]",
-            "CPU Package Power [W]",
-            "GPU Performance Limit - Utilization"
-        ],
-        "System Latency": [
-            "Frame Time Presented [ms]",
-            "GPU Memory Usage [%]",
-            "Core 0 Usage [%]",
-            "Core 1 Usage [%]",
-            "Core 2 Usage [%]",
-            "Core 3 Usage [%]"
-        ],
-        "GPU DELTA": [
-            "GPU Hot Spot Temperature [\u00b0C]",
-            "GPU Temperature [\u00b0C]"
-        ],
-        "Thermal Limits": [
-            "GPU Performance Limit - Thermal",
-            "GPU Temperature [\u00b0C]",
-            "CPU Thermal Throttling",
-            "GPU Clock [MHz]"
-        ],
-        "Power Analysis": [
-            "Total Board Power (TBP) [W]",
-            "CPU Package Power [W]",
-            "GPU Voltage [V]",
-            "GPU Core Voltage [V]"
-        ],
-        "Memory Usage": [
-            "GPU Memory Allocated [MB]",
-            "GPU Memory Usage [%]",
-            "Virtual Memory Committed [MB]"
-        ],
-        "Cooling/Fans": [
-            "GPU Fan1 [RPM]",
-            "GPU Fan2 [RPM]",
-            "GPU Temperature [\u00b0C]",
-            "CPU Fan [RPM]"
-        ]
+  "groups": {
+    "RAILS": {
+      "sensors": [
+        "+12V [V]",
+        "+3.3V [V]",
+        "+5V [V]"
+      ],
+      "modes": {
+        "multi_mode": false,
+        "delta_mode": false,
+        "time_mode": true,
+        "heatmap_mode": false
+      }
     },
-    "settings": {
-        "dark_mode": true,
+    "Stutter Analysis (Full)": {
+      "sensors": [
+        "GPU Utilization [%]",
+        "GPU Clock (Effective) [MHz]",
+        "CPU Package Power [W]",
+        "Frame Time Presented (99%) [ms]"
+      ],
+      "modes": {
         "multi_mode": true,
         "delta_mode": false,
-        "ignored_version": "",
-        "updates_disabled": false,
         "time_mode": true,
-        "heatmap_mode": false,
-        "thresholds": {
-            "temp_limits": {
-                "HOTSPOT": 95.0,
-                "HOT SPOT": 95.0,
-                "GPU": 88.0,
-                "VRAM": 95.0,
-                "MEMORY": 95.0,
-                "VRM": 110.0,
-                "CORE": 95.0,
-                "TDIE": 95.0,
-                "TCTL": 95.0,
-                "CCD": 90.0,
-                "CCX": 90.0,
-                "IOD": 95.0,
-                "SOCKET": 95.0,
-                "COOLANT": 45.0,
-                "LIQUID": 45.0,
-                "WATER": 45.0,
-                "SSD": 65.0,
-                "NVME": 65.0,
-                "HDD": 55.0,
-                "DRIVE": 70.0,
-                "TEMPERATURE": 70.0,
-                "CHIPSET": 90.0,
-                "PCH": 90.0,
-                "MOSFET": 110.0,
-                "CHOKE": 110.0
-            },
-            "volt_rails": {
-                "+12V": [
-                    11.4,
-                    12.6
-                ],
-                "+5V": [
-                    4.75,
-                    5.25
-                ],
-                "+3.3V": [
-                    3.13,
-                    3.46
-                ]
-            },
-            "misc": {
-                "cpu_volt_lo": 0.8,
-                "cpu_volt_hi": 1.55,
-                "gpu_volt_max": 1.1,
-                "dram_volt_lo": 1.1,
-                "dram_volt_hi": 1.55,
-                "fan_min_rpm": 400.0,
-                "cpu_power_max": 300.0,
-                "gpu_power_max": 500.0,
-                "total_power_max": 600.0,
-                "latency_max_ms": 50.0,
-                "frametime_max_ms": 100.0,
-                "fps_min": 10.0,
-                "coolant_max": 45.0,
-                "memory_load_max": 95.0,
-                "drive_spare_min": 10.0,
-                "drive_life_min": 10.0,
-                "vcore_droop_max": 0.3,
-                "clock_instability": 0.35,
-                "throttle_threshold": 0.9,
-                "sig_cpu_thermal_pct": 0.85,
-                "sig_cpu_thermal_samples": 10,
-                "sig_fan_stall_rpm": 100.0,
-                "sig_fan_min_spinning": 200.0,
-                "sig_fan_hot_cpu_c": 70.0,
-                "sig_fan_hot_gpu_c": 65.0,
-                "sig_drive_temp_max": 70.0,
-                "sig_vrm_temp_max": 105.0,
-                "sig_chipset_temp_max": 80.0,
-                "sig_ram_exhaust_pct": 95.0,
-                "sig_vram_overflow_pct": 98.0,
-                "sig_cpu_bn_gpu_pct": 60.0,
-                "sig_cpu_bn_cpu_pct": 85.0,
-                "sig_cpu_bn_samples": 10,
-                "sig_stutter_mult": 3.0,
-                "sig_stutter_min_hits": 5,
-                "sig_tdr_clock_frac": 0.5,
-                "sig_ppt_sat_pct": 0.98,
-                "sig_ppt_sat_samples": 15,
-                "sig_clock_stretch_mhz": 500.0,
-                "sig_disk_busy_pct": 99.9,
-                "sig_disk_busy_samples": 3,
-                "sig_v12_lo": 11.4,
-                "sig_v5_lo": 4.75,
-                "sig_v5_hi": 5.25,
-                "sig_v33_lo": 3.14,
-                "sig_v33_hi": 3.47
-            }
-        },
-        "disabled_sigs": [],
-        "sig_timeline_enabled": false,
-        "tooltip_enabled": false
+        "heatmap_mode": false
+      }
+    },
+    "GPU DELTA": {
+      "sensors": [
+        "GPU Hot Spot Temperature [\u00b0C]",
+        "GPU Temperature [\u00b0C]"
+      ],
+      "modes": {
+        "multi_mode": false,
+        "delta_mode": true,
+        "time_mode": true,
+        "heatmap_mode": false
+      }
+    },
+    "Memory Usage": {
+      "sensors": [
+        "GPU Memory Controller Load [%]",
+        "GPU Memory Usage [%]",
+        "GPU Memory Allocated [MB]",
+        "Physical Memory Used [MB]",
+        "Virtual Memory Committed [MB]"
+      ],
+      "modes": {
+        "multi_mode": true,
+        "delta_mode": false,
+        "time_mode": true,
+        "heatmap_mode": false
+      }
+    },
+    "Lag Analysis": {
+      "sensors": [
+        "CPU [\u00b0C]",
+        "GPU Hot Spot Temperature [\u00b0C]",
+        "GPU Temperature [\u00b0C]",
+        "GPU Memory Usage [MB]",
+        "Frame Time Presented (99%) [ms]",
+        "Throttle Reason - Thermal [Yes/No]"
+      ],
+      "modes": {
+        "multi_mode": true,
+        "delta_mode": false,
+        "time_mode": true,
+        "heatmap_mode": false
+      }
     }
+  },
+  "settings": {
+    "dark_mode": true,
+    "multi_mode": true,
+    "delta_mode": false,
+    "ignored_version": "",
+    "updates_disabled": false,
+    "time_mode": true,
+    "heatmap_mode": false,
+    "thresholds": {
+      "temp_limits": {
+        "HOTSPOT": 95.0,
+        "HOT SPOT": 95.0,
+        "GPU": 88.0,
+        "VRAM": 95.0,
+        "MEMORY": 95.0,
+        "VRM": 110.0,
+        "CORE": 95.0,
+        "TDIE": 95.0,
+        "TCTL": 95.0,
+        "CCD": 90.0,
+        "CCX": 90.0,
+        "IOD": 95.0,
+        "SOCKET": 95.0,
+        "COOLANT": 45.0,
+        "LIQUID": 45.0,
+        "WATER": 45.0,
+        "SSD": 65.0,
+        "NVME": 65.0,
+        "HDD": 55.0,
+        "DRIVE": 70.0,
+        "TEMPERATURE": 70.0,
+        "CHIPSET": 90.0,
+        "PCH": 90.0,
+        "MOSFET": 110.0,
+        "CHOKE": 110.0
+      },
+      "volt_rails": {
+        "+12V": [
+          11.4,
+          12.6
+        ],
+        "+5V": [
+          4.75,
+          5.25
+        ],
+        "+3.3V": [
+          3.13,
+          3.46
+        ]
+      },
+      "misc": {
+        "cpu_volt_lo": 0.8,
+        "cpu_volt_hi": 1.55,
+        "gpu_volt_max": 1.1,
+        "dram_volt_lo": 1.1,
+        "dram_volt_hi": 1.55,
+        "fan_min_rpm": 400.0,
+        "cpu_power_max": 300.0,
+        "gpu_power_max": 500.0,
+        "total_power_max": 600.0,
+        "latency_max_ms": 50.0,
+        "frametime_max_ms": 100.0,
+        "fps_min": 10.0,
+        "coolant_max": 45.0,
+        "memory_load_max": 95.0,
+        "drive_spare_min": 10.0,
+        "drive_life_min": 10.0,
+        "vcore_droop_max": 0.3,
+        "clock_instability": 0.35,
+        "throttle_threshold": 0.9,
+        "sig_cpu_thermal_pct": 0.85,
+        "sig_cpu_thermal_samples": 10,
+        "sig_fan_stall_rpm": 100.0,
+        "sig_fan_min_spinning": 200.0,
+        "sig_fan_hot_cpu_c": 70.0,
+        "sig_fan_hot_gpu_c": 65.0,
+        "sig_drive_temp_max": 70.0,
+        "sig_vrm_temp_max": 105.0,
+        "sig_chipset_temp_max": 80.0,
+        "sig_ram_exhaust_pct": 95.0,
+        "sig_vram_overflow_pct": 98.0,
+        "sig_cpu_bn_gpu_pct": 60.0,
+        "sig_cpu_bn_cpu_pct": 85.0,
+        "sig_cpu_bn_samples": 10,
+        "sig_stutter_mult": 3.0,
+        "sig_stutter_min_hits": 5,
+        "sig_tdr_clock_frac": 0.5,
+        "sig_ppt_sat_pct": 0.98,
+        "sig_ppt_sat_samples": 15,
+        "sig_clock_stretch_mhz": 500.0,
+        "sig_disk_busy_pct": 99.9,
+        "sig_disk_busy_samples": 3,
+        "sig_v12_lo": 11.4,
+        "sig_v5_lo": 4.75,
+        "sig_v5_hi": 5.25,
+        "sig_v33_lo": 3.14,
+        "sig_v33_hi": 3.47
+      }
+    },
+    "disabled_sigs": [],
+    "sig_timeline_enabled": false,
+    "tooltip_enabled": false
+  }
 }
