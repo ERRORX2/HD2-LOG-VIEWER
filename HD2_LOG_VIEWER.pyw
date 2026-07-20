@@ -266,7 +266,7 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.6.7"
+CURRENT_VERSION = "1.6.8"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -3682,7 +3682,7 @@ figure img{{border-radius:8px;}}
                     wl("  not present", 'muted')
 
         cpu_temp      = self._col('TCTL') or self._col('TDIE') or self._col_excl(['CPU'], excl=['USAGE','UTIL','LOAD','THREAD','W]','%]','MHz','RPM'])
-        cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col('CLOCK')
+        cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col_excl(('CLOCK',), excl=('GPU', 'MEMORY', 'PCIE', 'BUS', 'RING', 'CACHE', 'CROSSBAR'))
         cpu_usage_col = self._col_excl(['CPU','USAGE'], excl=['°C','TEMP','W]']) or self._col_excl(['CPU','UTIL'], excl=['°C','TEMP','W]']) or self._col_excl(['CPU','LOAD'], excl=['°C','TEMP','W]']) or self._col('TOTAL', 'CPU')
         cpu_power     = self._col_excl(['CPU','PACKAGE','W'], excl=['°C','TEMP','USAGE','LOAD','%']) or self._col_excl(['CPU','PPT'], excl=['°C','TEMP']) or self._col_excl(['CPU','POWER'], excl=['°C','TEMP'])
         throttle      = self._col('THROTTLE') or self._col('PROCHOT')
@@ -3736,7 +3736,14 @@ figure img{{border-radius:8px;}}
         wl(f"  Intel req cols ({len(intel_pcore_req)}): {intel_pcore_req[:3] or MISS}", 'val')
         wl(f"  Intel eff cols ({len(intel_pcore_eff)}): {intel_pcore_eff[:3] or MISS}", 'val')
 
-        gpu_hotspot       = self._col_excl(('GPU', 'HOT'),  excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
+        gpu_hotspot       = self._col_excl(('GPU', 'HOT'),  excl=('CPU', 'LIMIT'))
+        if not gpu_hotspot:
+            _gpu_t_cands = [c for c in df.columns
+                            if 'GPU' in c.upper() and 'TEMP' in c.upper()
+                            and not any(x in c.upper() for x in
+                                        ('CPU', 'LIMIT', 'MEMORY', 'JUNCTION', 'VR', 'SOC'))]
+            if _gpu_t_cands:
+                gpu_hotspot = max(_gpu_t_cands, key=lambda c: df[c].max())
         gpu_usage_col     = self._col_active(('GPU', 'USAGE')) or self._col_active(('GPU', 'LOAD'))
         gpu_clock         = self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col_active(('GPU', 'FREQUENCY'))
         gpu_power         = self._col_active(('GPU', 'POWER'))
@@ -3748,10 +3755,18 @@ figure img{{border-radius:8px;}}
         gpu_mem_dynamic   = self._col('GPU D3D Memory Dynamic')
         gpu_bus_col       = self._col('GPU Bus Load') or self._col('Bus Load')
         vram_junc         = self._col('GPU Memory Junction Temperature [°C]')
-        gpu_edge          = self._col('GPU Temperature') or self._col_excl(
-                                ('GPU', 'TEMP'),
-                                excl=('HOTSPOT', 'MEMORY', 'CPU', 'VR', 'VRM', 'JUNCTION', 'SOC')
-                            )
+        _gpu_edge_cands = [c for c in df.columns
+                           if 'GPU' in c.upper() and 'TEMP' in c.upper()
+                           and not any(x in c.upper() for x in
+                                       ('HOTSPOT', 'MEMORY', 'CPU', 'VR', 'VRM', 'JUNCTION', 'SOC', 'LIMIT'))]
+        if len(_gpu_edge_cands) >= 2:
+            gpu_edge = min(_gpu_edge_cands, key=lambda c: df[c].max())
+            if gpu_edge == gpu_hotspot:
+                gpu_edge = next((c for c in _gpu_edge_cands if c != gpu_hotspot), None)
+        elif _gpu_edge_cands:
+            gpu_edge = _gpu_edge_cands[0] if _gpu_edge_cands[0] != gpu_hotspot else None
+        else:
+            gpu_edge = None
 
         section("GPU COLUMNS")
         col("gpu_hotspot",        gpu_hotspot)
@@ -4566,13 +4581,20 @@ figure img{{border-radius:8px;}}
                          if c and c in df.columns), None)
 
         cpu_temp      = _a('cpu_temp') or self._col('TCTL') or self._col('TDIE') or self._col('PROZESSOR', 'TEMPERATUR') or self._col('TEMPERATUR') or self._col_excl(['CPU'], excl=['USAGE','UTIL','LOAD','THREAD','W]','%]','MHz','RPM'])
-        cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col('CLOCK')
+        cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col_excl(('CLOCK',), excl=('GPU', 'MEMORY', 'PCIE', 'BUS', 'RING', 'CACHE', 'CROSSBAR'))
         cpu_usage_col = _a('cpu_usage') or self._col('CPU', 'AUSLASTUNG') or self._col_excl(['CPU','USAGE'], excl=['°C','TEMP','W]']) or self._col_excl(['CPU','UTIL'], excl=['°C','TEMP','W]']) or self._col_excl(['CPU','LOAD'], excl=['°C','TEMP','W]']) or self._col('PROZESSOR') or self._col('TOTAL', 'CPU')
         cpu_power     = _a('cpu_power') or self._col('CPU-Gesamt-Leistungsaufnahme') or self._col_excl(['CPU','PACKAGE','W'], excl=['°C','TEMP','USAGE','LOAD','%']) or self._col_excl(['CPU','PPT'], excl=['°C','TEMP']) or self._col_excl(['CPU','POWER'], excl=['°C','TEMP']) or self._col('CPU Package Power')
         throttle      = self._col('THROTTLE') or self._col('PROCHOT')
         cpu_utility   = self._col('CPU USAGE') or self._col('CPU UTILIZATION') or self._col('CPU AUSLASTUNG') or self._col('TOTAL CPU USAGE')
 
-        gpu_hotspot   = _a('gpu_temp') or self._col_excl(('GPU', 'HOT'), excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU',))
+        gpu_hotspot   = _a('gpu_temp') or self._col_excl(('GPU', 'HOT'), excl=('CPU', 'LIMIT'))
+        if not gpu_hotspot:
+            _gpu_temp_candidates = [c for c in df.columns
+                                    if 'GPU' in c.upper() and 'TEMP' in c.upper()
+                                    and not any(x in c.upper() for x in
+                                                ('CPU', 'LIMIT', 'MEMORY', 'JUNCTION', 'VR', 'SOC'))]
+            if _gpu_temp_candidates:
+                gpu_hotspot = max(_gpu_temp_candidates, key=lambda c: df[c].max())
         gpu_usage_col = _a('gpu_usage') or self._col_active(('GPU', 'USAGE')) or self._col_active(('GPU', 'LOAD')) or self._col_active(('GPU', 'AUSLASTUNG')) or self._col('GPU USAGE')
         gpu_clock     = _a('gpu_clock') or self._col_active(('GPU', 'EFFECTIVE', 'CLOCK'), excl=('MEMORY', 'CROSSBAR', 'VIDEO')) or self._col_active(('GPU', 'CLOCK', 'MEASURED'), excl=('MEMORY', 'CROSSBAR')) or self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col_active(('GPU', 'FREQUENCY')) or self._col_active(('GPU', 'TAKT'))
         gpu_throttle  = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
@@ -4640,10 +4662,18 @@ figure img{{border-radius:8px;}}
             hs_max = mx(gpu_hotspot)
             hs_limit = self.temp_limits.get('HOTSPOT', 95.0)
 
-            gpu_edge = self._col('GPU Temperature') or self._col_excl(
-                ('GPU', 'TEMP'),
-                excl=('HOTSPOT', 'MEMORY', 'CPU', 'VR', 'VRM', 'JUNCTION', 'SOC')
-            )
+            _gpu_t_all = [c for c in df.columns
+                          if 'GPU' in c.upper() and 'TEMP' in c.upper()
+                          and not any(x in c.upper() for x in
+                                      ('HOTSPOT', 'MEMORY', 'CPU', 'VR', 'VRM', 'JUNCTION', 'SOC', 'LIMIT'))]
+            if len(_gpu_t_all) >= 2:
+                gpu_edge = min(_gpu_t_all, key=lambda c: df[c].max())
+                if gpu_edge == gpu_hotspot:
+                    gpu_edge = next((c for c in _gpu_t_all if c != gpu_hotspot), None)
+            elif _gpu_t_all:
+                gpu_edge = _gpu_t_all[0] if _gpu_t_all[0] != gpu_hotspot else None
+            else:
+                gpu_edge = None
 
             delta_val = 0
             if gpu_edge:
@@ -6458,7 +6488,9 @@ figure img{{border-radius:8px;}}
              "Used for TDR detection, clock cap, and power limit oscillation.\n"
              "Look for the GPU core/shader clock speed in MHz.\n"
              "Common names: GPU Clock, GPU Core Clock, GPU Effective Clock",
-             self._col('GPU','CLOCK') or self._col('GPU','FREQUENCY'),
+             self._col_excl(('GPU','EFFECTIVE','CLOCK'), excl=('MEMORY','CROSSBAR','VIDEO'))
+             or self._col_excl(('GPU','CLOCK','MEASURED'), excl=('MEMORY','CROSSBAR'))
+             or self._col_excl(('GPU','CLOCK'), excl=('MEMORY','CROSSBAR','SOC','VIDEO','VCN')),
              lambda c: any(k in c.upper() for k in ['GPU','GRAFIK'])
              and any(k in c.upper() for k in ['CLOCK','FREQ','[MHZ]','TAKT'])
              and 'MEMORY' not in c.upper() and 'VIDEO' not in c.upper()),
@@ -6481,7 +6513,9 @@ figure img{{border-radius:8px;}}
              "Used for PSU rail stability and hardware failure detection.\n"
              "Look for a voltage column reading ~3.3V at idle.\n"
              "Common names: +3.3V, 3.3V, 3V3, VCCIO, VDD (SWA)",
-             self._col('+3.3V') or self._col('3V3') or self._col('3.3V'),
+             self._col_excl(('+3.3V',), excl=('[W]','[A]','POWER','CURRENT','GPU','INPUT','EST'))
+             or self._col_excl(('3V3',), excl=('[W]','[A]','POWER','CURRENT','GPU'))
+             or self._col_excl(('3.3V',), excl=('[W]','[A]','POWER','CURRENT','GPU','INPUT','EST')),
              lambda c: any(k in c.upper() for k in
                            ['3.3', '3V3', 'VCC3', 'VCCIO', 'VDDA', 'AVDD',
                             'VSB', 'VDD (SWA)', 'VDDQ', 'VPP'])
@@ -6502,9 +6536,12 @@ figure img{{border-radius:8px;}}
              "Used for memory desync detection on AMD Ryzen systems.\n"
              "Look for the DRAM/memory clock speed in MHz.\n"
              "Common names: Memory Clock [MHz], MCLK [MHz], DRAM Clock",
-             self._col('MCLK') or self._col('MEMORY CLOCK') or self._col('DRAM CLOCK'),
+             self._col_excl(('MCLK',), excl=('GPU','VRAM','GDDR','VIDEO'))
+             or self._col_excl(('MEMORY CLOCK',), excl=('GPU','VRAM','GDDR','VIDEO'))
+             or self._col_excl(('DRAM CLOCK',), excl=('GPU','VRAM','GDDR','VIDEO')),
              lambda c: any(k in c.upper() for k in ['MCLK','MEMORY CLOCK','DRAM CLOCK'])
-             and '[MHZ]' in c.upper()),
+             and '[MHZ]' in c.upper()
+             and not any(k in c.upper() for k in ['GPU','VRAM','GDDR','VIDEO'])),
             ("gpu_busy",      "GPU Busy Time (PresentMon)",
              "Used for GPU engine wait bottleneck detection.\n"
              "Look for time in milliseconds the GPU spent actively rendering.\n"
@@ -6559,6 +6596,21 @@ figure img{{border-radius:8px;}}
             candidates = [c for c in df_cols
                           if filt(c) and c != self.analyzer.time_col
                           and c not in already_known]
+            _universal_units = {
+                'gpu_usage':  '[%]',
+                'cpu_usage':  '[%]',
+                'gpu_temp':   '°C',
+                'cpu_temp':   '°C',
+                'gpu_power':  '[W]',
+                'cpu_power':  '[W]',
+                'gpu_clock':  '[MHz]',
+            }
+            if not candidates and key in _universal_units:
+                _unit = _universal_units[key]
+                candidates = [c for c in df_cols
+                              if c != self.analyzer.time_col
+                              and c not in already_known
+                              and _unit in c]
             if not candidates:
                 continue
 
@@ -6594,7 +6646,7 @@ figure img{{border-radius:8px;}}
         dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
 
         self.root.update_idletasks()
-        pw, ph = 560, min(160 + len(candidates) * 28 + 80, 560)
+        pw, ph = 580, min(280 + len(candidates) * 28 + 80, 680)
         rx = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
         ry = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
         dialog.geometry(f"{pw}x{ph}+{rx}+{ry}")
@@ -6641,11 +6693,47 @@ figure img{{border-radius:8px;}}
             sb.pack(side=tk.RIGHT, fill=tk.Y)
 
         var = tk.StringVar(value="")
+
+        preview_frame = tk.Frame(inner, bg=bg3, padx=10, pady=8,
+                                 highlightthickness=1, highlightbackground=bg3)
+        preview_frame.pack(fill=tk.X, pady=(8, 0))
+        preview_lbl = tk.Label(preview_frame,
+                               text="← Select a sensor to preview its values",
+                               font=('Segoe UI', 9), bg=bg3, fg="#888",
+                               anchor='w', justify='left')
+        preview_lbl.pack(anchor='w')
+
+        def _on_select(*_):
+            col = var.get()
+            if not col or col not in self.df.columns:
+                return
+            s = pd.to_numeric(self.df[col], errors='coerce').dropna()
+            if s.empty:
+                preview_lbl.config(text=f"{col}\n  No numeric data", fg="#888")
+                return
+            mn, av, mx = s.min(), s.mean(), s.max()
+            unit = ''
+            for u in ['[°C]','[W]','[V]','[%]','[MHz]','[MB]','[GB]','[RPM]','[ms]','[A]']:
+                if u in col:
+                    unit = u.strip('[]')
+                    break
+            preview_lbl.config(
+                text=f"  {col}\n"
+                     f"  Min: {mn:.2f}{unit}    Avg: {av:.2f}{unit}    Max: {mx:.2f}{unit}    "
+                     f"Samples: {len(s):,}",
+                fg=fg)
+            preview_frame.config(highlightbackground=accent)
+
+        var.trace_add('write', _on_select)
+
         for c in candidates:
             tk.Radiobutton(radio_frame, text=c, variable=var, value=c,
                            bg=bg2, fg=fg, activebackground=bg2, activeforeground=fg,
                            selectcolor=acc, font=('Segoe UI', 9),
                            anchor='w').pack(fill=tk.X, padx=8, pady=2)
+
+        if candidates:
+            var.set(candidates[0])
 
         btn_f = tk.Frame(inner, bg=bg)
         btn_f.pack(fill=tk.X, pady=(12, 0))

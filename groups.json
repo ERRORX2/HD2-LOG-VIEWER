@@ -57,8 +57,8 @@
     },
     "settings": {
         "dark_mode": true,
-        "multi_mode": false,
-        "delta_mode": true,
+        "multi_mode": true,
+        "delta_mode": false,
         "ignored_version": "",
         "updates_disabled": false,
         "time_mode": true,
@@ -133,6 +133,7 @@
                 "sig_fan_hot_gpu_c": 65.0,
                 "sig_drive_temp_max": 70.0,
                 "sig_vrm_temp_max": 105.0,
+                "sig_chipset_temp_max": 80.0,
                 "sig_ram_exhaust_pct": 95.0,
                 "sig_vram_overflow_pct": 98.0,
                 "sig_cpu_bn_gpu_pct": 60.0,
