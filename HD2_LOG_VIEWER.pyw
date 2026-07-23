@@ -1552,6 +1552,7 @@ class TelemetryApp:
             text="Tooltip: ON" if self._tooltip_enabled else "Tooltip: OFF")
         if not self._tooltip_enabled:
             self._clear_cursors()
+            self._hide_tk_tooltip()
             self.canvas_widget.draw_idle()
         self._save_config()
 
@@ -1595,6 +1596,7 @@ class TelemetryApp:
 
         self.fig.clear()
         self._clear_cursors()
+        self._hide_tk_tooltip()
         self.fig.patch.set_facecolor(bg_color)
 
         if not sel:
@@ -1854,6 +1856,7 @@ class TelemetryApp:
 
         self.fig.clear()
         self._clear_cursors()
+        self._hide_tk_tooltip()
         self.fig.patch.set_facecolor(bg)
 
         if hasattr(self, '_legend_panel'):
@@ -2856,6 +2859,13 @@ figure img{{border-radius:8px;}}
                     self._legend_inner.configure(bg=bg2)
                 if hasattr(self, '_legend_title'):
                     self._legend_title.configure(bg=bg2, fg=accent)
+                    try:
+                        if hasattr(self, '_tk_tooltip') and self._tk_tooltip.winfo_exists():
+                            self._tk_tooltip.configure(bg=bg2, fg=fg)
+                        if hasattr(self, '_tk_line_tooltip') and self._tk_line_tooltip.winfo_exists():
+                            self._tk_line_tooltip.configure(bg=bg2, fg=fg)
+                    except Exception:
+                        pass
                 if hasattr(self, '_legend_vsb'):
                     self._legend_vsb.configure(bg=bg3, troughcolor=bg2,
                                                activebackground=accent)
@@ -8396,6 +8406,32 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._cid_pick   = self.canvas_widget.mpl_connect('pick_event',          self._on_legend_pick)
         self._pinned_line = None
 
+        _t_tip = self._get_theme()
+        self._tk_tooltip = tk.Label(
+            _plot_container,
+            text="", font=('Segoe UI', 8),
+            bg=_t_tip.get("bg2", "#1e1e1e"),
+            fg=_t_tip.get("fg", "#ffffff"),
+            relief='solid', bd=1,
+            padx=6, pady=4,
+            justify='left',
+            wraplength=300,
+        )
+        self._tk_tooltip_container = _plot_container
+        self._tk_tooltip.place_forget()
+
+        self._tk_line_tooltip = tk.Label(
+            _plot_container,
+            text="", font=('Segoe UI', 8),
+            bg=_t_tip.get("bg2", "#1e1e1e"),
+            fg=_t_tip.get("fg", "#ffffff"),
+            relief='solid', bd=1,
+            padx=6, pady=4,
+            justify='left',
+            wraplength=300,
+        )
+        self._tk_line_tooltip.place_forget()
+
         self.toolbar = _NoHistoryToolbar(self.canvas_widget, toolbar_f, pack_toolbar=False)
         self.toolbar.update()
         self.toolbar.pack(side=tk.LEFT)
@@ -9072,9 +9108,53 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             except: pass
             self._prev_highlight = None
 
+    def _show_tk_tooltip(self, text, mpl_event, border_color):
+        tip = getattr(self, '_tk_line_tooltip', None)
+        if not tip or not tip.winfo_exists():
+            return
+        try:
+            t = self._get_theme()
+            tip.configure(
+                text=text,
+                bg=t.get("bg2", "#1e1e1e"),
+                fg=t.get("fg", "#ffffff"),
+                highlightbackground=border_color,
+                highlightthickness=2,
+                highlightcolor=border_color,
+            )
+            canvas_tk = self.canvas_widget.get_tk_widget()
+            cx = canvas_tk.winfo_x()
+            cy = canvas_tk.winfo_y()
+            mx = self.root.winfo_pointerx() - canvas_tk.winfo_rootx()
+            my = self.root.winfo_pointery() - canvas_tk.winfo_rooty()
+            ox, oy = 14, 14
+            if mx + ox + 320 > canvas_tk.winfo_width():
+                ox = -320
+            if my + oy + 60 > canvas_tk.winfo_height():
+                oy = -70
+            tip.place(x=cx + mx + ox, y=cy + my + oy)
+            tip.lift()
+        except Exception:
+            pass
+
+    def _hide_tk_tooltip(self):
+        tip = getattr(self, '_tk_tooltip', None)
+        if tip:
+            try:
+                tip.place_forget()
+            except Exception:
+                pass
+        line_tip = getattr(self, '_tk_line_tooltip', None)
+        if line_tip:
+            try:
+                line_tip.place_forget()
+            except Exception:
+                pass
+
     def _on_mouse_leave(self, event):
         self._last_cursor_idx = -1
         self._clear_cursors()
+        self._hide_tk_tooltip()
         self.canvas_widget.draw_idle()
 
     def _update_tk_legend(self, entries):
@@ -9493,19 +9573,21 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     ann_txt = f"{col_name}\nCurr: {curr:.2f}  Min: {s_min:.1f}  Max: {s_max:.1f}"
                     ann = getattr(self, '_line_annotation', None)
                     if ann is not None:
-
-                        ann.set_text(ann_txt)
-                        ann.xy = (plot_x, curr)
-                    else:
-                        self._line_annotation = ax.annotate(
-                            ann_txt,
-                            xy=(plot_x, curr),
-                            xytext=(12, 12), textcoords='offset points',
-                            fontsize=8, color=tc,
-                            bbox=dict(boxstyle='round,pad=0.4', facecolor=fc, alpha=0.92,
-                                      edgecolor=closest_line.get_color(), linewidth=1.5),
-                            zorder=20, annotation_clip=False
-                        )
+                        try: ann.remove()
+                        except Exception: pass
+                        self._line_annotation = None
+                    self._show_tk_tooltip(ann_txt, event, closest_line.get_color())
+                elif col_name.startswith('Δ') and self.delta_mode and len(sel) >= 2:
+                    d_curr = abs(row[sel[0]] - row[sel[1]])
+                    d_series = (self.df[sel[0]] - self.df[sel[1]]).abs()
+                    ann_txt = (f"Δ Delta\nCurr: {d_curr:.2f}  "
+                               f"Min: {d_series.min():.1f}  Max: {d_series.max():.1f}")
+                    ann = getattr(self, '_line_annotation', None)
+                    if ann is not None:
+                        try: ann.remove()
+                        except Exception: pass
+                        self._line_annotation = None
+                    self._show_tk_tooltip(ann_txt, event, closest_line.get_color())
             elif _pinned and _pinned in self.df.columns and ax:
 
                 curr = row[_pinned] if _pinned in row.index else float('nan')
@@ -9513,24 +9595,15 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 ann_txt = f"{_pinned}\nCurr: {curr:.2f}  Min: {s_min:.1f}  Max: {s_max:.1f}"
                 ann = getattr(self, '_line_annotation', None)
                 if ann is not None:
-                    ann.set_text(ann_txt)
-                    ann.xy = (plot_x, curr)
-                else:
-
-                    pin_color = tc
-                    for line in ax.get_lines():
-                        if line.get_label().split('\n')[0].strip() == _pinned:
-                            pin_color = line.get_color()
-                            break
-                    self._line_annotation = ax.annotate(
-                        ann_txt,
-                        xy=(plot_x, curr),
-                        xytext=(12, 12), textcoords='offset points',
-                        fontsize=8, color=tc,
-                        bbox=dict(boxstyle='round,pad=0.4', facecolor=fc, alpha=0.92,
-                                  edgecolor=pin_color, linewidth=1.5),
-                        zorder=20, annotation_clip=False
-                    )
+                    try: ann.remove()
+                    except Exception: pass
+                    self._line_annotation = None
+                pin_color = tc
+                for line in ax.get_lines():
+                    if line.get_label().split('\n')[0].strip() == _pinned:
+                        pin_color = line.get_color()
+                        break
+                self._show_tk_tooltip(ann_txt, event, pin_color)
             else:
 
                 if prev_hl:
@@ -9545,14 +9618,32 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     try: ann.remove()
                     except Exception: pass
                     self._line_annotation = None
+                self._hide_tk_tooltip()
 
             if getattr(self, '_tooltip_enabled', True):
-                self.cursor_text = self.fig.text(
-                    0.01, 0.99, txt, va='top', ha='left',
-                    wrap=True,
-                    bbox=dict(boxstyle='round', facecolor=fc, alpha=0.8, edgecolor='#555'),
-                    fontsize=8, color=tc)
-                self.cursor_text._get_wrap_line_width = lambda: self.fig.get_figwidth() * self.fig.dpi * 0.20
+                tip = getattr(self, '_tk_tooltip', None)
+                if tip and tip.winfo_exists():
+                    t = self._get_theme()
+                    tip.configure(
+                        text=txt,
+                        bg=t.get("bg2", "#1e1e1e"),
+                        fg=t.get("fg", "#ffffff"),
+                        highlightbackground=t.get("bg3", "#2a2a2a"),
+                        highlightthickness=1,
+                        highlightcolor=t.get("accent", "#1f6aa5"),
+                    )
+                    canvas_tk = self.canvas_widget.get_tk_widget()
+                    cx = canvas_tk.winfo_x()
+                    cy = canvas_tk.winfo_y()
+                    tip.place(x=cx + 8, y=cy + 8)
+                    tip.lift()
+                else:
+                    self.cursor_text = self.fig.text(
+                        0.01, 0.99, txt, va='top', ha='left',
+                        wrap=True,
+                        bbox=dict(boxstyle='round', facecolor=fc, alpha=0.8, edgecolor='#555'),
+                        fontsize=8, color=tc)
+                    self.cursor_text._get_wrap_line_width = lambda: self.fig.get_figwidth() * self.fig.dpi * 0.20
             self.canvas_widget.draw_idle()
         except Exception:
             pass
@@ -10136,6 +10227,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             return
         self.fig.clear()
         self._clear_cursors()
+        self._hide_tk_tooltip()
         is_dark = self.is_dark
         _t         = self._get_theme()
         bg_color   = _t["bg"]
