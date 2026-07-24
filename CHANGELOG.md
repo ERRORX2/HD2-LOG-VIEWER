@@ -1,5 +1,28 @@
 # Change Log
 
+## 📝 Changelog: v1.6.8.1 (2026-07-24)
+
+---
+
+### 💾 Presets
+
+* **Plot Modes:** Presets now save and restore plot mode (Multi-Plot, Delta, Time, Heatmap) alongside sensor selection.
+* **Button Indicators:** Preset buttons now show sensor count and mode indicator (e.g., "GPU DELTA (2) Δ").
+* **Warning Toast:** Added a warning toast when a preset's sensors aren't fully found in the current CSV.
+* **Format Extension:** Extended the `group.json` format to store modes per preset while remaining backward compatible with the old flat sensor-list format.
+
+### 💬 Tooltips
+
+* **Overlay Rendering:** Fixed the sensor hover tooltip and pinned-sensor tooltip rendering behind the legend panel - both are now Tk-based overlays instead of matplotlib canvas drawings, so they correctly render above the legend.
+* **Flicker Fix:** Fixed the mouse-following tooltip flickering/disappearing during continuous mouse movement.
+* **Delta Line Hover:** Fixed the mouse-following tooltip not appearing when hovering directly over the Δ delta line - it now shows the current/min/max delta value like it does for regular sensor lines.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json` and `theme.json` when updating to preserve your custom sensor presets, aliases, themes, and saved configurations.
+
 ## 📝 Changelog: v1.6.8 (2026-07-20)
 
 ---
