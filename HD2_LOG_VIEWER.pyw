@@ -67,6 +67,7 @@ _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 GROUPS_FILE         = "groups.json"
 SENSOR_ALIASES_FILE = "sensor_aliases.json"
 THEME_FILE          = "theme.json"
+CUSTOM_SIG_FILE     = "custom_sig.json"
 
 _DEFAULT_DARK_THEME = {
     "bg":      "#121212",
@@ -266,7 +267,27 @@ def save_theme(theme: dict):
             json.dump(theme, f, indent=4)
     except Exception:
         pass
-CURRENT_VERSION = "1.6.8.1"
+
+def load_custom_signatures() -> dict:
+    """Load custom signatures from custom_sig.json file.
+    Returns dict mapping signature names to signature definitions."""
+    try:
+        if Path(CUSTOM_SIG_FILE).exists():
+            with open(CUSTOM_SIG_FILE, 'r') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def save_custom_signatures(signatures: dict):
+    """Save custom signatures to custom_sig.json file."""
+    try:
+        with open(CUSTOM_SIG_FILE, 'w') as f:
+            json.dump(signatures, f, indent=4)
+    except Exception:
+        pass
+
+CURRENT_VERSION = "1.7"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -1054,6 +1075,791 @@ class TelemetryApp:
         self.root.destroy()
         os._exit(0)
 
+    def _open_custom_sig_editor(self):
+        """Open a guided wizard to create and manage custom signatures."""
+        is_dark = self.is_dark
+        _t = self._get_theme(); bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]; fg = _t["fg"]; accent = _t["accent"]
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Custom Signature Wizard")
+        dialog.geometry("800x700")
+        dialog.minsize(750, 650)
+        dialog.grab_set()
+        dialog.configure(bg=bg)
+        self.root.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 400
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 350
+        dialog.geometry(f"800x700+{x}+{y}")
+        
+        custom_sigs = load_custom_signatures()
+        
+        def get_available_sensors():
+            try:
+                if hasattr(self, 'vars') and self.vars:
+                    return sorted(list(self.vars.keys()))
+            except Exception as e:
+                pass
+            return []
+        
+        state = {
+            'step': 1,
+            'mode': 'create',
+            'edit_sig': None,
+            'signatures': custom_sigs.copy(),
+            'current_sig': {
+                'name': '',
+                'default_severity': 'WARNING',
+                'trigger_mode': 'always',
+                'tracked_sensors': [],
+                'excluded_sensors': [],
+                'sensor_mins': {},
+                'sensor_maxs': {},
+                'info_count': 5,
+                'warn_count': 10,
+                'crit_count': 15
+            }
+        }
+        
+        main_frame = tk.Frame(dialog, bg=bg)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        
+        def update_progress():
+            progress_text = f"Step {state['step']} of 7"
+            progress_label.config(text=progress_text)
+            
+            for i in range(1, 8):
+                step_btn = step_buttons.get(i)
+                if step_btn:
+                    if i == state['step']:
+                        step_btn.config(bg=accent, fg='white')
+                    elif i < state['step']:
+                        step_btn.config(bg='#4caf50', fg='white')
+                    else:
+                        step_btn.config(bg=bg3, fg='#888')
+        
+        header = tk.Frame(main_frame, bg=bg)
+        header.pack(fill=tk.X, pady=(0, 15))
+        
+        tk.Label(header, text="Signature Wizard", font=('Segoe UI', 14, 'bold'),
+                bg=bg, fg=accent).pack(anchor='w')
+        
+        progress_label = tk.Label(header, text="", font=('Segoe UI', 9),
+                                 bg=bg, fg='#888')
+        progress_label.pack(anchor='w', pady=(5, 0))
+        
+        step_frame = tk.Frame(header, bg=bg)
+        step_frame.pack(fill=tk.X, pady=(8, 0))
+        
+        step_buttons = {}
+        step_labels = ['Select', 'Name', 'Severity', 'Mode', 'Sensors', 'Thresholds', 'Review']
+        for i, label in enumerate(step_labels, 1):
+            btn_frame = tk.Frame(step_frame, bg=bg)
+            btn_frame.pack(side=tk.LEFT, padx=2)
+            
+            step_btn = tk.Label(btn_frame, text=str(i), font=('Segoe UI', 9, 'bold'),
+                               bg=bg3, fg='#888', width=3, height=1, relief='raised')
+            step_btn.pack()
+            step_buttons[i] = step_btn
+            
+            tk.Label(step_frame, text=label, font=('Segoe UI', 8),
+                    bg=bg, fg='#666').pack(side=tk.LEFT, padx=(2, 8))
+        
+        content_frame = tk.Frame(main_frame, bg=bg)
+        content_frame.pack(fill=tk.BOTH, expand=True)
+        
+        btn_row = tk.Frame(main_frame, bg=bg)
+        btn_row.pack(fill=tk.X, pady=(15, 0))
+        
+        def clear_content():
+            for w in content_frame.winfo_children():
+                w.destroy()
+        
+        def show_edit_menu(sig_name):
+            """Show menu to choose what to edit"""
+            clear_content()
+            
+            tk.Label(content_frame, text=f"Edit: {sig_name}",
+                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 15))
+            
+            tk.Label(content_frame, text="What would you like to change?",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 10))
+            
+            button_data = [
+                ("📛 Name", 2),
+                ("⭐ Severity", 3),
+                ("⚙️  Trigger Mode", 4),
+                ("📊 Sensors", 5),
+                ("📈 Thresholds", 6),
+                ("✓ Review & Save", 7)
+            ]
+            
+            for btn_text, step in button_data:
+                def make_callback(s):
+                    def callback():
+                        state['step'] = s
+                        if s == 2:
+                            show_step_2()
+                        elif s == 3:
+                            show_step_3()
+                        elif s == 4:
+                            show_step_4()
+                        elif s == 5:
+                            show_step_5()
+                        elif s == 6:
+                            show_step_6()
+                        elif s == 7:
+                            show_step_7()
+                        update_progress()
+                    return callback
+                
+                tk.Button(content_frame, text=btn_text, font=('Segoe UI', 10),
+                         bg=bg3, fg=fg, relief='flat', padx=10, pady=8,
+                         command=make_callback(step)).pack(fill=tk.X, pady=3)
+            
+            tk.Button(content_frame, text="← Back", font=('Segoe UI', 9),
+                     bg=bg3, fg=fg, relief='flat', pady=5,
+                     command=lambda: (state.update({'mode': 'create', 'edit_sig': None}), show_step_1(), update_progress())).pack(anchor='w', pady=(15, 0))
+        
+        def show_step_1():
+            """Step 1: Select action (New/Edit)"""
+            clear_content()
+            
+            tk.Label(content_frame, text="What would you like to do?",
+                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 15))
+            
+            if state['signatures']:
+                tk.Label(content_frame, text="Edit Existing Signature:",
+                        font=('Segoe UI', 10, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 8))
+                
+                sig_list_frame = tk.Frame(content_frame, bg=bg2, relief='flat')
+                sig_list_frame.pack(fill=tk.X, pady=(0, 15))
+                
+                sig_canvas = tk.Canvas(sig_list_frame, bg=bg2, highlightthickness=1, 
+                                      highlightbackground=bg3, height=120)
+                scrollbar = tk.Scrollbar(sig_list_frame, orient="vertical", command=sig_canvas.yview)
+                sig_body = tk.Frame(sig_canvas, bg=bg2)
+                sig_wid = sig_canvas.create_window((0, 0), window=sig_body, anchor="nw")
+                sig_body.bind("<Configure>", lambda e: sig_canvas.configure(scrollregion=sig_canvas.bbox("all")))
+                sig_canvas.bind("<Configure>", lambda e: sig_canvas.itemconfig(sig_wid, width=e.width))
+                sig_canvas.configure(yscrollcommand=scrollbar.set)
+                sig_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+                scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+                
+                for sig_name in sorted(state['signatures'].keys()):
+                    sig_data = state['signatures'][sig_name]
+                    is_disabled = sig_data.get('disabled', False)
+                    
+                    btn_frame = tk.Frame(sig_body, bg=bg3, relief='flat')
+                    btn_frame.pack(fill=tk.X, padx=4, pady=2)
+                    
+                    status = "● " if not is_disabled else "⊘ "
+                    tk.Label(btn_frame, text=f"{status}{sig_name}", font=('Segoe UI', 9),
+                            bg=bg3, fg=fg if not is_disabled else '#666', 
+                            width=30, anchor='w', padx=8, pady=6).pack(side=tk.LEFT, fill=tk.X, expand=True)
+                    
+                    def make_edit(name):
+                        def edit_sig():
+                            state['mode'] = 'edit'
+                            state['edit_sig'] = name
+                            state['current_sig'] = state['signatures'][name].copy()
+                            show_edit_menu(name)
+                        return edit_sig
+                    
+                    def make_test(name):
+                        def test_sig():
+                            if not hasattr(self, 'df') or self.df.empty:
+                                messagebox.showerror("Error", "Load a CSV file first to test signature")
+                                return
+                            
+                            sig_data_test = state['signatures'][name]
+                            if sig_data_test.get('disabled', False):
+                                messagebox.showwarning("Warning", "This signature is disabled")
+                                return
+                            
+                            try:
+                                df = self.df
+                                tracked = sig_data_test.get('tracked_sensors', [])
+                                excluded = sig_data_test.get('excluded_sensors', [])
+                                mins_dict = sig_data_test.get('sensor_mins', {})
+                                maxs_dict = sig_data_test.get('sensor_maxs', {})
+                                trigger_mode = sig_data_test.get('trigger', {}).get('mode', 'always')
+                                default_sev = sig_data_test.get('default_severity', 'WARNING')
+                                
+                                sensor_to_col = {}
+                                for sensor_name in tracked:
+                                    sensor_upper = sensor_name.upper()
+                                    if sensor_name in df.columns:
+                                        sensor_to_col[sensor_name] = sensor_name
+                                    else:
+                                        for col in df.columns:
+                                            if sensor_upper in col.upper():
+                                                sensor_to_col[sensor_name] = col
+                                                break
+                                
+                                excluded_upper_set = set(e.upper() for e in excluded)
+                                filtered_mapping = {}
+                                for sensor_name, col in sensor_to_col.items():
+                                    if not any(exc_upper in col.upper() for exc_upper in excluded_upper_set):
+                                        filtered_mapping[sensor_name] = col
+                                
+                                if not filtered_mapping:
+                                    messagebox.showinfo("Test Result", f"❌ No sensors matched!\n\nTracked: {tracked}\nExcluded: {excluded}")
+                                    return
+                                
+                                violation_count = 0
+                                evidence = []
+                                for sensor_name, col in filtered_mapping.items():
+                                    if col not in df.columns:
+                                        continue
+                                    col_data = pd.to_numeric(df[col], errors='coerce')
+                                    
+                                    if sensor_name in mins_dict:
+                                        min_val = float(mins_dict[sensor_name])
+                                        min_viols = (col_data < min_val).sum()
+                                        if min_viols > 0:
+                                            violation_count += min_viols
+                                            evidence.append(f"{col}: {min_viols} below {min_val}")
+                                    
+                                    if sensor_name in maxs_dict:
+                                        max_val = float(maxs_dict[sensor_name])
+                                        max_viols = (col_data > max_val).sum()
+                                        if max_viols > 0:
+                                            violation_count += max_viols
+                                            evidence.append(f"{col}: {max_viols} above {max_val}")
+                                
+                                if violation_count == 0:
+                                    messagebox.showinfo("Test Result", f"✓ No violations detected\n\nSensors checked: {len(filtered_mapping)}")
+                                    return
+                                
+                                if trigger_mode == 'always':
+                                    severity = default_sev
+                                else:
+                                    trigger_conf = sig_data_test.get('trigger', {})
+                                    info_threshold = trigger_conf.get('info_count', 5)
+                                    warn_threshold = trigger_conf.get('warn_count', 10)
+                                    crit_threshold = trigger_conf.get('crit_count', 15)
+                                    
+                                    if violation_count >= crit_threshold:
+                                        severity = 'CRITICAL'
+                                    elif violation_count >= warn_threshold:
+                                        severity = 'WARNING'
+                                    elif violation_count >= info_threshold:
+                                        severity = 'INFO'
+                                    else:
+                                        messagebox.showinfo("Test Result", f"✓ Below trigger threshold\n\nViolations: {violation_count}\nThresholds: INFO={info_threshold}, WARNING={warn_threshold}, CRITICAL={crit_threshold}")
+                                        return
+                                
+                                result_text = f"⚠️  SIGNATURE TRIGGERED\n\n"
+                                result_text += f"Severity: {severity}\n"
+                                result_text += f"Violations: {violation_count}\n\n"
+                                result_text += "Evidence:\n"
+                                for ev in evidence[:5]:
+                                    result_text += f"  • {ev}\n"
+                                
+                                messagebox.showinfo("Test Result", result_text)
+                                
+                            except Exception as e:
+                                messagebox.showerror("Error", f"Test failed: {str(e)}")
+                        return test_sig
+                    
+                    def make_delete(name):
+                        def delete_sig():
+                            if messagebox.askyesno("Confirm Delete", f"Delete signature '{name}'?\n\nThis cannot be undone."):
+                                del state['signatures'][name]
+                                save_custom_signatures(state['signatures'])
+                                show_step_1()
+                                update_progress()
+                        return delete_sig
+                    
+                    tk.Button(btn_frame, text="🧪 Test", font=('Segoe UI', 8), relief='flat',
+                             bg='#9c27b0', fg="white", width=8, command=make_test(sig_name)).pack(side=tk.LEFT, padx=1)
+                    tk.Button(btn_frame, text="Edit", font=('Segoe UI', 8), relief='flat',
+                             bg=accent, fg='white', width=6, command=make_edit(sig_name)).pack(side=tk.LEFT, padx=1)
+                    tk.Button(btn_frame, text="🗑️ Delete", font=('Segoe UI', 8), relief='flat',
+                             bg='#ff4d4d', fg="white", width=10, command=make_delete(sig_name)).pack(side=tk.LEFT, padx=1)
+            
+            tk.Label(content_frame, text="Create New Signature:",
+                    font=('Segoe UI', 10, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(15, 8))
+            
+            tk.Button(content_frame, text="✨ Create New Signature",
+                     font=('Segoe UI', 10, 'bold'), bg=accent, fg='white',
+                     relief='flat', padx=15, pady=10,
+                     command=lambda: (
+                         state.update({'mode': 'create', 'step': 2, 'edit_sig': None}),
+                         state['current_sig'].update({
+                             'name': '', 'tracked_sensors': [], 'excluded_sensors': [],
+                             'sensor_mins': {}, 'sensor_maxs': {}
+                         }),
+                         show_step_2(),
+                         update_progress()
+                     )).pack(anchor='w')
+        
+        def show_step_2():
+            """Step 2: Name"""
+            clear_content()
+            
+            tk.Label(content_frame, text="Signature Name",
+                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            tk.Label(content_frame, text="Give your signature a descriptive name (e.g., 'GPU Overtemp Warning')",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 12))
+            
+            name_var = tk.StringVar(value=state['current_sig'].get('name', ''))
+            name_entry = tk.Entry(content_frame, textvariable=name_var, font=('Segoe UI', 10),
+                                 bg=bg2, fg=fg, insertbackground=fg, relief='flat', width=40)
+            name_entry.pack(anchor='w', fill=tk.X, pady=(0, 15))
+            name_entry.focus()
+            
+            feedback_label = tk.Label(content_frame, text="", font=('Segoe UI', 9),
+                                     bg=bg, fg='#888')
+            feedback_label.pack(anchor='w')
+            
+            def check_name(*args):
+                name = name_var.get().strip()
+                if not name:
+                    feedback_label.config(text="⚠️  Name is required", fg='#f39c12')
+                elif name in state['signatures'] and state['mode'] == 'create':
+                    feedback_label.config(text="⚠️  Name already exists", fg='#ff4444')
+                else:
+                    feedback_label.config(text="✓ Name is valid", fg='#4caf50')
+            
+            name_var.trace('w', check_name)
+            check_name()
+            
+            def next_step():
+                name = name_var.get().strip()
+                if not name:
+                    messagebox.showerror("Error", "Please enter a name")
+                    return
+                if name in state['signatures'] and state['mode'] == 'create':
+                    messagebox.showerror("Error", "This name already exists")
+                    return
+                state['current_sig']['name'] = name
+                state['step'] = 3
+                show_step_3()
+                update_progress()
+            
+            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
+                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(20, 0))
+        
+        def show_step_3():
+            """Step 3: Severity"""
+            clear_content()
+            
+            tk.Label(content_frame, text="Default Severity Level",
+                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            tk.Label(content_frame, text="Choose the severity for 'Always' mode or as base level for 'Consecutive' mode",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 15))
+            
+            sev_var = tk.StringVar(value=state['current_sig'].get('default_severity', 'WARNING'))
+            
+            for sev, color, desc in [
+                ('CRITICAL', '#ff4d4d', 'Serious issue - immediate attention required'),
+                ('WARNING', '#f59e0b', 'Problem detected - needs investigation'),
+                ('INFO', '#38bdf8', 'Informational - minor issues or trends')
+            ]:
+                frame = tk.Frame(content_frame, bg=bg3, relief='flat')
+                frame.pack(fill=tk.X, pady=4)
+                
+                rb = tk.Radiobutton(frame, text='', variable=sev_var, value=sev,
+                                   bg=bg3, fg=fg, selectcolor=accent, relief='flat')
+                rb.pack(side=tk.LEFT, padx=8, pady=8)
+                
+                tk.Label(frame, text=sev, font=('Segoe UI', 10, 'bold'),
+                        bg=color, fg='white', width=10, padx=8).pack(side=tk.LEFT)
+                
+                tk.Label(frame, text=desc, font=('Segoe UI', 9),
+                        bg=bg3, fg=fg, padx=8).pack(side=tk.LEFT, fill=tk.X, expand=True)
+            
+            def next_step():
+                state['current_sig']['default_severity'] = sev_var.get()
+                state['step'] = 4
+                show_step_4()
+                update_progress()
+            
+            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
+                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(20, 0))
+        
+        def show_step_4():
+            """Step 4: Trigger Mode"""
+            clear_content()
+            
+            tk.Label(content_frame, text="Trigger Mode",
+                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            tk.Label(content_frame, text="How should this signature trigger?",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 15))
+            
+            mode_var = tk.StringVar(value=state['current_sig'].get('trigger_mode', 'always'))
+            
+            frame1 = tk.Frame(content_frame, bg=bg3, relief='flat')
+            frame1.pack(fill=tk.X, pady=4)
+            rb1 = tk.Radiobutton(frame1, text='', variable=mode_var, value='always',
+                                bg=bg3, selectcolor=accent)
+            rb1.pack(side=tk.LEFT, padx=8, pady=8)
+            tk.Label(frame1, text="Always Trigger", font=('Segoe UI', 10, 'bold'),
+                    bg=bg3, fg=fg).pack(side=tk.LEFT, padx=8)
+            
+            always_desc = tk.Frame(content_frame, bg=bg)
+            always_desc.pack(fill=tk.X, padx=30, pady=(0, 15))
+            tk.Label(always_desc, text="Triggers immediately when any violation is detected\nUse for: Absolute limits that should never be exceeded",
+                    font=('Segoe UI', 9), bg=bg, fg='#888', justify='left').pack(anchor='w')
+            
+            frame2 = tk.Frame(content_frame, bg=bg3, relief='flat')
+            frame2.pack(fill=tk.X, pady=4)
+            rb2 = tk.Radiobutton(frame2, text='', variable=mode_var, value='consecutive',
+                                bg=bg3, selectcolor=accent)
+            rb2.pack(side=tk.LEFT, padx=8, pady=8)
+            tk.Label(frame2, text="Consecutive Violations", font=('Segoe UI', 10, 'bold'),
+                    bg=bg3, fg=fg).pack(side=tk.LEFT, padx=8)
+            
+            cons_desc = tk.Frame(content_frame, bg=bg)
+            cons_desc.pack(fill=tk.X, padx=30, pady=(0, 15))
+            tk.Label(cons_desc, text="Escalates severity based on violation count\nUse for: Detecting trends, reducing false positives",
+                    font=('Segoe UI', 9), bg=bg, fg='#888', justify='left').pack(anchor='w')
+            
+            def next_step():
+                state['current_sig']['trigger_mode'] = mode_var.get()
+                state['step'] = 5
+                show_step_5()
+                update_progress()
+            
+            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
+                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(20, 0))
+        
+        def show_step_5():
+            """Step 5: Select Sensors"""
+            clear_content()
+            
+            tk.Label(content_frame, text="Select Sensors to Monitor",
+                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            available_sensors = get_available_sensors()
+            
+            if not available_sensors:
+                tk.Label(content_frame, text="⚠️  No sensors available. Load a CSV file first.",
+                        font=('Segoe UI', 10), bg=bg, fg='#ff4444').pack(anchor='w', pady=20)
+                
+                def next_step():
+                    state['step'] = 6
+                    show_step_6()
+                    update_progress()
+                
+                tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
+                         bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(20, 0))
+                return
+            
+            tk.Label(content_frame, text="Select sensors to track for violations:",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 10))
+            
+            search_frame = tk.Frame(content_frame, bg=bg)
+            search_frame.pack(fill=tk.X, pady=(0, 10))
+            
+            tk.Label(search_frame, text="Search:", font=('Segoe UI', 9),
+                    bg=bg, fg=fg).pack(side=tk.LEFT, padx=(0, 5))
+            
+            search_var = tk.StringVar()
+            search_entry = tk.Entry(search_frame, textvariable=search_var, font=('Segoe UI', 9),
+                                   bg=bg2, fg=fg, insertbackground=fg, relief='flat', width=30)
+            search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+            search_entry.focus()
+            
+            sensor_frame = tk.Frame(content_frame, bg=bg)
+            sensor_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+            
+            sensor_canvas = tk.Canvas(sensor_frame, bg=bg2, highlightthickness=1,
+                                     highlightbackground=bg3)
+            scrollbar = tk.Scrollbar(sensor_frame, orient="vertical", command=sensor_canvas.yview)
+            sensor_body = tk.Frame(sensor_canvas, bg=bg2)
+            sensor_wid = sensor_canvas.create_window((0, 0), window=sensor_body, anchor="nw")
+            sensor_body.bind("<Configure>", lambda e: sensor_canvas.configure(scrollregion=sensor_canvas.bbox("all")))
+            sensor_canvas.bind("<Configure>", lambda e: sensor_canvas.itemconfig(sensor_wid, width=e.width))
+            sensor_canvas.configure(yscrollcommand=scrollbar.set)
+            sensor_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            sensor_vars = {}
+            
+            def render_sensors(filter_text=''):
+                """Render sensors, filtering by search text"""
+                for w in sensor_body.winfo_children():
+                    w.destroy()
+                
+                filtered = [s for s in available_sensors if filter_text.lower() in s.lower()]
+                
+                if not filtered:
+                    tk.Label(sensor_body, text="No sensors match search", font=('Segoe UI', 9),
+                            bg=bg2, fg='#888').pack(fill=tk.X, padx=8, pady=10)
+                    return
+                
+                for sensor in filtered:
+                    is_tracked = sensor in state['current_sig'].get('tracked_sensors', [])
+                    var = tk.BooleanVar(value=is_tracked)
+                    sensor_vars[sensor] = var
+                    
+                    frame = tk.Frame(sensor_body, bg=bg3)
+                    frame.pack(fill=tk.X, padx=4, pady=2)
+                    
+                    cb = tk.Checkbutton(frame, text=sensor, variable=var,
+                                       font=('Segoe UI', 9), bg=bg3, fg=fg,
+                                       selectcolor=accent, activebackground=bg3)
+                    cb.pack(fill=tk.X, padx=8, pady=6)
+            
+            def on_search(*args):
+                """Handle search input"""
+                render_sensors(search_var.get())
+            
+            search_var.trace('w', on_search)
+            render_sensors()
+            
+            def next_step():
+                tracked = [s for s, v in sensor_vars.items() if v.get()]
+                if not tracked:
+                    messagebox.showerror("Error", "Please select at least one sensor")
+                    return
+                state['current_sig']['tracked_sensors'] = tracked
+                state['step'] = 6
+                show_step_6()
+                update_progress()
+            
+            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
+                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(10, 0))
+        
+        def show_step_6():
+            """Step 6: Set Thresholds"""
+            clear_content()
+            
+            tk.Label(content_frame, text="Set Min/Max Thresholds",
+                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            tk.Label(content_frame, text="Define acceptable value ranges for selected sensors:",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 15))
+            
+            threshold_frame = tk.Frame(content_frame, bg=bg)
+            threshold_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+            
+            threshold_canvas = tk.Canvas(threshold_frame, bg=bg2, highlightthickness=1,
+                                        highlightbackground=bg3)
+            scrollbar = tk.Scrollbar(threshold_frame, orient="vertical", command=threshold_canvas.yview)
+            threshold_body = tk.Frame(threshold_canvas, bg=bg2)
+            threshold_wid = threshold_canvas.create_window((0, 0), window=threshold_body, anchor="nw")
+            threshold_body.bind("<Configure>", lambda e: threshold_canvas.configure(scrollregion=threshold_canvas.bbox("all")))
+            threshold_canvas.bind("<Configure>", lambda e: threshold_canvas.itemconfig(threshold_wid, width=e.width))
+            threshold_canvas.configure(yscrollcommand=scrollbar.set)
+            threshold_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            threshold_vars = {}
+            mins_dict = state['current_sig'].get('sensor_mins', {})
+            maxs_dict = state['current_sig'].get('sensor_maxs', {})
+            
+            for sensor in state['current_sig'].get('tracked_sensors', []):
+                frame = tk.Frame(threshold_body, bg=bg3, relief='flat')
+                frame.pack(fill=tk.X, padx=4, pady=4)
+                
+                tk.Label(frame, text=sensor, font=('Segoe UI', 9, 'bold'),
+                        bg=bg3, fg=fg, width=25, anchor='w').pack(side=tk.LEFT, padx=8, pady=6)
+                
+                min_var = tk.StringVar(value=str(mins_dict.get(sensor, '')))
+                min_entry = tk.Entry(frame, textvariable=min_var, font=('Segoe UI', 9),
+                                    bg=bg, fg=fg, insertbackground=fg, relief='flat', width=8)
+                min_entry.pack(side=tk.LEFT, padx=4)
+                tk.Label(frame, text="min", font=('Segoe UI', 8),
+                        bg=bg3, fg='#888').pack(side=tk.LEFT)
+                
+                max_var = tk.StringVar(value=str(maxs_dict.get(sensor, '')))
+                max_entry = tk.Entry(frame, textvariable=max_var, font=('Segoe UI', 9),
+                                    bg=bg, fg=fg, insertbackground=fg, relief='flat', width=8)
+                max_entry.pack(side=tk.LEFT, padx=4)
+                tk.Label(frame, text="max", font=('Segoe UI', 8),
+                        bg=bg3, fg='#888').pack(side=tk.LEFT)
+                
+                threshold_vars[sensor] = (min_var, max_var)
+            
+            if state['current_sig'].get('trigger_mode') == 'consecutive':
+                tk.Label(content_frame, text="Violation Thresholds (for Consecutive mode):",
+                        font=('Segoe UI', 10, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(15, 8))
+                
+                thres_frame = tk.Frame(content_frame, bg=bg)
+                thres_frame.pack(fill=tk.X, pady=(0, 10))
+                
+                info_var = tk.StringVar(value=str(state['current_sig'].get('info_count', 5)))
+                warn_var = tk.StringVar(value=str(state['current_sig'].get('warn_count', 10)))
+                crit_var = tk.StringVar(value=str(state['current_sig'].get('crit_count', 15)))
+                
+                row1 = tk.Frame(thres_frame, bg=bg)
+                row1.pack(fill=tk.X, pady=2)
+                tk.Label(row1, text="INFO after", font=('Segoe UI', 9),
+                        bg=bg, fg=fg).pack(side=tk.LEFT)
+                tk.Entry(row1, textvariable=info_var, font=('Segoe UI', 9),
+                        bg=bg2, fg=fg, relief='flat', width=6).pack(side=tk.LEFT, padx=4)
+                tk.Label(row1, text="violations", font=('Segoe UI', 9),
+                        bg=bg, fg=fg).pack(side=tk.LEFT)
+                
+                row2 = tk.Frame(thres_frame, bg=bg)
+                row2.pack(fill=tk.X, pady=2)
+                tk.Label(row2, text="WARNING after", font=('Segoe UI', 9),
+                        bg=bg, fg=fg).pack(side=tk.LEFT)
+                tk.Entry(row2, textvariable=warn_var, font=('Segoe UI', 9),
+                        bg=bg2, fg=fg, relief='flat', width=6).pack(side=tk.LEFT, padx=4)
+                tk.Label(row2, text="violations", font=('Segoe UI', 9),
+                        bg=bg, fg=fg).pack(side=tk.LEFT)
+                
+                row3 = tk.Frame(thres_frame, bg=bg)
+                row3.pack(fill=tk.X, pady=2)
+                tk.Label(row3, text="CRITICAL after", font=('Segoe UI', 9),
+                        bg=bg, fg=fg).pack(side=tk.LEFT)
+                tk.Entry(row3, textvariable=crit_var, font=('Segoe UI', 9),
+                        bg=bg2, fg=fg, relief='flat', width=6).pack(side=tk.LEFT, padx=4)
+                tk.Label(row3, text="violations", font=('Segoe UI', 9),
+                        bg=bg, fg=fg).pack(side=tk.LEFT)
+            else:
+                info_var = warn_var = crit_var = None
+            
+            def next_step():
+                mins = {}
+                maxs = {}
+                for sensor, (min_v, max_v) in threshold_vars.items():
+                    min_str = min_v.get().strip()
+                    max_str = max_v.get().strip()
+                    if min_str:
+                        try:
+                            mins[sensor] = float(min_str)
+                        except:
+                            pass
+                    if max_str:
+                        try:
+                            maxs[sensor] = float(max_str)
+                        except:
+                            pass
+                
+                if not mins and not maxs:
+                    messagebox.showerror("Error", "Set at least one min or max threshold")
+                    return
+                
+                state['current_sig']['sensor_mins'] = mins
+                state['current_sig']['sensor_maxs'] = maxs
+                
+                if state['current_sig'].get('trigger_mode') == 'consecutive':
+                    try:
+                        state['current_sig']['info_count'] = int(info_var.get() or 5)
+                        state['current_sig']['warn_count'] = int(warn_var.get() or 10)
+                        state['current_sig']['crit_count'] = int(crit_var.get() or 15)
+                    except:
+                        pass
+                
+                state['step'] = 7
+                show_step_7()
+                update_progress()
+            
+            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
+                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(10, 0))
+        
+        def show_step_7():
+            """Step 7: Review and Save"""
+            clear_content()
+            
+            tk.Label(content_frame, text="Review & Save",
+                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 15))
+            
+            sig = state['current_sig']
+            
+            summary_frame = tk.Frame(content_frame, bg=bg3, relief='flat')
+            summary_frame.pack(fill=tk.X, pady=(0, 15))
+            
+            summary_text = f"""
+Name: {sig.get('name', 'N/A')}
+Severity: {sig.get('default_severity', 'WARNING')}
+Mode: {sig.get('trigger_mode', 'always').title()}
+Sensors: {len(sig.get('tracked_sensors', []))} selected
+
+Min/Max Thresholds:
+"""
+            for sensor in sig.get('tracked_sensors', []):
+                min_v = sig.get('sensor_mins', {}).get(sensor)
+                max_v = sig.get('sensor_maxs', {}).get(sensor)
+                if min_v is not None:
+                    summary_text += f"  • {sensor}: min={min_v}"
+                if max_v is not None:
+                    summary_text += f" max={max_v}" if min_v else f"  • {sensor}: max={max_v}"
+                summary_text += "\n"
+            
+            if sig.get('trigger_mode') == 'consecutive':
+                summary_text += f"\nViolation Thresholds:\n"
+                summary_text += f"  • INFO: {sig.get('info_count', 5)}\n"
+                summary_text += f"  • WARNING: {sig.get('warn_count', 10)}\n"
+                summary_text += f"  • CRITICAL: {sig.get('crit_count', 15)}"
+            
+            tk.Label(content_frame, text=summary_text, font=('Segoe UI', 9),
+                    bg=bg3, fg=fg, justify='left', padx=12, pady=10).pack(fill=tk.X)
+            
+            tk.Label(content_frame, text="✓ Ready to save! Click 'Save Signature' to continue.",
+                    font=('Segoe UI', 9), bg=bg, fg='#4caf50').pack(anchor='w', pady=(15, 0))
+            
+            def save():
+                name = sig.get('name', '')
+                if state['mode'] == 'edit' and state['edit_sig']:
+                    if name != state['edit_sig'] and state['edit_sig'] in state['signatures']:
+                        del state['signatures'][state['edit_sig']]
+                
+                disabled = state['signatures'].get(state['edit_sig'], {}).get('disabled', False) if state['mode'] == 'edit' else False
+                
+                state['signatures'][name] = {
+                    'default_severity': sig['default_severity'],
+                    'tracked_sensors': sig['tracked_sensors'],
+                    'excluded_sensors': sig.get('excluded_sensors', []),
+                    'sensor_mins': sig['sensor_mins'],
+                    'sensor_maxs': sig['sensor_maxs'],
+                    'trigger': {
+                        'mode': sig['trigger_mode'],
+                        'info_count': sig.get('info_count', 5),
+                        'warn_count': sig.get('warn_count', 10),
+                        'crit_count': sig.get('crit_count', 15)
+                    },
+                    'disabled': disabled
+                }
+                
+                save_custom_signatures(state['signatures'])
+                
+                state['current_sig'] = {
+                    'name': '', 'default_severity': 'WARNING', 'trigger_mode': 'always',
+                    'tracked_sensors': [], 'excluded_sensors': [],
+                    'sensor_mins': {}, 'sensor_maxs': {}
+                }
+                state['mode'] = 'create'
+                state['edit_sig'] = None
+                state['step'] = 1
+                show_step_1()
+                update_progress()
+                messagebox.showinfo("Success", f"Signature '{name}' saved!")
+            
+            tk.Button(content_frame, text="✓ Save Signature", font=('Segoe UI', 10, 'bold'),
+                     bg='#4caf50', fg='white', relief='flat', command=save).pack(anchor='w', pady=(0, 10))
+        
+        show_step_1()
+        update_progress()
+        
+        for btn in btn_row.winfo_children():
+            btn.destroy()
+        
+        def save_all():
+            save_custom_signatures(state['signatures'])
+            messagebox.showinfo("Success", f"Saved {len(state['signatures'])} signature(s).")
+            dialog.destroy()
+        
+        def cancel():
+            if state['signatures'] != custom_sigs:
+                if messagebox.askyesno("Confirm", "Close without saving changes?"):
+                    dialog.destroy()
+            else:
+                dialog.destroy()
+        
+        tk.Button(btn_row, text="Save & Close", font=('Segoe UI', 9, 'bold'),
+                 bg=accent, fg='white', relief='flat', command=save_all).pack(side=tk.LEFT, padx=2)
+        tk.Button(btn_row, text="Cancel", font=('Segoe UI', 9),
+                 relief='flat', bg=bg3, fg=fg, command=cancel).pack(side=tk.LEFT, padx=2)
+
     def _open_limits_editor(self):
         """Open a scrollable dialog to view and edit all detection thresholds."""
         is_dark = self.is_dark
@@ -1126,6 +1932,12 @@ class TelemetryApp:
             if unit:
                 tk.Label(f, text=unit, bg=bg, fg="#888",
                          font=('Segoe UI', 8)).pack(side=tk.LEFT)
+
+        sig_btn_frame = tk.Frame(body, bg=bg)
+        sig_btn_frame.pack(fill=tk.X, pady=(0, 15), padx=8)
+        tk.Button(sig_btn_frame, text="🏷️  Create Custom Signature", font=('Segoe UI', 10, 'bold'),
+                 bg=accent, fg='white', relief='flat', padx=15, pady=8,
+                 command=lambda: (dialog.destroy(), self._open_custom_sig_editor())).pack(fill=tk.X)
 
         section("Temperature Limits (°C)")
         temp_display = [
@@ -5824,7 +6636,130 @@ figure img{{border-radius:8px;}}
                         advice="Unplug non-essential USB devices or use a powered USB hub."
                     )
 
+        self._evaluate_custom_signatures(df, add)
+
         return hits
+
+    def _evaluate_custom_signatures(self, df, add_func):
+        """Evaluate custom signatures and add results to the signature list."""
+        custom_sigs = load_custom_signatures()
+        if not custom_sigs:
+            return
+        
+        for sig_name, sig_data in custom_sigs.items():
+            if sig_data.get('disabled', False):
+                continue
+            
+            try:
+                tracked = sig_data.get('tracked_sensors', [])
+                excluded = sig_data.get('excluded_sensors', [])
+                mins_dict = sig_data.get('sensor_mins', {})
+                maxs_dict = sig_data.get('sensor_maxs', {})
+                trigger_mode = sig_data.get('trigger', {}).get('mode', 'always')
+                default_sev = sig_data.get('default_severity', 'WARNING')
+                
+                if not tracked:
+                    continue
+                
+                sensor_to_col = {}
+                for sensor_name in tracked:
+                    sensor_upper = sensor_name.upper()
+                    
+                    if sensor_name in df.columns:
+                        sensor_to_col[sensor_name] = sensor_name
+                    else:
+                        for col in df.columns:
+                            if sensor_upper in col.upper():
+                                sensor_to_col[sensor_name] = col
+                                break
+                
+                excluded_upper_set = set(e.upper() for e in excluded)
+                filtered_mapping = {}
+                for sensor_name, col in sensor_to_col.items():
+                    if not any(exc_upper in col.upper() for exc_upper in excluded_upper_set):
+                        filtered_mapping[sensor_name] = col
+                
+                if not filtered_mapping:
+                    continue
+                
+                violation_count = 0
+                evidence = []
+                violated_cols = set()
+                
+                for sensor_name, col in filtered_mapping.items():
+                    if col not in df.columns:
+                        continue
+                    
+                    try:
+                        col_data = pd.to_numeric(df[col], errors='coerce')
+                        col_violations = 0
+                        
+                        if sensor_name in mins_dict:
+                            min_val = float(mins_dict[sensor_name])
+                            min_viols = (col_data < min_val).sum()
+                            if min_viols > 0:
+                                col_violations += min_viols
+                                violation_count += min_viols
+                                violated_cols.add(col)
+                                evidence.append(f"{col}: {min_viols} below {min_val}")
+                        
+                        if sensor_name in maxs_dict:
+                            max_val = float(maxs_dict[sensor_name])
+                            max_viols = (col_data > max_val).sum()
+                            if max_viols > 0:
+                                col_violations += max_viols
+                                violation_count += max_viols
+                                violated_cols.add(col)
+                                evidence.append(f"{col}: {max_viols} above {max_val}")
+                    except Exception:
+                        pass
+                
+                if violation_count == 0:
+                    continue
+                
+                if trigger_mode == 'always':
+                    severity = default_sev
+                else:
+                    trigger_conf = sig_data.get('trigger', {})
+                    info_threshold = trigger_conf.get('info_count', 5)
+                    warn_threshold = trigger_conf.get('warn_count', 10)
+                    crit_threshold = trigger_conf.get('crit_count', 15)
+                    
+                    if violation_count >= crit_threshold:
+                        severity = 'CRITICAL'
+                    elif violation_count >= warn_threshold:
+                        severity = 'WARNING'
+                    elif violation_count >= info_threshold:
+                        severity = 'INFO'
+                    else:
+                        continue
+                
+                violation_mask = None
+                try:
+                    mask = pd.Series([False] * len(df))
+                    for sensor_name, col in filtered_mapping.items():
+                        if col in df.columns:
+                            col_data = pd.to_numeric(df[col], errors='coerce')
+                            col_violated = pd.Series([False] * len(df))
+                            if sensor_name in mins_dict:
+                                col_violated |= col_data < float(mins_dict[sensor_name])
+                            if sensor_name in maxs_dict:
+                                col_violated |= col_data > float(maxs_dict[sensor_name])
+                            mask |= col_violated
+                    violation_mask = mask
+                except Exception:
+                    pass
+                
+                add_func(
+                    name=sig_name,
+                    severity=severity,
+                    description=f"Custom signature detected violations in tracked sensors ({violation_count} total).",
+                    evidence=evidence[:5] if evidence else ["Sensor violations detected"],
+                    mask=violation_mask,
+                    cols=list(violated_cols)
+                )
+            except Exception as e:
+                pass
 
     def _build_narrative(self, results: list) -> str:
         """Build a hedged plain-English summary paragraph from signature results."""
@@ -7883,7 +8818,14 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                          wraplength=620,
                          justify='left').pack(anchor='w', pady=(4, 0))
 
-                for r in results:
+                # Separate built-in and custom signatures
+                custom_sigs = load_custom_signatures()
+                custom_sig_names = set(custom_sigs.keys())
+                builtin_results = [r for r in results if r['name'] not in custom_sig_names]
+                custom_results = [r for r in results if r['name'] in custom_sig_names]
+
+                # Display built-in signatures
+                for r in builtin_results:
 
                     is_crit = r['severity'] == 'CRITICAL'
                     is_info = r.get('severity') == 'INFO'
@@ -7949,6 +8891,97 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
                     ttk.Button(card, text="📌 Select Relevant Sensors",
                                command=_make_select(r['name'])).pack(anchor='w', pady=(6, 0))
+
+                if custom_results:
+                    sep_frame = tk.Frame(body, bg=bg)
+                    sep_frame.pack(fill=tk.X, pady=(15, 5), padx=2)
+                    tk.Frame(sep_frame, bg=accent, height=2).pack(fill=tk.X)
+                    tk.Label(sep_frame, text="🏷️  Custom Signatures",
+                            font=('Segoe UI', 10, 'bold'),
+                            bg=bg, fg=accent).pack(anchor='w', pady=(4, 0))
+                    
+                    for r in custom_results:
+                        is_crit = r['severity'] == 'CRITICAL'
+                        is_info = r.get('severity') == 'INFO'
+
+                        card_bg   = "#2a0a0a" if (is_dark and is_crit) else\
+                                    "#1a2a1a" if (is_dark and not is_crit) else\
+                                    "#fdecea" if is_crit else "#eafaf1"
+
+                        sev_color = "#e74c3c" if is_crit else "#f39c12"
+
+                        if is_info:
+                            sev_color = "#3498db"
+
+                        card = tk.Frame(body, bg=card_bg, padx=12, pady=10)
+                        card.pack(fill=tk.X, pady=5, padx=2)
+
+                        hdr = tk.Frame(card, bg=card_bg)
+                        hdr.pack(fill=tk.X)
+
+                        tk.Label(hdr,
+                                text="CRITICAL" if is_crit else "INFO" if is_info else "WARNING",
+                                font=('Segoe UI', 8, 'bold'),
+                                bg=sev_color,
+                                fg="white",
+                                padx=6,
+                                pady=2).pack(side=tk.LEFT)
+
+                        tk.Label(hdr,
+                                text=f"  {r['name']}",
+                                font=('Segoe UI', 10, 'bold'),
+                                bg=card_bg,
+                                fg=fg).pack(side=tk.LEFT)
+
+                        tk.Label(card,
+                                text=r['description'],
+                                bg=card_bg,
+                                fg=fg,
+                                font=('Segoe UI', 9),
+                                wraplength=580,
+                                justify='left').pack(anchor='w', pady=(6, 4))
+
+                        if r.get('evidence'):
+                            for ev in r['evidence']:
+                                if ev:
+                                    tk.Label(card,
+                                            text=f"  • {ev}",
+                                            bg=card_bg,
+                                            fg="#aaaaaa" if is_dark else "#555555",
+                                            font=('Segoe UI', 8)).pack(anchor='w')
+
+                        def _make_select_custom(sig_name):
+                            def _select():
+                                custom_sig = custom_sigs.get(sig_name, {})
+                                tracked = custom_sig.get('tracked_sensors', [])
+                                selected = set()
+                                
+                                for sensor_name in tracked:
+                                    if sensor_name in cols:
+                                        selected.add(sensor_name)
+                                    else:
+                                        for col in cols:
+                                            if sensor_name.upper() in col.upper():
+                                                selected.add(col)
+                                                break
+                                
+                                excluded = custom_sig.get('excluded_sensors', [])
+                                for excluded_sensor in excluded:
+                                    selected = {c for c in selected if excluded_sensor.upper() not in c.upper()}
+                                
+                                if not selected:
+                                    self.show_toast(f"No matching sensors found for: {sig_name}")
+                                    return
+                                
+                                for col, var in self.vars.items():
+                                    var.set(col in selected)
+                                self.update_plot()
+                                self.show_toast(f"Selected {len(selected)} sensor(s) for: {sig_name}")
+                                dialog.lift()
+                            return _select
+
+                        ttk.Button(card, text="📌 Select Tracked Sensors",
+                                   command=_make_select_custom(r['name'])).pack(anchor='w', pady=(6, 0))
 
             btn_row = tk.Frame(dialog, bg=bg)
             btn_row.pack(pady=10)
