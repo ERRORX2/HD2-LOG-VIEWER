@@ -31,6 +31,28 @@ import re
 import threading as _threading
 import tkinter as _tk_module
 
+class LineNumbers(tk.Canvas):
+    def __init__(self, parent, text_widget, **kwargs):
+        tk.Canvas.__init__(self, parent, **kwargs)
+        self.text_widget = text_widget
+        self.config(width=50, highlightthickness=0)
+        text_widget.bind('<Configure>', self.redraw)
+        text_widget.bind('<MouseWheel>', self.redraw)
+        text_widget.bind('<Button-4>', self.redraw)
+        text_widget.bind('<Button-5>', self.redraw)
+    
+    def redraw(self, event=None):
+        self.delete("all")
+        i = self.text_widget.index("@0,0")
+        while True:
+            dline = self.text_widget.dlineinfo(i)
+            if dline is None:
+                break
+            y = dline[1]
+            linenum = str(i).split('.')[0]
+            self.create_text(2, y, anchor="nw", text=linenum, font=('Courier', 9), fill='#666666')
+            i = self.text_widget.index(f"{i}+1line")
+
 def _safe_var_del(self):
     if _threading.current_thread() is _threading.main_thread():
         if self._tk.getboolean(self._tk.call("info", "exists", self._name)):
@@ -287,7 +309,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7"
+CURRENT_VERSION = "1.7.1"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -1106,6 +1128,7 @@ class TelemetryApp:
             'mode': 'create',
             'edit_sig': None,
             'signatures': custom_sigs.copy(),
+            'advanced_mode': False,
             'current_sig': {
                 'name': '',
                 'default_severity': 'WARNING',
@@ -1116,7 +1139,9 @@ class TelemetryApp:
                 'sensor_maxs': {},
                 'info_count': 5,
                 'warn_count': 10,
-                'crit_count': 15
+                'crit_count': 15,
+                'description': '',
+                'advice': ''
             }
         }
         
@@ -1220,6 +1245,516 @@ class TelemetryApp:
                      bg=bg3, fg=fg, relief='flat', pady=5,
                      command=lambda: (state.update({'mode': 'create', 'edit_sig': None}), show_step_1(), update_progress())).pack(anchor='w', pady=(15, 0))
         
+        def show_advanced_editor_edit(sig_name):
+            """Advanced signature code editor for editing"""
+            adv_dialog = tk.Toplevel(dialog)
+            adv_dialog.title(f"Edit Advanced Signature: {sig_name}")
+            adv_dialog.geometry("900x700")
+            adv_dialog.minsize(850, 600)
+            adv_dialog.configure(bg=bg)
+            self.root.update_idletasks()
+            x = dialog.winfo_x() + (dialog.winfo_width() // 2) - 450
+            y = dialog.winfo_y() + (dialog.winfo_height() // 2) - 350
+            adv_dialog.geometry(f"900x700+{x}+{y}")
+            
+            main = tk.Frame(adv_dialog, bg=bg)
+            main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            
+            header = tk.Frame(main, bg=bg)
+            header.pack(fill=tk.X, pady=(0, 10))
+            
+            tk.Label(header, text=f"Edit Advanced Signature: {sig_name}",
+                    font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w')
+            tk.Label(header, text="Modify the signature code below",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(4, 0))
+            
+            sep = tk.Frame(main, bg=bg3, height=1)
+            sep.pack(fill=tk.X, pady=(0, 10))
+            
+            editor_frame = tk.Frame(main, bg=bg)
+            editor_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+            
+            tk.Label(editor_frame, text="Signature Code:", font=('Segoe UI', 9, 'bold'),
+                    bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            code_frame = tk.Frame(editor_frame, bg=bg)
+            code_frame.pack(fill=tk.BOTH, expand=True)
+            
+            code_area = tk.Text(code_frame, bg=bg2, fg='#00ff00', insertbackground='#00ff00',
+                               font=('Courier', 10), relief='flat', wrap=tk.WORD)
+            code_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+            
+            line_numbers = LineNumbers(code_frame, code_area, bg=bg2, highlightthickness=0)
+            line_numbers.pack(side=tk.LEFT, fill=tk.Y)
+            
+            syntax_label = tk.Label(editor_frame, text="✓ Syntax OK", font=('Segoe UI', 9),
+                                   bg='#1a5f1a', fg='#00ff00', relief='flat', anchor='w', padx=8, pady=3)
+            syntax_label.pack(fill=tk.X, side=tk.BOTTOM)
+            
+            def check_syntax(event=None):
+                code = code_area.get('1.0', tk.END).strip()
+                if not code:
+                    syntax_label.config(text="✓ Ready", bg='#1a3a1a', fg='#888888')
+                    return
+                try:
+                    compile(code, '<string>', 'exec')
+                    syntax_label.config(text="✓ Syntax OK", bg='#1a5f1a', fg='#00ff00')
+                except SyntaxError as e:
+                    msg = f"✗ Line {e.lineno}: {e.msg}" if e.lineno else f"✗ Syntax Error: {e.msg}"
+                    syntax_label.config(text=msg, bg='#5f1a1a', fg='#ff6666')
+            
+            code_area.bind('<KeyRelease>', check_syntax)
+            
+            sig_data = state['signatures'][sig_name]
+            code_area.insert('1.0', sig_data.get('code', ''))
+            check_syntax()
+            
+            def show_reference():
+                ref_dialog = tk.Toplevel(adv_dialog)
+                ref_dialog.title("Advanced Signature Reference")
+                ref_dialog.geometry("850x700")
+                ref_dialog.minsize(750, 600)
+                ref_dialog.configure(bg=bg)
+                
+                ref_main = tk.Frame(ref_dialog, bg=bg)
+                ref_main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+                
+                tk.Label(ref_main, text="Available Variables & Functions",
+                        font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w', pady=(0, 10))
+                
+                ref_canvas = tk.Canvas(ref_main, bg=bg2, highlightthickness=1, highlightbackground=bg3)
+                ref_scrollbar = tk.Scrollbar(ref_main, orient="vertical", command=ref_canvas.yview)
+                ref_frame = tk.Frame(ref_canvas, bg=bg2)
+                
+                ref_wid = ref_canvas.create_window((0, 0), window=ref_frame, anchor="nw")
+                ref_frame.bind("<Configure>", lambda e: ref_canvas.configure(scrollregion=ref_canvas.bbox("all")))
+                ref_canvas.bind("<Configure>", lambda e: ref_canvas.itemconfig(ref_wid, width=e.width))
+                ref_canvas.configure(yscrollcommand=ref_scrollbar.set)
+                
+                ref_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+                ref_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+                
+                ref_items = [
+                    ("DISCOVER SENSORS", ""),
+                    ("Find all columns", "cols=list(df.columns)\nadd('Cols','INFO',f'Total:{len(cols)}',[str(cols[:15])])"),
+                    ("Find by keyword", "cpu=[c for c in df.columns if 'CPU' in c.upper()]\nadd('CPUcols','INFO',f'Found:{len(cpu)}',[str(cpu)])"),
+                    ("Find temps", "temps=[c for c in df.columns if 'TEMP' in c.upper()]\nadd('Temps','INFO',f'Found:{len(temps)}',[str(temps[:10])])"),
+                    ("Find GPU temps", "gpus=[c for c in df.columns if 'GPU' in c.upper() and 'TEMP' in c.upper()]\nadd('GPUtemps','INFO',f'Found:{len(gpus)}',[str(gpus)])"),
+                    ("", ""),
+                    ("QUICK EXAMPLES", ""),
+                    ("CPU Temp", "col='CPU Die (average) [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>85:\n        add('CPUHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
+                    ("GPU Temp", "col='GPU Hot Spot Temperature [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>90:\n        add('GPUHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
+                    ("CPU Usage", "col='Total CPU Usage [%]'\nif col in df.columns:\n    u=pd.to_numeric(df[col],errors='coerce')\n    if (u>95).any():\n        add('CPUMax','INFO','Maxed',[f'Peak:{u.max():.0f}%'])"),
+                    ("VRAM Temp", "col='GPU Memory Junction Temperature [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>80:\n        add('VRAMHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
+                    ("", ""),
+                    ("YOUR COLUMNS", ""),
+                    ("'CPU Die (average) [C]'", "CPU die temp"),
+                    ("'CPU [Tdie] [C]'", "CPU Tdie"),
+                    ("'Total CPU Usage [%]'", "CPU usage"),
+                    ("'GPU Hot Spot Temperature [C]'", "GPU hotspot"),
+                    ("'GPU Temperature [C]'", "GPU temp"),
+                    ("'GPU Memory Junction Temperature [C]'", "VRAM temp"),
+                    ("", ""),
+                    ("PATTERNS", ""),
+                    ("Max check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    if d.max()>T:\n        add(...)"),
+                    ("Count check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    v=(d>T).sum()\n    if v>0:\n        add(...)"),
+                    ("Average check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    if d.mean()>T:\n        add(...)"),
+                    ("", ""),
+                    ("SEVERITY", ""),
+                    ("'INFO'", "Info message"),
+                    ("'WARNING'", "Warning"),
+                    ("'CRITICAL'", "Critical"),
+                ]
+                
+                for item, desc in ref_items:
+                    if item == "":
+                        continue
+                    if item.isupper() or (len(item) > 0 and item[0] == "'"):
+                        item_frame = tk.Frame(ref_frame, bg=bg2)
+                    else:
+                        item_frame = tk.Frame(ref_frame, bg=bg2, relief='flat')
+                    item_frame.pack(fill=tk.X, padx=8, pady=(6 if item.isupper() else 4), anchor='w')
+                    
+                    if item.isupper():
+                        tk.Label(item_frame, text=item, font=('Segoe UI', 10, 'bold'),
+                                bg=bg2, fg=accent).pack(anchor='w')
+                    else:
+                        tk.Label(item_frame, text=item, font=('Segoe UI', 9, 'bold'),
+                                bg=bg2, fg='#88ccff').pack(anchor='w', side=tk.LEFT, padx=(10, 8))
+                        if desc:
+                            tk.Label(item_frame, text=desc, font=('Segoe UI', 9),
+                                    bg=bg2, fg=fg, justify=tk.LEFT, wraplength=650).pack(anchor='w', side=tk.LEFT)
+                
+                tk.Button(ref_frame, text="Close", font=('Segoe UI', 9),
+                         bg=bg3, fg=fg, relief='flat', command=ref_dialog.destroy).pack(pady=10)
+            
+            btn_frame = tk.Frame(main, bg=bg)
+            btn_frame.pack(fill=tk.X)
+            
+            def save_advanced():
+                code = code_area.get('1.0', tk.END).strip()
+                if not code:
+                    messagebox.showerror("Error", "Please enter signature code", parent=adv_dialog)
+                    code_area.focus()
+                    return
+                
+                try:
+                    compile(code, '<string>', 'exec')
+                except SyntaxError as e:
+                    messagebox.showerror("Syntax Error", f"Line {e.lineno}: {e.msg}\n\n{e.text}", parent=adv_dialog)
+                    code_area.focus()
+                    return
+                
+                state['signatures'][sig_name]['code'] = code
+                save_custom_signatures(state['signatures'])
+                messagebox.showinfo("Success", f"Advanced signature '{sig_name}' updated!", parent=adv_dialog)
+                adv_dialog.destroy()
+            
+            tk.Button(btn_frame, text="📖 Reference", font=('Segoe UI', 10),
+                     bg='#FF9800', fg='white', relief='flat', command=show_reference).pack(side=tk.LEFT, padx=2)
+            tk.Button(btn_frame, text="📚 View Examples", font=('Segoe UI', 10),
+                     bg='#2196F3', fg='white', relief='flat', command=show_code_examples).pack(side=tk.LEFT, padx=2)
+            tk.Button(btn_frame, text="Save Changes", font=('Segoe UI', 10, 'bold'),
+                     bg='#4caf50', fg='white', relief='flat', command=save_advanced).pack(side=tk.LEFT, padx=2)
+            tk.Button(btn_frame, text="Cancel", font=('Segoe UI', 9),
+                     bg=bg3, fg=fg, relief='flat', command=adv_dialog.destroy).pack(side=tk.LEFT, padx=2)
+        
+        def show_code_examples():
+            """Show pre-built signature code examples"""
+            ex_dialog = tk.Toplevel(adv_dialog if 'adv_dialog' in dir() else dialog)
+            ex_dialog.title("Advanced Signature Code Examples")
+            ex_dialog.geometry("950x650")
+            ex_dialog.minsize(900, 600)
+            ex_dialog.configure(bg=bg)
+            
+            main = tk.Frame(ex_dialog, bg=bg)
+            main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            
+            header = tk.Frame(main, bg=bg)
+            header.pack(fill=tk.X, pady=(0, 10))
+            tk.Label(header, text="Advanced Signature Examples",
+                    font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w')
+            tk.Label(header, text="Click on an example to copy its code",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(4, 0))
+            
+            content_frame = tk.Frame(main, bg=bg)
+            content_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+            
+            examples = {
+                "GPU VRAM Overflow": """vram_pct = (df['GPU Memory Junction Temperature [C]'] / df['GPU Memory Junction Temperature [C]'].max()) * 100
+if (vram_pct > 95).any():
+    add('GPU VRAM Overflow', 'WARNING',
+        'VRAM pressure causing spillover. ADVICE: Lower resolution/textures.',
+        [f'Peak VRAM: {vram_pct.max():.1f}%'])""",
+
+                "Temperature Threshold Check": """col = 'GPU Hot Spot Temperature [C]'
+if col in df.columns:
+    temps = pd.to_numeric(df[col], errors='coerce')
+    max_temp = temps.max()
+    avg_temp = temps.mean()
+    
+    if max_temp > 90:
+        severity = "CRITICAL" if max_temp > 95 else "WARNING"
+        add('GPU Temperature High', severity,
+            f'GPU hotspot reached {max_temp:.1f}C',
+            [f'Max: {max_temp:.1f}C', f'Average: {avg_temp:.1f}C'])""",
+
+                "Usage Pattern Detection": """cpu_col = 'Total CPU Usage [%]'
+gpu_col = 'GPU Usage [%]'
+
+if cpu_col in df.columns and gpu_col in df.columns:
+    cpu_usage = pd.to_numeric(df[cpu_col], errors='coerce')
+    gpu_usage = pd.to_numeric(df[gpu_col], errors='coerce')
+    
+    high_cpu_low_gpu = ((cpu_usage > 80) & (gpu_usage < 30)).sum()
+    
+    if high_cpu_low_gpu > 10:
+        add('CPU Bottleneck Detected', 'INFO',
+            'CPU high while GPU idle - possible bottleneck',
+            [f'Samples: {high_cpu_low_gpu}', 
+             f'CPU avg: {cpu_usage.mean():.1f}%',
+             f'GPU avg: {gpu_usage.mean():.1f}%'])""",
+
+                "Multiple Column Search": """matching_cols = [c for c in df.columns if 'TEMP' in c.upper()]
+
+if len(matching_cols) > 0:
+    temps_data = {}
+    for col in matching_cols[:5]:
+        temp_values = pd.to_numeric(df[col], errors='coerce')
+        max_val = temp_values.max()
+        temps_data[col] = max_val
+    
+    add('Temperature Report', 'INFO',
+        f'Found {len(matching_cols)} temperature sensors',
+        [f'{col}: {temps_data[col]:.1f}C' for col in list(temps_data.keys())[:3]])""",
+
+                "Threshold Violations": """col = 'Total CPU Usage [%]'
+threshold = 95
+
+if col in df.columns:
+    usage = pd.to_numeric(df[col], errors='coerce')
+    violations = (usage > threshold).sum()
+    violation_pct = (violations / len(usage)) * 100
+    
+    if violations > 0:
+        add('CPU Usage Peak', 'WARNING',
+            f'CPU exceeded {threshold}% threshold',
+            [f'Violations: {violations} samples',
+             f'Percentage: {violation_pct:.1f}%',
+             f'Peak: {usage.max():.0f}%'])""",
+            }
+            
+            list_frame = tk.Frame(content_frame, bg=bg)
+            list_frame.pack(side=tk.LEFT, fill=tk.BOTH, padx=(0, 10))
+            
+            tk.Label(list_frame, text="Examples:", font=('Segoe UI', 9, 'bold'),
+                    bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            list_canvas = tk.Canvas(list_frame, bg=bg2, highlightthickness=1, highlightbackground=bg3)
+            list_scroll = tk.Scrollbar(list_frame, orient="vertical", command=list_canvas.yview)
+            list_body = tk.Frame(list_canvas, bg=bg2)
+            list_wid = list_canvas.create_window((0, 0), window=list_body, anchor="nw")
+            list_body.bind("<Configure>", lambda e: list_canvas.configure(scrollregion=list_canvas.bbox("all")))
+            list_canvas.bind("<Configure>", lambda e: list_canvas.itemconfig(list_wid, width=e.width))
+            list_canvas.configure(yscrollcommand=list_scroll.set)
+            list_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            list_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            code_frame = tk.Frame(content_frame, bg=bg)
+            code_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(10, 0))
+            
+            tk.Label(code_frame, text="Code Preview:", font=('Segoe UI', 9, 'bold'),
+                    bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            code_display = tk.Text(code_frame, bg=bg2, fg='#00ff00', font=('Courier', 9),
+                                  relief='flat', wrap=tk.WORD)
+            code_display.pack(fill=tk.BOTH, expand=True)
+            code_display.configure(state='disabled')
+            
+            def show_example(name):
+                code_display.configure(state='normal')
+                code_display.delete('1.0', tk.END)
+                code_display.insert('1.0', examples[name])
+                code_display.configure(state='disabled')
+            
+            for ex_name in examples.keys():
+                btn = tk.Button(list_body, text=ex_name, font=('Segoe UI', 9),
+                               bg=bg3, fg=fg, relief='flat', anchor='w',
+                               command=lambda n=ex_name: show_example(n))
+                btn.pack(fill=tk.X, padx=4, pady=2)
+            
+            show_example(list(examples.keys())[0])
+            
+            btn_row = tk.Frame(ex_dialog, bg=bg)
+            btn_row.pack(fill=tk.X, padx=10, pady=(0, 10))
+            
+            def copy_code():
+                code = code_display.get('1.0', tk.END)
+                ex_dialog.clipboard_clear()
+                ex_dialog.clipboard_append(code)
+                messagebox.showinfo("Copied", "Code copied to clipboard!")
+            
+            tk.Button(btn_row, text="Copy Code", font=('Segoe UI', 10, 'bold'),
+                     bg='#4caf50', fg='white', relief='flat', command=copy_code).pack(side=tk.LEFT, padx=2)
+            tk.Button(btn_row, text="Close", font=('Segoe UI', 9),
+                     bg=bg3, fg=fg, relief='flat', command=ex_dialog.destroy).pack(side=tk.LEFT, padx=2)
+        
+        def show_advanced_editor():
+            """Advanced signature code editor"""
+            adv_dialog = tk.Toplevel(dialog)
+            adv_dialog.title("Advanced Signature Editor")
+            adv_dialog.geometry("900x700")
+            adv_dialog.minsize(850, 600)
+            adv_dialog.configure(bg=bg)
+            self.root.update_idletasks()
+            x = dialog.winfo_x() + (dialog.winfo_width() // 2) - 450
+            y = dialog.winfo_y() + (dialog.winfo_height() // 2) - 350
+            adv_dialog.geometry(f"900x700+{x}+{y}")
+            
+            main = tk.Frame(adv_dialog, bg=bg)
+            main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            
+            header = tk.Frame(main, bg=bg)
+            header.pack(fill=tk.X, pady=(0, 10))
+            
+            tk.Label(header, text="Advanced Signature Editor",
+                    font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w')
+            tk.Label(header, text="Write custom signature logic using Python (like built-in signatures)",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(4, 0))
+            
+            name_frame = tk.Frame(main, bg=bg)
+            name_frame.pack(fill=tk.X, pady=(0, 10))
+            tk.Label(name_frame, text="Name:", font=('Segoe UI', 9),
+                    bg=bg, fg=fg).pack(side=tk.LEFT, padx=(0, 5))
+            name_var = tk.StringVar()
+            name_entry = tk.Entry(name_frame, textvariable=name_var, font=('Segoe UI', 10),
+                                 bg=bg2, fg=fg, insertbackground=fg, relief='flat', width=40)
+            name_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+            
+            sep = tk.Frame(main, bg=bg3, height=1)
+            sep.pack(fill=tk.X, pady=(0, 10))
+            
+            editor_frame = tk.Frame(main, bg=bg)
+            editor_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+            
+            tk.Label(editor_frame, text="Signature Code:", font=('Segoe UI', 9, 'bold'),
+                    bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            code_frame = tk.Frame(editor_frame, bg=bg)
+            code_frame.pack(fill=tk.BOTH, expand=True)
+            
+            code_area = tk.Text(code_frame, bg=bg2, fg='#00ff00', insertbackground='#00ff00',
+                               font=('Courier', 10), relief='flat', wrap=tk.WORD)
+            code_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+            
+            line_numbers = LineNumbers(code_frame, code_area, bg=bg2, highlightthickness=0)
+            line_numbers.pack(side=tk.LEFT, fill=tk.Y)
+            
+            syntax_label = tk.Label(editor_frame, text="✓ Syntax OK", font=('Segoe UI', 9),
+                                   bg='#1a5f1a', fg='#00ff00', relief='flat', anchor='w', padx=8, pady=3)
+            syntax_label.pack(fill=tk.X, side=tk.BOTTOM)
+            
+            def check_syntax(event=None):
+                code = code_area.get('1.0', tk.END).strip()
+                if not code:
+                    syntax_label.config(text="✓ Ready", bg='#1a3a1a', fg='#888888')
+                    return
+                try:
+                    compile(code, '<string>', 'exec')
+                    syntax_label.config(text="✓ Syntax OK", bg='#1a5f1a', fg='#00ff00')
+                except SyntaxError as e:
+                    msg = f"✗ Line {e.lineno}: {e.msg}" if e.lineno else f"✗ Syntax Error: {e.msg}"
+                    syntax_label.config(text=msg, bg='#5f1a1a', fg='#ff6666')
+            
+            code_area.bind('<KeyRelease>', check_syntax)
+            
+            template = "tracked = [\"Sensor1\", \"Sensor2\"]\nexcluded = [\"SkipMe\"]\n\nfor col in tracked:\n    if col not in df.columns:\n        continue\n    if any(exc.upper() in col.upper() for exc in excluded):\n        continue\n    \n    data = pd.to_numeric(df[col], errors='coerce')\n    violations = (data < 20) | (data > 100)\n    \n    if violations.sum() > 5:\n        add(\n            name=\"Your Signature\",\n            severity=\"WARNING\",\n            description=\"Description\",\n            evidence=[f\"{col}: {violations.sum()} violations\"]\n        )"
+            code_area.insert('1.0', template)
+            check_syntax()
+            
+            
+            def show_reference():
+                ref_dialog = tk.Toplevel(adv_dialog)
+                ref_dialog.title("Advanced Signature Reference")
+                ref_dialog.geometry("850x700")
+                ref_dialog.minsize(750, 600)
+                ref_dialog.configure(bg=bg)
+                
+                ref_main = tk.Frame(ref_dialog, bg=bg)
+                ref_main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+                
+                tk.Label(ref_main, text="Available Variables & Functions",
+                        font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w', pady=(0, 10))
+                
+                ref_canvas = tk.Canvas(ref_main, bg=bg2, highlightthickness=1, highlightbackground=bg3)
+                ref_scrollbar = tk.Scrollbar(ref_main, orient="vertical", command=ref_canvas.yview)
+                ref_frame = tk.Frame(ref_canvas, bg=bg2)
+                
+                ref_wid = ref_canvas.create_window((0, 0), window=ref_frame, anchor="nw")
+                ref_frame.bind("<Configure>", lambda e: ref_canvas.configure(scrollregion=ref_canvas.bbox("all")))
+                ref_canvas.bind("<Configure>", lambda e: ref_canvas.itemconfig(ref_wid, width=e.width))
+                ref_canvas.configure(yscrollcommand=ref_scrollbar.set)
+                
+                ref_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+                ref_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+                
+                ref_items = [
+                    ("DISCOVER SENSORS", ""),
+                    ("Find all columns", "cols=list(df.columns)\nadd('Cols','INFO',f'Total:{len(cols)}',[str(cols[:15])])"),
+                    ("Find by keyword", "cpu=[c for c in df.columns if 'CPU' in c.upper()]\nadd('CPUcols','INFO',f'Found:{len(cpu)}',[str(cpu)])"),
+                    ("Find temps", "temps=[c for c in df.columns if 'TEMP' in c.upper()]\nadd('Temps','INFO',f'Found:{len(temps)}',[str(temps[:10])])"),
+                    ("Find GPU temps", "gpus=[c for c in df.columns if 'GPU' in c.upper() and 'TEMP' in c.upper()]\nadd('GPUtemps','INFO',f'Found:{len(gpus)}',[str(gpus)])"),
+                    ("", ""),
+                    ("QUICK EXAMPLES", ""),
+                    ("CPU Temp", "col='CPU Die (average) [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>85:\n        add('CPUHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
+                    ("GPU Temp", "col='GPU Hot Spot Temperature [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>90:\n        add('GPUHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
+                    ("CPU Usage", "col='Total CPU Usage [%]'\nif col in df.columns:\n    u=pd.to_numeric(df[col],errors='coerce')\n    if (u>95).any():\n        add('CPUMax','INFO','Maxed',[f'Peak:{u.max():.0f}%'])"),
+                    ("VRAM Temp", "col='GPU Memory Junction Temperature [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>80:\n        add('VRAMHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
+                    ("", ""),
+                    ("YOUR COLUMNS", ""),
+                    ("'CPU Die (average) [C]'", "CPU die temp"),
+                    ("'CPU [Tdie] [C]'", "CPU Tdie"),
+                    ("'Total CPU Usage [%]'", "CPU usage"),
+                    ("'GPU Hot Spot Temperature [C]'", "GPU hotspot"),
+                    ("'GPU Temperature [C]'", "GPU temp"),
+                    ("'GPU Memory Junction Temperature [C]'", "VRAM temp"),
+                    ("", ""),
+                    ("PATTERNS", ""),
+                    ("Max check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    if d.max()>T:\n        add(...)"),
+                    ("Count check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    v=(d>T).sum()\n    if v>0:\n        add(...)"),
+                    ("Average check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    if d.mean()>T:\n        add(...)"),
+                    ("", ""),
+                    ("SEVERITY", ""),
+                    ("'INFO'", "Info message"),
+                    ("'WARNING'", "Warning"),
+                    ("'CRITICAL'", "Critical"),
+                ]
+                
+                for item, desc in ref_items:
+                    if item == "":
+                        continue
+                    if item.isupper() or (len(item) > 0 and item[0] == "'"):
+                        item_frame = tk.Frame(ref_frame, bg=bg2)
+                    else:
+                        item_frame = tk.Frame(ref_frame, bg=bg2, relief='flat')
+                    item_frame.pack(fill=tk.X, padx=8, pady=(6 if item.isupper() else 4), anchor='w')
+                    
+                    if item.isupper():
+                        tk.Label(item_frame, text=item, font=('Segoe UI', 10, 'bold'),
+                                bg=bg2, fg=accent).pack(anchor='w')
+                    else:
+                        tk.Label(item_frame, text=item, font=('Segoe UI', 9, 'bold'),
+                                bg=bg2, fg='#88ccff').pack(anchor='w', side=tk.LEFT, padx=(10, 8))
+                        if desc:
+                            tk.Label(item_frame, text=desc, font=('Segoe UI', 9),
+                                    bg=bg2, fg=fg, justify=tk.LEFT, wraplength=650).pack(anchor='w', side=tk.LEFT)
+                
+                tk.Button(ref_frame, text="Close", font=('Segoe UI', 9),
+                         bg=bg3, fg=fg, relief='flat', command=ref_dialog.destroy).pack(pady=10)
+            
+            btn_frame = tk.Frame(main, bg=bg)
+            btn_frame.pack(fill=tk.X)
+            
+            def save_advanced():
+                sig_name = name_var.get().strip()
+                if not sig_name:
+                    messagebox.showerror("Error", "Please enter a signature name", parent=adv_dialog)
+                    name_entry.focus()
+                    return
+                
+                code = code_area.get('1.0', tk.END).strip()
+                if not code:
+                    messagebox.showerror("Error", "Please enter signature code", parent=adv_dialog)
+                    code_area.focus()
+                    return
+                
+                try:
+                    compile(code, '<string>', 'exec')
+                except SyntaxError as e:
+                    messagebox.showerror("Syntax Error", f"Line {e.lineno}: {e.msg}\n\n{e.text}", parent=adv_dialog)
+                    code_area.focus()
+                    return
+                
+                state['signatures'][sig_name] = {
+                    'code': code,
+                    'advanced': True
+                }
+                save_custom_signatures(state['signatures'])
+                messagebox.showinfo("Success", f"Advanced signature '{sig_name}' saved!", parent=adv_dialog)
+                adv_dialog.destroy()
+                state['mode'] = 'create'
+                show_step_1()
+                update_progress()
+            
+            tk.Button(btn_frame, text="📖 Reference", font=('Segoe UI', 10),
+                     bg='#FF9800', fg='white', relief='flat', command=show_reference).pack(side=tk.LEFT, padx=2)
+            tk.Button(btn_frame, text="📚 View Examples", font=('Segoe UI', 10),
+                     bg='#2196F3', fg='white', relief='flat', command=show_code_examples).pack(side=tk.LEFT, padx=2)
+            tk.Button(btn_frame, text="Save Signature", font=('Segoe UI', 10, 'bold'),
+                     bg='#4caf50', fg='white', relief='flat', command=save_advanced).pack(side=tk.LEFT, padx=2)
+            tk.Button(btn_frame, text="Cancel", font=('Segoe UI', 9),
+                     bg=bg3, fg=fg, relief='flat', command=adv_dialog.destroy).pack(side=tk.LEFT, padx=2)
+        
         def show_step_1():
             """Step 1: Select action (New/Edit)"""
             clear_content()
@@ -1252,17 +1787,23 @@ class TelemetryApp:
                     btn_frame = tk.Frame(sig_body, bg=bg3, relief='flat')
                     btn_frame.pack(fill=tk.X, padx=4, pady=2)
                     
-                    status = "● " if not is_disabled else "⊘ "
-                    tk.Label(btn_frame, text=f"{status}{sig_name}", font=('Segoe UI', 9),
-                            bg=bg3, fg=fg if not is_disabled else '#666', 
+                    is_advanced = sig_data.get('advanced', False)
+                    status = "🚀 " if is_advanced else ("● " if not is_disabled else "⊘ ")
+                    label_text = f"{status}{sig_name}"
+                    label_color = '#9c27b0' if is_advanced else (fg if not is_disabled else '#666')
+                    tk.Label(btn_frame, text=label_text, font=('Segoe UI', 9),
+                            bg=bg3, fg=label_color, 
                             width=30, anchor='w', padx=8, pady=6).pack(side=tk.LEFT, fill=tk.X, expand=True)
                     
                     def make_edit(name):
                         def edit_sig():
-                            state['mode'] = 'edit'
-                            state['edit_sig'] = name
-                            state['current_sig'] = state['signatures'][name].copy()
-                            show_edit_menu(name)
+                            if state['signatures'][name].get('advanced', False):
+                                show_advanced_editor_edit(name)
+                            else:
+                                state['mode'] = 'edit'
+                                state['edit_sig'] = name
+                                state['current_sig'] = state['signatures'][name].copy()
+                                show_edit_menu(name)
                         return edit_sig
                     
                     def make_test(name):
@@ -1278,6 +1819,38 @@ class TelemetryApp:
                             
                             try:
                                 df = self.df
+                                
+                                if sig_data_test.get('advanced', False):
+                                    code = sig_data_test.get('code', '')
+                                    test_results = []
+                                    def test_add(name, severity, description, evidence, advice=None, mask=None, cols=None):
+                                        test_results.append({
+                                            'name': name,
+                                            'severity': severity,
+                                            'description': description,
+                                            'evidence': evidence
+                                        })
+                                    
+                                    try:
+                                        exec(code, {'pd': pd, 'add': test_add, 'df': df})
+                                    except Exception as e:
+                                        messagebox.showerror("Execution Error", f"{type(e).__name__}: {str(e)}")
+                                        return
+                                    
+                                    if not test_results:
+                                        messagebox.showinfo("Test Result", "✓ No violations detected\n\nCode executed successfully but no signatures fired.")
+                                        return
+                                    
+                                    result = test_results[0]
+                                    msg = f"✓ Signature Fired!\n\n"
+                                    msg += f"Name: {result['name']}\n"
+                                    msg += f"Severity: {result['severity']}\n"
+                                    msg += f"Description: {result['description']}\n"
+                                    if result['evidence']:
+                                        msg += f"Evidence:\n" + "\n".join(f"  • {e}" for e in result['evidence'])
+                                    messagebox.showinfo("Test Result", msg)
+                                    return
+                                
                                 tracked = sig_data_test.get('tracked_sensors', [])
                                 excluded = sig_data_test.get('excluded_sensors', [])
                                 mins_dict = sig_data_test.get('sensor_mins', {})
@@ -1381,18 +1954,29 @@ class TelemetryApp:
             tk.Label(content_frame, text="Create New Signature:",
                     font=('Segoe UI', 10, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(15, 8))
             
-            tk.Button(content_frame, text="✨ Create New Signature",
+            btn_frame = tk.Frame(content_frame, bg=bg)
+            btn_frame.pack(anchor='w', pady=(0, 10))
+            
+            tk.Button(btn_frame, text="✨ Create Simple Signature",
                      font=('Segoe UI', 10, 'bold'), bg=accent, fg='white',
                      relief='flat', padx=15, pady=10,
                      command=lambda: (
-                         state.update({'mode': 'create', 'step': 2, 'edit_sig': None}),
+                         state.update({'mode': 'create', 'step': 2, 'edit_sig': None, 'advanced_mode': False}),
                          state['current_sig'].update({
                              'name': '', 'tracked_sensors': [], 'excluded_sensors': [],
-                             'sensor_mins': {}, 'sensor_maxs': {}
+                             'sensor_mins': {}, 'sensor_maxs': {}, 'description': '', 'advice': ''
                          }),
                          show_step_2(),
                          update_progress()
-                     )).pack(anchor='w')
+                     )).pack()
+            
+            tk.Button(btn_frame, text="🚀 Create Advanced Signature",
+                     font=('Segoe UI', 10, 'bold'), bg='#9c27b0', fg='white',
+                     relief='flat', padx=15, pady=10,
+                     command=lambda: (
+                         state.update({'mode': 'create', 'edit_sig': None, 'advanced_mode': True}),
+                         show_advanced_editor()
+                     )).pack(pady=(5, 0))
         
         def show_step_2():
             """Step 2: Name"""
@@ -1749,6 +2333,52 @@ class TelemetryApp:
                     except:
                         pass
                 
+                if state['advanced_mode']:
+                    state['step'] = 6.5
+                    show_step_6_advanced()
+                else:
+                    state['step'] = 7
+                    show_step_7()
+                update_progress()
+            
+            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
+                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(10, 0))
+        
+        def show_step_6_advanced():
+            """Step 6.5: Advanced Fields (optional)"""
+            clear_content()
+            
+            if not state['advanced_mode']:
+                state['step'] = 7
+                show_step_7()
+                update_progress()
+                return
+            
+            tk.Label(content_frame, text="Advanced Options (Optional)",
+                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
+            
+            tk.Label(content_frame, text="Add custom description and advice text (like built-in signatures):",
+                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 12))
+            
+            tk.Label(content_frame, text="Description:",
+                    font=('Segoe UI', 9, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 4))
+            
+            desc_text = tk.Text(content_frame, height=3, width=40, bg=bg2, fg=fg,
+                               insertbackground=fg, relief='flat')
+            desc_text.pack(fill=tk.X, pady=(0, 8))
+            desc_text.insert('1.0', state['current_sig'].get('description', ''))
+            
+            tk.Label(content_frame, text="Advice (optional):",
+                    font=('Segoe UI', 9, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(8, 4))
+            
+            advice_text = tk.Text(content_frame, height=3, width=40, bg=bg2, fg=fg,
+                                 insertbackground=fg, relief='flat')
+            advice_text.pack(fill=tk.X, pady=(0, 8))
+            advice_text.insert('1.0', state['current_sig'].get('advice', ''))
+            
+            def next_step():
+                state['current_sig']['description'] = desc_text.get('1.0', tk.END).strip()
+                state['current_sig']['advice'] = advice_text.get('1.0', tk.END).strip()
                 state['step'] = 7
                 show_step_7()
                 update_progress()
@@ -1805,7 +2435,7 @@ Min/Max Thresholds:
                 
                 disabled = state['signatures'].get(state['edit_sig'], {}).get('disabled', False) if state['mode'] == 'edit' else False
                 
-                state['signatures'][name] = {
+                sig_to_save = {
                     'default_severity': sig['default_severity'],
                     'tracked_sensors': sig['tracked_sensors'],
                     'excluded_sensors': sig.get('excluded_sensors', []),
@@ -1819,6 +2449,14 @@ Min/Max Thresholds:
                     },
                     'disabled': disabled
                 }
+                
+                if state['advanced_mode']:
+                    if sig.get('description'):
+                        sig_to_save['description'] = sig['description']
+                    if sig.get('advice'):
+                        sig_to_save['advice'] = sig['advice']
+                
+                state['signatures'][name] = sig_to_save
                 
                 save_custom_signatures(state['signatures'])
                 
@@ -1889,7 +2527,7 @@ Min/Max Thresholds:
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         sb.pack(side=tk.RIGHT, fill=tk.Y)
         canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>",
-            lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
+               lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units") if canvas.winfo_exists() else None))
         canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
 
         entries = {}
@@ -6650,6 +7288,20 @@ figure img{{border-radius:8px;}}
             if sig_data.get('disabled', False):
                 continue
             
+            if sig_data.get('advanced', False):
+                try:
+                    code = sig_data.get('code', '')
+                    local_env = {'df': df, 'add': add_func, 'pd': pd}
+                    exec(code, {'pd': pd, 'add': add_func, 'df': df})
+                except Exception as e:
+                    add_func(
+                        name=f"Error in '{sig_name}'",
+                        severity="WARNING",
+                        description=f"Advanced signature failed: {type(e).__name__}",
+                        evidence=[str(e)]
+                    )
+                continue
+            
             try:
                 tracked = sig_data.get('tracked_sensors', [])
                 excluded = sig_data.get('excluded_sensors', [])
@@ -6750,13 +7402,17 @@ figure img{{border-radius:8px;}}
                 except Exception:
                     pass
                 
+                desc = sig_data.get('description', f"Custom signature detected violations in tracked sensors ({violation_count} total).")
+                adv = sig_data.get('advice', None)
+                
                 add_func(
                     name=sig_name,
                     severity=severity,
-                    description=f"Custom signature detected violations in tracked sensors ({violation_count} total).",
+                    description=desc,
                     evidence=evidence[:5] if evidence else ["Sensor violations detected"],
                     mask=violation_mask,
-                    cols=list(violated_cols)
+                    cols=list(violated_cols),
+                    advice=adv
                 )
             except Exception as e:
                 pass
@@ -8896,9 +9552,22 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     sep_frame = tk.Frame(body, bg=bg)
                     sep_frame.pack(fill=tk.X, pady=(15, 5), padx=2)
                     tk.Frame(sep_frame, bg=accent, height=2).pack(fill=tk.X)
-                    tk.Label(sep_frame, text="🏷️  Custom Signatures",
-                            font=('Segoe UI', 10, 'bold'),
-                            bg=bg, fg=accent).pack(anchor='w', pady=(4, 0))
+                    
+                    adv_sigs = [r for r in custom_results if custom_sigs.get(r['name'], {}).get('advanced', False)]
+                    simple_sigs = [r for r in custom_results if not custom_sigs.get(r['name'], {}).get('advanced', False)]
+                    
+                    if adv_sigs:
+                        tk.Label(sep_frame, text="🚀 Advanced Signatures",
+                                font=('Segoe UI', 10, 'bold'),
+                                bg=bg, fg='#9c27b0').pack(anchor='w', pady=(4, 0))
+                    elif simple_sigs:
+                        tk.Label(sep_frame, text="🏷️  Custom Signatures",
+                                font=('Segoe UI', 10, 'bold'),
+                                bg=bg, fg=accent).pack(anchor='w', pady=(4, 0))
+                    else:
+                        tk.Label(sep_frame, text="🏷️  Custom Signatures",
+                                font=('Segoe UI', 10, 'bold'),
+                                bg=bg, fg=accent).pack(anchor='w', pady=(4, 0))
                     
                     for r in custom_results:
                         is_crit = r['severity'] == 'CRITICAL'
