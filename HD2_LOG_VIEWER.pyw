@@ -309,7 +309,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.1"
+CURRENT_VERSION = "1.7.2"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -665,7 +665,7 @@ class TelemetryAnalyzer:
             last_row = self.df.iloc[-1]
             numeric_cols = [c for c in self.df.columns if c != self.time_col]
             check = self.df.iloc[-1][numeric_cols]
-            if (check == 0).sum() + check.isna().sum() > (len(numeric_cols) / 2):
+            if ((check == 0) | check.isna()).all():
                 self.df = self.df.iloc[:-1]
             else:
                 break
@@ -683,6 +683,90 @@ class TelemetryAnalyzer:
             self.time_series = self.time_series.iloc[:len(self.df)].reset_index(drop=True)
         self.df = self.df.reset_index(drop=True)
         self.aliases = self.load_aliases()
+
+    def detect_csv_gaps(self, gap_threshold_seconds: float = 10.0) -> dict:
+        """
+        Detect time gaps in the CSV data (where logging was paused or interrupted).
+        
+        Args:
+            gap_threshold_seconds: Gaps larger than this value (in seconds) are flagged.
+        
+        Returns:
+            dict with keys:
+                'has_gaps': bool - True if any gaps detected
+                'gaps': list of dicts, each with:
+                    - 'start_row': row index before gap
+                    - 'end_row': row index after gap
+                    - 'duration_seconds': size of gap
+                    - 'start_time': timestamp before gap
+                    - 'end_time': timestamp after gap
+                'total_gap_time': float - total gap duration in seconds
+                'gap_count': int - number of gaps
+                'data_usable': bool - True if data is reasonably usable
+        """
+        result = {
+            'has_gaps': False,
+            'gaps': [],
+            'total_gap_time': 0.0,
+            'gap_count': 0,
+            'data_usable': True,
+        }
+        
+        if self.time_series is None or len(self.time_series) < 2:
+            return result
+        
+        try:
+            # Convert time_series to datetime for comparison
+            times = pd.to_datetime(self.time_series, errors='coerce')
+            
+            # Calculate time deltas between consecutive rows
+            deltas = times.diff()
+            
+            # Find gaps larger than threshold
+            for idx in range(1, len(deltas)):
+                delta = deltas.iloc[idx]
+                if pd.isna(delta):
+                    continue
+                
+                delta_seconds = delta.total_seconds()
+                
+                if delta_seconds > gap_threshold_seconds:
+                    result['has_gaps'] = True
+                    result['gap_count'] += 1
+                    result['total_gap_time'] += delta_seconds
+                    
+                    gap_info = {
+                        'start_row': idx - 1,
+                        'end_row': idx,
+                        'duration_seconds': delta_seconds,
+                        'start_time': str(times.iloc[idx - 1]),
+                        'end_time': str(times.iloc[idx]),
+                    }
+                    result['gaps'].append(gap_info)
+            
+            # Determine if data is still usable
+            # Mark as potentially problematic if:
+            # - More than 10% of data missing due to gaps
+            # - More than 5 separate gaps
+            # - Single gap > 5 minutes
+            if result['gap_count'] > 0:
+                total_time_span = (times.max() - times.min()).total_seconds()
+                if total_time_span > 0:
+                    gap_percentage = (result['total_gap_time'] / total_time_span) * 100
+                    if gap_percentage > 10.0:
+                        result['data_usable'] = False
+                
+                if result['gap_count'] > 5:
+                    result['data_usable'] = False
+                
+                max_gap = max(g['duration_seconds'] for g in result['gaps'])
+                if max_gap > 300:  # 5 minutes
+                    result['data_usable'] = False
+        
+        except Exception as e:
+            result['detection_error'] = str(e)
+        
+        return result
 
     def extract_hardware_names(self) -> dict:
 
@@ -4132,31 +4216,631 @@ Min/Max Thresholds:
                     for s in self.sessions)
 
                 html = f"""<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8">
-<title>RESYNC.ERR Session Compare</title>
-<style>
-body{{background:#0d0d1a;color:#e2e8f0;font-family:'Segoe UI',sans-serif;padding:32px;}}
-h1{{color:#4f8ef7;}}
-h2{{color:#a78bfa;border-bottom:1px solid #1e1e3a;padding-bottom:6px;margin-top:28px;}}
-h3{{color:#a78bfa;margin-top:10px;}}
-table{{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;}}
-th{{background:#1a1a38;color:#4f8ef7;padding:6px 10px;text-align:left;}}
-td{{padding:5px 10px;border-bottom:1px solid #1e1e3a;}}
-tr:hover td{{background:#13132b;}}
-.footer{{color:#64748b;font-size:11px;margin-top:32px;}}
-figure{{margin:0 0 8px;}}
-figure img{{border-radius:8px;}}
-</style></head><body>
-<h1>RESYNC.ERR - Session Compare Report</h1>
-<p style="color:#64748b">Generated {generated_at} · {len(self.sessions)} sessions · {len(sensors)} sensors</p>
-<h2>Sessions</h2><ul>{sess_list}</ul>
-<h2>Charts  <small style="color:#64748b;font-size:11px">green = S2 better · red = S2 worse</small></h2>
-{charts_html}
-<h2>Statistics  <small style="color:#64748b;font-size:11px">▲ green = best · ▼ red = worst</small></h2>
-<table><thead><tr><th>Sensor</th>{hdr_sess}</tr>{sub_hdr}</thead>
-<tbody>{rows_html}</tbody></table>
-<p class="footer">RESYNC.ERR v{CURRENT_VERSION} · {generated_at}</p>
-</body></html>"""
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RESYNC.ERR - Performance Analysis</title>
+  <style>
+    * {{margin: 0; padding: 0; box-sizing: border-box;}}
+    
+    body {{
+      background: #0a0e27;
+      color: #e0e6ed;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow-x: hidden;
+    }}
+    
+    .hero {{
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 80px 40px;
+      text-align: center;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }}
+    
+    .hero::before {{
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 500px;
+      height: 500px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+    }}
+    
+    .hero::after {{
+      content: '';
+      position: absolute;
+      bottom: -50%;
+      left: -10%;
+      width: 400px;
+      height: 400px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+    }}
+    
+    .hero-content {{
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+    }}
+    
+    .hero h1 {{
+      font-size: 56px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }}
+    
+    .hero-subtitle {{
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 40px;
+      font-weight: 300;
+    }}
+    
+    .stats-row {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 40px;
+    }}
+    
+    .stat-box {{
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }}
+    
+    .stat-number {{
+      font-size: 42px;
+      font-weight: 800;
+      color: #fff;
+    }}
+    
+    .stat-label {{
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-top: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }}
+    
+    .container {{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 60px 40px;
+    }}
+    
+    section {{
+      margin-bottom: 80px;
+      scroll-margin-top: 100px;
+    }}
+    
+    h2 {{
+      font-size: 42px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }}
+    
+    .section-subtitle {{
+      font-size: 16px;
+      color: #888;
+      margin-bottom: 40px;
+      font-weight: 400;
+    }}
+    
+    .sessions-container {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }}
+    
+    .session {{
+      background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      border-radius: 16px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }}
+    
+    .session::before {{
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }}
+    
+    .session:hover {{
+      border-color: rgba(102, 126, 234, 0.5);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15);
+    }}
+    
+    .session-title {{
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }}
+    
+    .session-desc {{
+      font-size: 14px;
+      color: #999;
+      margin-bottom: 16px;
+    }}
+    
+    .session-badge {{
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }}
+    
+    .charts-grid {{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      margin-bottom: 40px;
+    }}
+    
+    .chart-card {{
+      background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s ease;
+    }}
+    
+    .chart-card:hover {{
+      border-color: rgba(102, 126, 234, 0.5);
+      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15);
+    }}
+    
+    .chart-label {{
+      font-size: 16px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 20px;
+    }}
+    
+    .chart-card img {{
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      display: block;
+    }}
+    
+    .table-wrapper {{
+      overflow-x: auto;
+      border-radius: 16px;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
+    }}
+    
+    table {{
+      width: 100%;
+      border-collapse: collapse;
+      background: transparent;
+    }}
+    
+    thead {{
+      background: rgba(102, 126, 234, 0.1);
+    }}
+    
+    th {{
+      padding: 20px 16px;
+      text-align: left;
+      font-weight: 700;
+      color: #667eea;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+    }}
+    
+    td {{
+      padding: 16px;
+      border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+      font-size: 14px;
+    }}
+    
+    tbody tr:hover {{
+      background: rgba(102, 126, 234, 0.08);
+    }}
+    
+    tbody tr:last-child td {{
+      border-bottom: none;
+    }}
+    
+    .value-good {{
+      color: #10b981;
+      font-weight: 700;
+    }}
+    
+    .value-bad {{
+      color: #ef4444;
+      font-weight: 700;
+    }}
+    
+    .legend {{
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }}
+    
+    .legend-item {{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }}
+    
+    .legend-dot {{
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }}
+    
+    .dot-green {{background: #10b981;}}
+    .dot-red {{background: #ef4444;}}
+    
+    .guide-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 40px;
+    }}
+    
+    .guide-card {{
+      background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s ease;
+    }}
+    
+    .guide-card:hover {{
+      border-color: rgba(102, 126, 234, 0.5);
+      transform: translateY(-8px);
+    }}
+    
+    .guide-card h3 {{
+      font-size: 18px;
+      color: #667eea;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }}
+    
+    .guide-card p {{
+      color: #ccc;
+      font-size: 14px;
+      line-height: 1.8;
+      margin-bottom: 12px;
+    }}
+    
+    .guide-card p:last-child {{
+      margin-bottom: 0;
+    }}
+    
+    .tip {{
+      background: rgba(102, 126, 234, 0.1);
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 30px 0;
+    }}
+    
+    .tip-title {{
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 8px;
+    }}
+    
+    .tip-text {{
+      color: #ccc;
+      font-size: 14px;
+    }}
+    
+    .footer {{
+      background: #0a0e27;
+      border-top: 1px solid rgba(102, 126, 234, 0.2);
+      padding: 60px 40px;
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+    }}
+    
+    .footer-title {{
+      color: #667eea;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }}
+    
+    .cta-button {{
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px 40px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+      margin-top: 20px;
+      display: inline-block;
+      cursor: pointer;
+      border: none;
+    }}
+    
+    .cta-button:hover {{
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+    }}
+    
+    .comparison-badge {{
+      display: inline-block;
+      background: rgba(102, 126, 234, 0.1);
+      color: #667eea;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 12px;
+    }}
+    
+    @media (max-width: 768px) {{
+      .hero {{
+        padding: 50px 20px;
+      }}
+      
+      .hero h1 {{
+        font-size: 36px;
+      }}
+      
+      .container {{
+        padding: 40px 20px;
+      }}
+      
+      h2 {{
+        font-size: 28px;
+      }}
+      
+      .sessions-container {{
+        grid-template-columns: 1fr;
+      }}
+      
+      .stats-row {{
+        grid-template-columns: repeat(2, 1fr);
+      }}
+      
+      .guide-grid {{
+        grid-template-columns: 1fr;
+      }}
+      
+      table {{
+        font-size: 12px;
+      }}
+      
+      th, td {{
+        padding: 12px 8px;
+      }}
+    }}
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-content">
+    <h1>⚡ RESYNC.ERR</h1>
+    <p class="hero-subtitle">Performance Analysis & Session Comparison</p>
+    
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-number">{len(self.sessions)}</div>
+        <div class="stat-label">Sessions</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">{len(sensors)}</div>
+        <div class="stat-label">Sensors</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" style="font-size: 24px;">{generated_at}</div>
+        <div class="stat-label">Generated</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <section id="sessions">
+    <h2>📁 Recording Sessions</h2>
+    <p class="section-subtitle">Compare hardware performance across your sessions</p>
+    
+    <div class="sessions-container">
+      {chr(10).join(
+        f'''<div class="session">
+          <div class="session-title">{html_mod.escape(s["label"])}</div>
+          <div class="session-desc">{"Reference baseline for all comparisons" if si == 0 else "Compared against Session 1"}</div>
+          <span class="session-badge">{"Baseline" if si == 0 else f"Session {si + 1}"}</span>
+        </div>''' 
+        for si, s in enumerate(self.sessions)
+      )}
+    </div>
+  </section>
+
+  <section id="charts">
+    <h2>📊 Performance Charts</h2>
+    <p class="section-subtitle">Visual comparison of key metrics</p>
+    
+    <div class="tip">
+      <div class="tip-title">💡 How to Read These Charts</div>
+      <div class="tip-text">
+        <strong style="color: #10b981;">🟢 Green areas</strong> = Better performance (cooler temps, higher FPS, more stable)<br>
+        <strong style="color: #ef4444;">🔴 Red areas</strong> = Worse performance (higher temps, lower FPS, less stable)
+      </div>
+    </div>
+    
+    <div class="charts-grid">
+      {charts_html}
+    </div>
+  </section>
+
+  <section id="statistics">
+    <h2>📈 Detailed Statistics</h2>
+    <p class="section-subtitle">Complete sensor analysis and metrics breakdown</p>
+    
+    <div class="tip">
+      <div class="tip-title">📊 Understanding the Data</div>
+      <div class="tip-text">
+        <strong>Min/Max:</strong> Lowest and highest recorded values<br>
+        <strong>Avg:</strong> Average across the entire session<br>
+        <strong>P95/P99:</strong> 95th and 99th percentile values<br>
+        <strong>σ:</strong> Standard deviation (consistency - lower is more stable)
+      </div>
+    </div>
+    
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Sensor</th>
+            {hdr_sess}
+          </tr>
+          {sub_hdr}
+        </thead>
+        <tbody>
+          {rows_html}
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot dot-green"></div>
+        <span>Better Performance</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot dot-red"></div>
+        <span>Worse Performance</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="guide">
+    <h2>🎓 How to Interpret Results</h2>
+    <p class="section-subtitle">Understanding what your data means</p>
+    
+    <div class="guide-grid">
+      <div class="guide-card">
+        <h3>✅ Green (Better)</h3>
+        <p><strong>Temperature:</strong> Lower = cooler, better cooling</p>
+        <p><strong>Power:</strong> Lower = more efficient</p>
+        <p><strong>FPS/Speed:</strong> Higher = faster performance</p>
+        <p><strong>Stability:</strong> Lower σ = more consistent</p>
+      </div>
+      
+      <div class="guide-card">
+        <h3>❌ Red (Worse)</h3>
+        <p><strong>Temperature:</strong> Higher = hotter, thermal stress</p>
+        <p><strong>Power:</strong> Higher = less efficient</p>
+        <p><strong>FPS/Speed:</strong> Lower = slower performance</p>
+        <p><strong>Stability:</strong> Higher σ = inconsistent behavior</p>
+      </div>
+      
+      <div class="guide-card">
+        <h3>🔍 Common Scenarios</h3>
+        <p><strong>Temps up:</strong> Check dust, thermal paste, cooling</p>
+        <p><strong>Power up:</strong> Higher workload or inefficiency</p>
+        <p><strong>FPS down:</strong> Driver issue or workload change</p>
+        <p><strong>High variance:</strong> Possible throttling</p>
+      </div>
+    </div>
+    
+    <div class="tip" style="margin-top: 40px;">
+      <div class="tip-title">⚡ Pro Tips</div>
+      <div class="tip-text">
+        • Compare P95/P99 values to spot occasional spikes without being affected by rare outliers<br>
+        • High standard deviation can indicate thermal throttling or power delivery stress<br>
+        • Consistent improvements across all metrics usually means better system tuning<br>
+        • Watch for variance in clock speeds - high variance = instability
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="footer">
+  <p class="footer-title">RESYNC.ERR v{CURRENT_VERSION}</p>
+  <p>Hardware Telemetry Analysis & Performance Comparison</p>
+  <p style="margin-top: 12px; color: #666;">Generated on {generated_at}</p>
+  <p style="margin-top: 20px; color: #555; max-width: 600px; margin-left: auto; margin-right: auto;">
+    This report analyzes hardware sensor data to identify performance differences, stability issues, and system changes between recording sessions.
+  </p>
+</div>
+
+<script>
+  // Smooth scroll to section
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {{
+    anchor.addEventListener('click', function (e) {{
+      const href = this.getAttribute('href');
+      if (href !== '#') {{
+        e.preventDefault();
+        const elem = document.querySelector(href);
+        if (elem) {{
+          elem.scrollIntoView({{
+            behavior: 'smooth',
+            block: 'start'
+          }});
+        }}
+      }}
+    }});
+  }});
+  
+  // Add animation on scroll
+  const observer = new IntersectionObserver((entries) => {{
+    entries.forEach(entry => {{
+      if (entry.isIntersecting) {{
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }}
+    }});
+  }}, {{threshold: 0.1}});
+  
+  document.querySelectorAll('section, .session, .chart-card, .guide-card').forEach(el => {{
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  }});
+</script>
+
+</body>
+</html>"""
 
                 with open(f_path, 'w', encoding='utf-8') as fh:
                     fh.write(html)
@@ -4975,6 +5659,53 @@ figure img{{border-radius:8px;}}
         wl(f"  Disabled  : {sorted(self.disabled_sigs) or 'none'}", 'header')
         wl(f"  Format    : {'MangoHud' if self.analyzer.is_mangohud else 'HWiNFO64 / Generic CSV'}", 'header')
         wl('=' * 72, 'header')
+
+        section("CSV GAP DETECTION")
+        _gap_result = self.analyzer.detect_csv_gaps(gap_threshold_seconds=2.5)
+        if _gap_result.get('detection_error'):
+            wl(f"  ⚠ Error detecting gaps: {_gap_result['detection_error']}", 'warn')
+        else:
+            if not _gap_result['has_gaps']:
+                wl("  ✓ No significant gaps detected (threshold: >2.5 seconds)", 'ok')
+                wl("  CSV appears to have continuous logging.", 'ok')
+            else:
+                _usable_tag = 'ok' if _gap_result['data_usable'] else 'crit'
+                _usable_text = "✓ Data usable" if _gap_result['data_usable'] else "⚠ DATA QUALITY CONCERNS"
+                wl(f"  {_usable_text}", _usable_tag)
+                wl()
+                wl(f"  Found {_gap_result['gap_count']} gap(s) >2.5 seconds:", 'warn' if not _gap_result['data_usable'] else 'info')
+                wl(f"  Total gap time: {_gap_result['total_gap_time']:.2f} seconds", 'val')
+                wl()
+                
+                for i, gap in enumerate(_gap_result['gaps'], 1):
+                    _gap_mins = gap['duration_seconds'] / 60.0
+                    _gap_tag = 'warn' if gap['duration_seconds'] > 300 else 'info'
+                    wl(f"    Gap #{i}: {gap['duration_seconds']:.1f} sec ({_gap_mins:.2f} min)", _gap_tag)
+                    wl(f"      • Between rows {gap['start_row']} and {gap['end_row']}", 'muted')
+                    wl(f"      • {gap['start_time']} → {gap['end_time']}", 'val')
+                
+                wl()
+                if not _gap_result['data_usable']:
+                    wl("  ⚠ WARNING: This CSV may not be suitable for detailed analysis due to:", 'crit')
+                    reasons = []
+                    if _gap_result['gap_count'] > 5:
+                        reasons.append(f"    • More than 5 separate gaps ({_gap_result['gap_count']} found)")
+                    if max((g['duration_seconds'] for g in _gap_result['gaps']), default=0) > 300:
+                        reasons.append(f"    • At least one gap >5 minutes")
+                    total_span = (pd.to_datetime(self.analyzer.time_series).max() - 
+                                 pd.to_datetime(self.analyzer.time_series).min()).total_seconds()
+                    if total_span > 0:
+                        gap_pct = (_gap_result['total_gap_time'] / total_span) * 100
+                        if gap_pct > 10:
+                            reasons.append(f"    • Gap time >10% of total ({gap_pct:.1f}% missing)")
+                    for r in reasons:
+                        wl(r, 'crit')
+                    wl()
+                    wl("  Consider:", 'info')
+                    wl("    • Removing gap sections for more accurate analysis", 'info')
+                    wl("    • Treating before/after gap data separately", 'info')
+                    wl("    • Checking if HWINFO64 was paused during logging", 'info')
+            wl()
 
         section("DEPENDENCY CHECK")
         _deps = [
@@ -10687,6 +11418,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         for v in self.vars.values():
             v.set(False)
         self.session_compare_active = _prev
+        if self.delta_mode:
+            self._toggle_delta()
+        if not self.multi_mode:
+            self._toggle_multi()
         self.update_plot()
     def _render_composite_png(self, dpi=150):
         import io
