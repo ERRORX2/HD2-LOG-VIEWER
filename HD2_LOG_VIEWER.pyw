@@ -309,7 +309,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.2"
+CURRENT_VERSION = "1.7.3"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -635,9 +635,10 @@ class TelemetryAnalyzer:
 
         for enc in ['utf-8-sig', 'latin-1', 'cp1252']:
             try:
-                self.df = pd.read_csv(self.path, encoding=enc, sep=sep, on_bad_lines='skip',
-                                     engine='python')
-                if not self.df.empty:
+                df = pd.read_csv(self.path, encoding=enc, sep=sep, on_bad_lines='skip',
+                                 engine='python')
+                if len(df.columns) > 0:
+                    self.df = df
                     success = True
                     break
             except:
@@ -665,7 +666,8 @@ class TelemetryAnalyzer:
             last_row = self.df.iloc[-1]
             numeric_cols = [c for c in self.df.columns if c != self.time_col]
             check = self.df.iloc[-1][numeric_cols]
-            if ((check == 0) | check.isna()).all():
+            if (check == 0).sum() + check.isna().sum() > (len(numeric_cols) / 2):
+            #if ((check == 0) | check.isna()).all():
                 self.df = self.df.iloc[:-1]
             else:
                 break
@@ -716,19 +718,16 @@ class TelemetryAnalyzer:
             return result
         
         try:
-            # Convert time_series to datetime for comparison
-            times = pd.to_datetime(self.time_series, errors='coerce')
+            elapsed_seconds = self.time_series.dt.total_seconds()
+
+            deltas = elapsed_seconds.diff()
             
-            # Calculate time deltas between consecutive rows
-            deltas = times.diff()
-            
-            # Find gaps larger than threshold
             for idx in range(1, len(deltas)):
                 delta = deltas.iloc[idx]
                 if pd.isna(delta):
                     continue
                 
-                delta_seconds = delta.total_seconds()
+                delta_seconds = float(delta)
                 
                 if delta_seconds > gap_threshold_seconds:
                     result['has_gaps'] = True
@@ -739,18 +738,13 @@ class TelemetryAnalyzer:
                         'start_row': idx - 1,
                         'end_row': idx,
                         'duration_seconds': delta_seconds,
-                        'start_time': str(times.iloc[idx - 1]),
-                        'end_time': str(times.iloc[idx]),
+                        'start_time': str(self.time_series.iloc[idx - 1]),
+                        'end_time': str(self.time_series.iloc[idx]),
                     }
                     result['gaps'].append(gap_info)
-            
-            # Determine if data is still usable
-            # Mark as potentially problematic if:
-            # - More than 10% of data missing due to gaps
-            # - More than 5 separate gaps
-            # - Single gap > 5 minutes
+
             if result['gap_count'] > 0:
-                total_time_span = (times.max() - times.min()).total_seconds()
+                total_time_span = float(elapsed_seconds.max() - elapsed_seconds.min())
                 if total_time_span > 0:
                     gap_percentage = (result['total_gap_time'] / total_time_span) * 100
                     if gap_percentage > 10.0:
@@ -1164,6 +1158,7 @@ class TelemetryApp:
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
+        self.root.after(350, self._notify_csv_gaps)
         self.root.after(300, self._prompt_sensor_aliases)
 
         check_for_updates(
@@ -5692,10 +5687,16 @@ Min/Max Thresholds:
                         reasons.append(f"    • More than 5 separate gaps ({_gap_result['gap_count']} found)")
                     if max((g['duration_seconds'] for g in _gap_result['gaps']), default=0) > 300:
                         reasons.append(f"    • At least one gap >5 minutes")
-                    total_span = (pd.to_datetime(self.analyzer.time_series).max() - 
-                                 pd.to_datetime(self.analyzer.time_series).min()).total_seconds()
+                    
+                    total_span = (pd.to_timedelta(self.analyzer.time_series).max() - 
+                                 pd.to_timedelta(self.analyzer.time_series).min()).total_seconds()
+                    
                     if total_span > 0:
-                        gap_pct = (_gap_result['total_gap_time'] / total_span) * 100
+                        total_gap_time = _gap_result['total_gap_time']
+                        if hasattr(total_gap_time, 'total_seconds'):
+                            total_gap_time = total_gap_time.total_seconds()
+
+                        gap_pct = (total_gap_time / total_span) * 100
                         if gap_pct > 10:
                             reasons.append(f"    • Gap time >10% of total ({gap_pct:.1f}% missing)")
                     for r in reasons:
@@ -11296,9 +11297,39 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
+        self.root.after(350, self._notify_csv_gaps)
         self.root.after(300, self._prompt_sensor_aliases)
         if self.debug_mode:
             self._open_debug_window()
+
+    def _notify_csv_gaps(self):
+        try:
+            result = self.analyzer.detect_csv_gaps(gap_threshold_seconds=2.5)
+        except Exception as exc:
+            self.show_toast(f"Gap detection failed: {exc}")
+            return
+
+        if not result.get('has_gaps'):
+            return
+
+        gaps = result.get('gaps', [])
+        details = []
+        for gap in gaps[:5]:
+            details.append(
+                f"Rows {gap['start_row']:,}–{gap['end_row']:,}: "
+                f"{gap['duration_seconds']:.1f} seconds"
+            )
+        if len(gaps) > 5:
+            details.append(f"…and {len(gaps) - 5} more")
+
+        quality = "Data quality may be affected." if not result.get('data_usable', True) else ""
+        messagebox.showwarning(
+            "CSV Gaps Detected",
+            f"Found {result['gap_count']} logging gap(s) longer than 2.5 seconds.\n\n"
+            f"Total missing time: {result['total_gap_time']:.1f} seconds\n"
+            f"{quality}\n\n" + "\n".join(details),
+            parent=self.root,
+        )
 
     def _load_csv_threaded(self, path: str, on_success, on_error=None):
         """Show a spinner dialog, load the CSV in a background thread,
