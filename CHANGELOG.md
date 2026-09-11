@@ -1,5 +1,98 @@
 # Change Log
 
+## 📝 Changelog: v1.7.3 (2026-09-11)
+
+---
+
+### 🎨 UI & Workflow Improvements
+
+* **Hover Tooltips Restored:** Fixed a time-handling regression introduced in the previous version that broke mouse hover tooltips, restoring expected tooltip behavior across views.
+
+### 🐛 Bug Fixes & Enhancements
+
+* **Enhanced Gap Detection:** Refined the CSV gap detection analyzer for significantly higher accuracy when identifying logging stutters.
+* **Gap Threshold Error Trigger:** Added an explicit error state to alert users whenever a detected gap exceeds 2.5 seconds.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json`, `theme.json`, and `custom_sig.json` when updating to preserve your custom sensor presets, aliases, themes, custom signatures, and saved configurations.
+
+## 📝 Changelog: v1.7.2 (2026-08-22)
+
+---
+
+### 🎨 UI & Workflow Improvements
+
+* **Predictable Clear Button:** Improved the "Clear" button workflow. Pressing it now explicitly turns OFF Delta mode and turns ON Multi mode, ensuring you always return to a clean, consistent baseline state when deselecting sensors.
+
+### 🐛 Bug Fixes
+
+* **CSV Gap Detection:** Added a new analyzer that detects time gaps greater than 2.5 seconds (or 5+ missed readings) to easily identify logging stutters and application hangs.
+* **Debug Window Integration:** Added a dedicated "CSV GAP DETECTION" section to the Debug window, displaying a color-coded summary of detected gaps, their exact timestamps, and suggested remediation steps.
+* **CSV Data Truncation:** Fixed a critical bug where the program was aggressively removing valid data at the end of CSV files. (The old logic removed rows where >50% of values were 0 or NaN; it now strictly removes completely empty rows, perfectly preserving all valid data at file boundaries).
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json`, `theme.json`, and `custom_sig.json` when updating to preserve your custom sensor presets, aliases, themes, custom signatures, and saved configurations.
+
+## 📝 Changelog: v1.7.1 (2026-08-02)
+
+---
+
+### 🧑‍💻 Major Feature: Advanced Python Signatures
+
+* **Python Code Support:** Introduced an advanced signature system allowing you to create, edit, and test custom Python-based hardware diagnostic rules directly within the app.
+* **Dedicated Editor:** Added a fully-featured code editor for advanced signatures, complete with syntax checking, line numbers, and built-in code examples to guide your script creation.
+* **Custom Outputs:** Advanced signatures can now generate custom descriptions and provide specific, tailored advice based on the logic of your script.
+* **Complexity Limits:** Please note that advanced signatures currently lack access to some internal variables used by the app's prebuilt signatures, which limits their maximum complexity. If you have an idea for a highly complex signature that the editor can't handle, please raise an issue on GitHub so it can be considered for the built-in list!
+
+### 🎨 UI & Signature Management
+
+* **Unified Management:** Updated the signature management UI to seamlessly support and differentiate between both simple threshold-based signatures (from v1.7) and the new advanced Python signatures.
+* **Diagnosis Enhancements:** Improved result grouping in the Diagnosis window for better readability and organization when multiple custom signatures are triggered.
+* **Robust Evaluation:** Improved error handling and syntax validation to safely test and run user-supplied Python code without risking application crashes.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json`, `theme.json`, and `custom_sig.json` when updating to preserve your custom sensor presets, aliases, themes, custom signatures, and saved configurations.
+
+## 📝 Changelog: v1.7 (2026-07-31)
+
+---
+
+### 🎯 Major Feature: Custom Signatures System
+
+* **Custom Rules:** Create personalized hardware failure detection rules without modifying code. Custom rules are saved persistently to a new `custom_sig.json` file.
+* **Guided Wizard:** Added a step-by-step 7-step wizard to easily build signatures (Name, Severity, Trigger Mode, Sensors, Thresholds, Review, and Save).
+* **Dual Trigger Modes:** Choose between 'Always' mode (immediate trigger with fixed severity) or 'Consecutive' mode (escalates severity to INFO/WARNING/CRITICAL based on the number of violations to reduce temporary spike false positives).
+* **Advanced Sensor Matching:** Define Tracked and Excluded sensors using case-insensitive fuzzy matching, built right into a new checkbox-based sensor picker with real-time search.
+* **Min/Max Thresholds:** Dedicated input fields to set minimum values, maximum values, or both, tracking violations for every sample that exceeds your limits.
+
+### ⚙️ Signature Management & Testing
+
+* **Live Testing:** Added a `Test` button to evaluate a signature directly against your loaded CSV without saving. It displays a detailed results popup showing violation counts, matched sensors, and the triggered severity level.
+* **Quick Edit Menu:** Edit specific fields of an existing signature (Name, Sensors, Thresholds, etc.) quickly without having to run through the entire wizard from scratch.
+* **Enable/Disable/Delete:** Safely toggle custom signatures on or off (indicated by color-coded icons and grayed-out text) to test alternatives, or delete them permanently with safety confirmation dialogs.
+
+### 🎨 UI & Diagnosis Integration
+
+* **Settings Integration:** The Custom Signatures builder is now centrally accessible via a prominent button within the Settings dialog.
+* **Visual Separation:** Custom signatures now appear in their own dedicated section in the Diagnosis window, complete with a horizontal separator distinguishing them from the built-in app signatures.
+* **Chart Highlighting:** Added a "📌 Select Tracked Sensors" button on triggered custom signatures in the Diagnosis window to automatically select and highlight the offending sensors on your main plot.
+* **Data Refresh Requirement:** Please note that after creating or modifying a custom signature, you must reload your CSV file for the new signature to be evaluated and visible in the Diagnosis window.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json`, `theme.json`, and the newly created `custom_sig.json` when updating to preserve your custom sensor presets, aliases, themes, custom signatures, and saved configurations.
+
 ## 📝 Changelog: v1.6.8.1 (2026-07-24)
 
 ---
