@@ -309,7 +309,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.3"
+CURRENT_VERSION = "1.7.4"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -983,7 +983,7 @@ class TelemetryAnalyzer:
                 continue
 
         try:
-            parsed = pd.to_datetime(raw, errors='coerce')
+            parsed = pd.to_datetime(raw, errors='coerce', format='mixed')
             if parsed.notna().sum() > len(parsed) * 0.8:
                 self.time_col = found_col
                 first = parsed.dropna().iloc[0]
@@ -3128,6 +3128,16 @@ Min/Max Thresholds:
         self._hide_tk_tooltip()
         self.fig.patch.set_facecolor(bg_color)
 
+        def _is_numeric_column(col):
+            """Check if a column can be safely converted to numeric."""
+            try:
+                pd.to_numeric(self.df[col], errors='coerce').notna().any()
+                return True
+            except Exception:
+                return False
+        
+        sel = [c for c in sel if c in self.df.columns and _is_numeric_column(c)]
+
         if not sel:
             if hasattr(self, '_legend_panel'):
                 self._legend_panel.grid(row=0, column=1, sticky='ns')
@@ -3237,28 +3247,41 @@ Min/Max Thresholds:
         raw_data_map = {}
 
         for col in sel:
-            data = self.df[col].ffill().fillna(0).values.astype(float)
-            raw_data_map[col] = data
-            matrix.append(_normalize_row(col, data))
-            short = col
-            for bracket in ['[°C]', '[%]', '[MHz]', '[W]', '[V]', '[RPM]',
-                            '[ms]', '[FPS]', '[A]', '[MB]', '[GB]']:
-                short = short.replace(bracket, '').strip()
-            labels.append(short[:45])
+            try:
+                data = pd.to_numeric(self.df[col], errors='coerce').fillna(0).values.astype(float)
+                raw_data_map[col] = data
+                matrix.append(_normalize_row(col, data))
+                short = col
+                for bracket in ['[°C]', '[%]', '[MHz]', '[W]', '[V]', '[RPM]',
+                                '[ms]', '[FPS]', '[A]', '[MB]', '[GB]']:
+                    short = short.replace(bracket, '').strip()
+                labels.append(short[:45])
+            except Exception as e:
+                continue
 
         matrix = np.array(matrix)
+        
+        if len(matrix) == 0:
+            if hasattr(self, '_legend_panel'):
+                self._legend_panel.grid(row=0, column=1, sticky='ns')
+            self._update_tk_legend([])
+            ax = self.fig.add_subplot(111)
+            ax.set_facecolor(bg2_color)
+            ax.text(0.5, 0.5, "No numeric sensors selected", ha='center', va='center', color='gray')
+            self.canvas_widget.draw_idle()
+            return
 
         x_vals, ts, use_time = self._get_x_axis()
 
         ax = self.fig.add_subplot(111)
         ax.set_facecolor(bg_color)
 
-        extent = [x_vals[0], x_vals[-1], len(sel) - 0.5, -0.5]
+        extent = [x_vals[0], x_vals[-1], len(matrix) - 0.5, -0.5]
         ax.imshow(matrix, aspect='auto', cmap=cmap_discrete,
                   vmin=0, vmax=1, extent=extent,
                   interpolation='nearest', origin='upper')
 
-        for i in range(1, len(sel)):
+        for i in range(1, len(labels)):
             ax.axhline(i - 0.5, color=grid_color, lw=1.0)
 
         ax.set_yticks(range(len(labels)))
