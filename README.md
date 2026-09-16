@@ -51,7 +51,7 @@
 ### 🛠️ Option 3: Running from Source (For Developers)
 
 **Prerequisites:**
-* Python 3.12
+* Python 3.13.14
 * pip
 
 1. git clone ``https://github.com/ERRORX2/HD2-LOG-VIEWER.git``
