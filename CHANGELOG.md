@@ -1,5 +1,23 @@
 # Change Log
 
+## 📝 Changelog: v1.7.4 (2026-09-16)
+
+---
+
+### 🐛 Bug Fixes
+
+* **Heatmap Crash Fix:** Fixed a `ValueError` crash in Heatmap mode caused by attempting to convert non-numeric data (such as timestamps) into numerical float values.
+* **Numeric Data Handling:** Improved conversion resilience by automatically pre-filtering non-numeric columns and safely coercing data types before attempting to render the heatmap.
+* **Heatmap Rendering:** Fixed extent and grid calculations to correctly map to the actual matrix dimensions instead of failing on mismatched sizes.
+* **Date Parser Warnings:** Eliminated backend date parser warnings by explicitly specifying the mixed time format during timestamp conversions.
+* **Edge Case Handling:** Added fallback handling to prevent app lockups in the specific edge case where all selected columns are filtered out.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json`, `theme.json`, and `custom_sig.json` when updating to preserve your custom sensor presets, aliases, themes, custom signatures, and saved configurations.
+
 ## 📝 Changelog: v1.7.3 (2026-09-11)
 
 ---
