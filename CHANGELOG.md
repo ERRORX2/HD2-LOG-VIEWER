@@ -24,7 +24,7 @@
 
 ### 🎨 UI & Workflow Improvements
 
-* **Hover Tooltips Restored:** Fixed a time-handling regression introduced in the previous version that broke mouse hover tooltips, restoring expected tooltip behavior across views.
+* **Hover Tooltips Restored:** Fixed a regression introduced in v1.7.2 that brokemouse hover tooltips. Root cause: v1.7.2's stricter tail-trim preserved rowsw hose timestamps could not be parsed, the invalid time values those rows produced broke the hover position lookup across the entire plot. Tooltips were restored by reverting to the previous trim rule.
 
 ### 🐛 Bug Fixes & Enhancements
 
@@ -36,7 +36,7 @@
 ### 📢 Notes
 
 * Keep `groups.json`, `theme.json`, and `custom_sig.json` when updating to preserve your custom sensor presets, aliases, themes, custom signatures, and saved configurations.
-
+  
 ## 📝 Changelog: v1.7.2 (2026-08-22)
 
 ---
