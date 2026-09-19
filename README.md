@@ -12,9 +12,9 @@
 ### 📦 Option 1: Latest Windows Release (Recommended for Most Users)
 
 <!-- LATEST_RELEASE_START -->
-### 🚀 Latest Windows Release: v1.7.4 (2026-09-16)
+### 🚀 Latest Windows Release: v1.7.5 (2026-09-19)
 
-- Download: [release_release_v1.7.4.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.7.4/release_v1.7.4.zip)
+- Download: [release_release_v1.7.5.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.7.5/release_v1.7.5.zip)
 
 ### 🔐 Integrity
 
@@ -22,10 +22,10 @@
 
 <summary>Cryptographic Hashes</summary>
 
-* EXE SHA256: `576CFFBE65B3C70491206A3A33937616BD46186103B3E68CB564D77A259D3289`
+* EXE SHA256: `DE83CA0E72E3C6B19675C102A49BEBD55B37523CF1F754BBC293493B170F38D8`
 * Groups JSON SHA256: `0CDF44A34045CACD79EFC608A3A2312BDB903DEC5ADB0E30BE4343439878BAB3`
-* Manifest SHA256: `F004E70030517860E858BB677F2F12EE76E75FE18402870819435FB162DDDA7A`
-* ZIP SHA256: `95566F02663C9D383C613F27EE438B82D1822697E38872944036F26EEF85134E`
+* Manifest SHA256: `E6BAB3D484AC0435EC3CA6BBBFEAB5B9031201FF1358FF8A6697410BDDB4DA9A`
+* ZIP SHA256: `D0FA798C5C62251BFA38C61EDC8CF62F5139E4DD02F55593446F8768164E1B93`
 
 </details>
 <!-- LATEST_RELEASE_END -->
@@ -180,6 +180,7 @@ HD2 LOG VIEWER includes an advanced signature detection system that analyzes sys
 ## ⚖️ License
 
 MIT License - Developed for the hardware enthusiast and troubleshooting community.
+
 
 
 
