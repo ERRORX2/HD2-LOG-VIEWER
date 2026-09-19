@@ -309,7 +309,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.4"
+CURRENT_VERSION = "1.7.5"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -5951,6 +5951,80 @@ Min/Max Thresholds:
         wl(f"  Intel req cols ({len(intel_pcore_req)}): {intel_pcore_req[:3] or MISS}", 'val')
         wl(f"  Intel eff cols ({len(intel_pcore_eff)}): {intel_pcore_eff[:3] or MISS}", 'val')
 
+        section("INTEL P-CORE CLOCK STRETCHING DEBUG")
+        wl(f"  Condition: not req_cols={not req_cols}, intel_pcore_req={bool(intel_pcore_req)}, intel_pcore_eff={bool(intel_pcore_eff)}", 'val')
+        will_enter_intel = not req_cols and intel_pcore_req and intel_pcore_eff
+        wl(f"  Will enter Intel block: {will_enter_intel}", 'val' if will_enter_intel else 'warn')
+        
+        if will_enter_intel:
+            wl(f"  [✓] ENTERING INTEL BLOCK", 'ok')
+            per_core_ratios_debug = []
+            cores_processed_debug = []
+            
+            for i, req_col in enumerate(intel_pcore_req):
+                req_data = pd.to_numeric(df[req_col], errors='coerce').replace(0, np.nan)
+                valid_req = req_data > 300
+                
+                core_num = None
+                for sep in ['P-Core ', 'P-core ', 'P-CORE ']:
+                    if sep in req_col:
+                        core_num = req_col.split(sep)[-1].split(' ')[0]
+                        break
+                if not core_num:
+                    core_num = str(i)
+                
+                eff_cols_for_core = [c for c in intel_pcore_eff
+                                     if f'P-CORE {core_num}' in c.upper() 
+                                     and 'EFFECTIVE' in c.upper()]
+                
+                if not eff_cols_for_core:
+                    wl(f"    Core {core_num}: NO EFFECTIVE COLS FOUND", 'warn')
+                    continue
+                
+                core_ratios_temp = []
+                core_weights_temp = []
+                active_count = 0
+                
+                for eff_col in eff_cols_for_core:
+                    if eff_col not in df.columns:
+                        continue
+                    eff_data = pd.to_numeric(df[eff_col], errors='coerce')
+                    active = valid_req & (eff_data > 50)
+                    active_count += active.sum()
+                    
+                    if not active.any():
+                        continue
+                    
+                    ratio = (eff_data / req_data).clip(0, 1.5).where(active)
+                    weight = req_data.where(active)
+                    core_ratios_temp.append(ratio)
+                    core_weights_temp.append(weight)
+                
+                if core_ratios_temp:
+                    ratio_series = pd.concat(core_ratios_temp, axis=0).groupby(level=0).mean()
+                    ratio_mean = ratio_series.mean()
+                    per_core_ratios_debug.append(ratio_series)
+                    cores_processed_debug.append((core_num, ratio_mean, active_count))
+                    wl(f"    Core {core_num}: ratio_mean={ratio_mean:.4f}, active_samples={active_count}", 'ok')
+                else:
+                    wl(f"    Core {core_num}: NO RATIOS COLLECTED", 'warn')
+            
+            wl(f"  Total cores processed: {len(per_core_ratios_debug)}", 'val')
+            
+            if per_core_ratios_debug:
+                all_ratios_dbg = pd.concat(per_core_ratios_debug, axis=1)
+                weight_total_dbg = all_ratios_dbg.notna().sum(axis=1)
+                mean_ratio_dbg = all_ratios_dbg.mean(axis=1).dropna()
+                
+                wl(f"  Mean ratio: {mean_ratio_dbg.mean():.4f}", 'ok')
+                wl(f"  Min ratio: {mean_ratio_dbg.min():.4f}", 'val')
+                wl(f"  Max ratio: {mean_ratio_dbg.max():.4f}", 'val')
+                wl(f"  Samples: {len(mean_ratio_dbg)}", 'val')
+            else:
+                wl(f"  [✗] per_core_ratios_debug is EMPTY", 'crit')
+        else:
+            wl(f"  [✗] NOT ENTERING INTEL BLOCK", 'warn')
+
         gpu_hotspot       = self._col_excl(('GPU', 'HOT'),  excl=('CPU', 'LIMIT'))
         if not gpu_hotspot:
             _gpu_t_cands = [c for c in df.columns
@@ -7206,11 +7280,19 @@ Min/Max Thresholds:
             per_core_active = []
 
             for i, req_col in enumerate(intel_pcore_req):
-                req = df[req_col].replace(0, np.nan)
+                req = pd.to_numeric(df[req_col], errors='coerce').replace(0, np.nan)
                 valid_req = req > 300
-                core_num = req_col.split('P-core ')[-1].split(' ')[0] if 'P-core ' in req_col else str(i)
+                core_num = None
+                for sep in ['P-Core ', 'P-core ', 'P-CORE ']:
+                    if sep in req_col:
+                        core_num = req_col.split(sep)[-1].split(' ')[0]
+                        break
+                if not core_num:
+                    core_num = str(i)
+                
                 eff_cols_for_core = [c for c in intel_pcore_eff
-                                     if f'P-CORE {core_num} ' in c.upper()]
+                                     if f'P-CORE {core_num}' in c.upper() 
+                                     and 'EFFECTIVE' in c.upper()]
                 if not eff_cols_for_core:
                     continue
                 core_ratios  = []
@@ -7218,8 +7300,8 @@ Min/Max Thresholds:
                 for eff_col in eff_cols_for_core:
                     if eff_col not in df.columns:
                         continue
-                    eff = df[eff_col]
-                    active = valid_req & (eff > (0.35 * req + 100))
+                    eff = pd.to_numeric(df[eff_col], errors='coerce')
+                    active = valid_req & (eff > 50)
                     if not active.any():
                         continue
                     ratio = (eff / req).clip(0, 1.5).where(active)
@@ -7227,8 +7309,12 @@ Min/Max Thresholds:
                     core_ratios.append(ratio)
                     core_weights.append(weight)
                 if core_ratios:
-                    per_core_ratios.append(pd.concat(core_ratios, axis=0).groupby(level=0).mean())
-                    per_core_active.append(pd.concat(core_weights, axis=0).groupby(level=0).mean())
+                    ratio_series = pd.concat(core_ratios, axis=0).groupby(level=0).mean()
+                    weight_series = pd.concat(core_weights, axis=0).groupby(level=0).mean()
+                    ratio_series.name = core_num
+                    weight_series.name = core_num
+                    per_core_ratios.append(ratio_series)
+                    per_core_active.append(weight_series)
 
             if per_core_ratios:
                 all_ratios   = pd.concat(per_core_ratios, axis=1)
@@ -7239,12 +7325,10 @@ Min/Max Thresholds:
                 core_weight  = all_ratios.notna().sum(axis=1)
                 active_cores = core_weight > 0
                 mean_ratio   = mean_ratio[active_cores].dropna()
+                major_event = mean_ratio < 0.60
+                minor_event = (mean_ratio >= 0.60) & (mean_ratio < 0.80)
 
-                if len(mean_ratio) > 0:
-                    major_event = mean_ratio < 0.60
-                    minor_event = (mean_ratio >= 0.60) & (mean_ratio < 0.80)
-
-                    if major_event.any():
+                if major_event.any():
                         avg_r   = mean_ratio[major_event].mean()
                         worst_r = mean_ratio[major_event].min()
                         add(
@@ -7263,7 +7347,7 @@ Min/Max Thresholds:
                             ],
                             cols=intel_pcore_req[:4]
                         )
-                    elif minor_event.any():
+                elif minor_event.any():
                         avg_r = mean_ratio[minor_event].mean()
                         add(
                             name="CPU Clock Stretching (Minor)",
