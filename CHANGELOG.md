@@ -1,5 +1,27 @@
 # Change Log
 
+## 📝 Changelog: v1.7.5 (2026-09-19)
+
+---
+
+### ⚙️ Diagnostic Improvements
+
+* **Intel Clock Stretching:** Significantly improved and refactored the detection logic for Intel P-Core clock stretching to increase efficiency and clarity.
+* **P-Core Detection:** Made column matching logic more robust and case-insensitive to ensure Intel P-Cores are consistently identified.
+* **Threshold Adjustments:** Simplified the active core detection threshold to a fixed value (effective > 50) for more reliable event triggering.
+* **Enhanced Logging:** Added detailed debug logging specifically for Intel P-Core clock stretching to aid in advanced troubleshooting.
+* **Series Labeling:** Per-core ratio and weight series are now accurately named and tracked by their specific core number.
+
+### 🐛 Bug Fixes
+
+* **Intel Clock String Parsing:** Fixed an issue where Intel clock values stored as strings in certain CSVs caused the clock stretching logic to report a ratio of 0.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json`, `theme.json`, and `custom_sig.json` when updating to preserve your custom sensor presets, aliases, themes, custom signatures, and saved configurations.
+
 ## 📝 Changelog: v1.7.4 (2026-09-16)
 
 ---
@@ -24,12 +46,12 @@
 
 ### 🎨 UI & Workflow Improvements
 
-* **Hover Tooltips Restored:** Fixed a regression introduced in v1.7.2 that brokemouse hover tooltips. Root cause: v1.7.2's stricter tail-trim preserved rowsw hose timestamps could not be parsed, the invalid time values those rows produced broke the hover position lookup across the entire plot. Tooltips were restored by reverting to the previous trim rule.
+* **Hover Tooltips Restored:** Fixed a regression introduced in v1.7.2 that brokemouse hover tooltips. Root cause: v1.7.2's stricter tail-trim preserved rows whose timestamps could not be parsed, the invalid time values those rows produced broke the hover position lookup across the entire plot. Tooltips were restored by reverting to the previous trim rule.
 
 ### 🐛 Bug Fixes & Enhancements
 
 * **Enhanced Gap Detection:** Refined the CSV gap detection analyzer for significantly higher accuracy when identifying logging stutters.
-* **Gap Threshold Error Trigger:** Added an explicit error state to alert users whenever a detected gap exceeds 2.5 seconds.
+* **Gap Threshold Error Trigger:** Added an explicit error state to alert users when ever a detected gap exceeds 2.5 seconds.
 
 ---
 
