@@ -1,5 +1,44 @@
 # Change Log
 
+## 📝 Changelog: v1.7.6 (2026-09-21)
+
+---
+
+### 🎯 Major Feature: PSU Rail Analysis Rebuilt
+
+* **Value-Gated Rail Resolver:** All voltage-rail lookups (+12V / +5V / +3.3V) across the signature engine, debug dump, and HTML report charts now go through a single `resolve_psu_rail_column()` source of truth using anchored name tokens, component-rail exclusions, and a hard electrical window on column mean. This prevents mislabelled per-core sensors (e.g., `P-core 12 Voltage [V]`) from being mistaken for a +12V rail and fabricating false CRITICAL PSU failures.
+* **Laptop Gate Fix:** PSU rail analysis is no longer disabled by the `is_laptop` heuristic, ensuring desktops that log UPS battery telemetry keep rail analysis while genuine ATX rails are detected on any system.
+* **+12V Sag Detection:** Restored the rail-sag check so it runs unconditionally rather than being nested inside the GPU-hotspot branch. User-confirmed sensor aliases (`rail_12v` / `rail_5v` / `rail_33v` in `sensor_aliases.json`) take precedence.
+* **Composite PSU Evidence:** Restored the missing +12V sag-percentage block in "PSU Hardware Failure Indicators" (sample percentage below limit, minimum voltage, and capacitor-wear ripple checks).
+
+### ⚙️ New Signatures & Detectors
+
+* **GPU Power Limit Oscillation:** Added a signature to detect rapid power-limit engagement/release cycles within a sane duty-cycle window. Calculates clock std/drop evidence exclusively within the oscillation region to avoid skew from idle-to-gameplay state shifts. Threshold ("toggles/min") is configurable in Settings.
+* **GPU Driver TDR (Timeout):** Reworked timeout detection with pre/post usage confirmation and rising-edge event counting. Automatically goes OFFLINE with a stated reason if the usage column is not a percentage.
+* **VRAM Swapping / Memory Spillover:** Completely rewritten VRAM overflow analysis. Estimates VRAM capacity from sample pairs, defends against standing shared-memory pools, and reports offline reasons when sensors lack required data. Includes a dedicated debug-dump section (`VRAM SWAP / SPILL ANALYSIS`).
+* **Storage I/O Bottleneck:** Improved disk congestion detection so failing drives without an activity sensor are no longer ignored. Multi-drive systems are checked with the worst drive reported, and severity maps correctly (FAILURE -> CRITICAL / warning flag -> WARNING).
+* **MCLK / XMP Detection:** Rewritten to use 90th percentile values instead of median, supporting DDR5 double-rate clock reporting and downgrading to INFO on laptops with expected JEDEC-locked memory.
+
+### 🐛 Bug Fixes
+
+* **UI Thread Marshalling:** Added a `_post_ui()` helper across 19 worker thread sites (splash screen, version checker, toasts, analysis, reports). Dropped thread marshals now properly release the signature engine `_sig_running` flag rather than wedging it.
+* **German-Language Logs:** `[Yes/No]` columns now accept `Ja`/`Nein`, and CPU clock columns resolve correctly from `KERN TAKT` headers.
+* **Signature Chart Linking:** Power-limit oscillation and storage hits now attach region masks and source columns so charts highlight exact affected samples.
+* **Threshold Wiring Cleanup:** Deduplicated threshold dictionary keys, attribute assignments, Settings dialog rows, and save/load handlers.
+
+### 🎨 UI & Workflow Improvements
+
+* **Settings Dialog:** Added a new threshold control row for "GPU power-limit oscillation rate" (toggles/min).
+* **Debug Dump Additions:** Added sections for `DATA NORMALIZATION LOG`, `DATA TYPE ANALYSIS`, `SIGNATURE KEYWORD MATCHING (Top 5)`, and `ANALYSIS READINESS`, alongside updated TDR fields, canonical PSU rail columns, and VRAM-swap statistics.
+* **Custom Signature Editor:** Removed the outdated "GPU VRAM Overflow" sample template (superseded by the new VRAM swapping detector).
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json`, `theme.json`, and `custom_sig.json` when updating to preserve your custom sensor presets, aliases, themes, custom signatures, and saved configurations.
+* Manual rail aliases (`rail_12v` / `rail_5v` / `rail_33v`) remain honored as-is and bypass automatic value checks.
+
 ## 📝 Changelog: v1.7.5 (2026-09-19)
 
 ---

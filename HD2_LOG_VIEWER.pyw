@@ -86,6 +86,70 @@ _ERROR_KW      = ('ECC', 'BAD SECTOR', 'REALLOCATED', 'PENDING SECTOR',
 _RAIL_SKIP     = ('GPU PCIE', 'PCIE', '12VHPWR', 'INPUT')
 _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
 
+_PSU_RAIL_SPECS = {
+
+    '+12V': dict(
+        tokens=(r'\+12\s*V',                        # '+12V', '+12 V', 'ATX +12V'
+                r'(?<![\d.])12\s*V(?:IN)?(?![A-Z0-9])',   # '12V', '12 V', '12VIN' - never '12 Voltage'
+                r'\b12\s*VOLT\b',                  # '12 Volt [V]' (LHM style)
+                r'\bVBUS\s*12\b', r'\bVIN0\b',
+                r'\bEPS\s*12\b', r'\bATX\s*12\b'),
+        nominal=12.0, window=(9.0, 15.0)),
+    '+5V': dict(
+        tokens=(r'\+5\s*V',
+                r'(?<![\d.])5\s*V(?:IN)?(?![A-Z0-9])',
+                r'\b5\s*VOLT\b',
+                r'\b5VSB\b', r'\+5VS\b', r'\bVBUS\b',
+                r'\bAVCC\b', r'\bVCC5\b', r'\bATX\s*5\b', r'\bVIN0\b'),
+        nominal=5.0, window=(4.2, 5.8)),
+    '+3.3V': dict(
+        tokens=(r'\+3\.3\s*V',
+                r'(?<![\d.])3\.3\s*V(?:IN)?(?![A-Z0-9])',
+                r'\b3\.3\s*VOLT\b',
+                r'\b3V3\b', r'\bVCC3\b', r'\bAVCC3\b',
+                r'\b3VSB\b', r'\b3\.3VSB\b', r'\+3\.3VS\b',
+                r'\bVDD\s*\(SWA\)\b', r'\bAVCC\b', r'\bVIN0\b'),
+        nominal=3.3, window=(2.8, 3.9)),
+}
+_PSU_RAIL_EXCLUDE = (
+
+    'VID', 'CORE', 'CPU', 'GPU', 'DRAM', 'DIMM', 'SOC', 'CACHE',
+    'VDDQ', 'VDDCR', 'VCCIO', 'VPP', 'VRM', 'PCIE', 'PEG', 'HPWR',
+    '12VHPWR', 'FBVDD', 'VRAM', 'FAN', 'RPM', 'SVI', 'IMON', 'PPT',
+    'TDP', 'OFFSET', 'LIMIT', 'CHIP', 'MISC',
+)
+
+
+def resolve_psu_rail_column(df, rail, alias=None):
+
+    if alias and alias in df.columns:
+        return alias
+    spec = _PSU_RAIL_SPECS.get(rail)
+    if spec is None or df is None:
+        return None
+    tok_re = re.compile('|'.join(spec['tokens']))
+    lo, hi = spec['window']
+    best, best_dist = None, None
+    for c in df.columns:
+        cu = str(c).upper()
+        if '[V]' not in cu:
+            continue
+        if any(x in cu for x in _PSU_RAIL_EXCLUDE):
+            continue
+        if not tok_re.search(cu):
+            continue
+        try:
+            mean_v = float(pd.to_numeric(df[c], errors='coerce')
+                           .dropna().mean())
+        except Exception:
+            continue
+        if not (lo <= mean_v <= hi):
+            continue
+        dist = abs(mean_v - spec['nominal'])
+        if best_dist is None or dist < best_dist:
+            best, best_dist = c, dist
+    return best
+
 GROUPS_FILE         = "groups.json"
 SENSOR_ALIASES_FILE = "sensor_aliases.json"
 THEME_FILE          = "theme.json"
@@ -309,7 +373,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.5"
+CURRENT_VERSION = "1.7.6"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
@@ -362,12 +426,16 @@ def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, 
     except:
         return {}, False, False, False, "", False, False, {}, False, [], False, True
 
+def _post_ui(root, fn):
+    try:
+        root.after(0, fn)
+        return True
+    except (RuntimeError, tk.TclError):
+        return False
+
 def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: bool = False,
                       on_ignore=None, on_disable=None, silent: bool = True):
-    """
-    silent=True  -> startup check, skips notification if version is ignored or updates are disabled.
-    silent=False -> manual ⟳ check, always gives feedback.
-    """
+
     def _check():
         try:
             url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
@@ -379,12 +447,12 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
 
             if not latest:
                 if not silent:
-                    root.after(0, lambda: _toast("⚠️ Could not read release info"))
+                    _post_ui(root, lambda: _toast("⚠️ Could not read release info"))
                 return
 
             if latest == current:
                 if not silent:
-                    root.after(0, lambda: _toast("✅ You're on the latest version!"))
+                    _post_ui(root, lambda: _toast("✅ You're on the latest version!"))
                 return
 
             if silent:
@@ -394,11 +462,11 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
                     return
 
             release_url = data.get("html_url", "")
-            root.after(0, lambda: _notify(latest, release_url))
+            _post_ui(root, lambda: _notify(latest, release_url))
 
         except Exception:
             if not silent:
-                root.after(0, lambda: _toast("⚠️ Could not reach GitHub"))
+                _post_ui(root, lambda: _toast("⚠️ Could not reach GitHub"))
 
     def _toast(msg: str):
         try:
@@ -677,8 +745,9 @@ class TelemetryAnalyzer:
             if '[Yes/No]' in col or '[yes/no]' in col.lower():
                 self.df[col] = (
                     self.df[col].astype(str).str.strip().str.lower()
-                    .map({'yes': 1.0, 'no': 0.0, '1': 1.0, '0': 0.0,
-                          '1.0': 1.0, '0.0': 0.0, 'true': 1.0, 'false': 0.0})
+                    .map({'yes': 1.0, 'no': 0.0, 'ja': 1.0, 'nein': 0.0,
+                          '1': 1.0, '0': 0.0, '1.0': 1.0, '0.0': 0.0,
+                          'true': 1.0, 'false': 0.0})
                 )
 
         if self.time_series is not None:
@@ -1096,6 +1165,7 @@ class TelemetryApp:
             'sig_clock_stretch_mhz': 500.0,
             'sig_disk_busy_pct': 99.9,
             'sig_disk_busy_samples': 3,
+            'sig_gpu_osc_per_min': 6.0,
             'sig_v12_lo': 11.4,
             'sig_v5_lo': 4.75,  'sig_v5_hi': 5.25,
             'sig_v33_lo': 3.14, 'sig_v33_hi': 3.47,
@@ -1146,6 +1216,7 @@ class TelemetryApp:
         self.sig_clock_stretch_mhz  = misc['sig_clock_stretch_mhz']
         self.sig_disk_busy_pct      = misc['sig_disk_busy_pct']
         self.sig_disk_busy_samples  = int(misc['sig_disk_busy_samples'])
+        self.sig_gpu_osc_per_min    = misc.get('sig_gpu_osc_per_min', 6.0)
         self.sig_v12_lo             = misc['sig_v12_lo']
         self.sig_v5_lo              = misc['sig_v5_lo']
         self.sig_v5_hi              = misc['sig_v5_hi']
@@ -1520,12 +1591,6 @@ class TelemetryApp:
             content_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
             
             examples = {
-                "GPU VRAM Overflow": """vram_pct = (df['GPU Memory Junction Temperature [C]'] / df['GPU Memory Junction Temperature [C]'].max()) * 100
-if (vram_pct > 95).any():
-    add('GPU VRAM Overflow', 'WARNING',
-        'VRAM pressure causing spillover. ADVICE: Lower resolution/textures.',
-        [f'Peak VRAM: {vram_pct.max():.1f}%'])""",
-
                 "Temperature Threshold Check": """col = 'GPU Hot Spot Temperature [C]'
 if col in df.columns:
     temps = pd.to_numeric(df[col], errors='coerce')
@@ -2732,6 +2797,7 @@ Min/Max Thresholds:
         row("TDR: GPU clock fraction",           "sig_tdr_clock_frac",     self.sig_tdr_clock_frac,     "0–1")
         row("PPT saturation: % of limit",        "sig_ppt_sat_pct",        self.sig_ppt_sat_pct,        "0–1")
         row("PPT saturation: sustained samples", "sig_ppt_sat_samples",    self.sig_ppt_sat_samples,    "")
+        row("GPU power-limit oscillation rate",  "sig_gpu_osc_per_min",    self.sig_gpu_osc_per_min,    "toggles/min")
         row("Clock stretch gap",                 "sig_clock_stretch_mhz",  self.sig_clock_stretch_mhz,  "MHz")
         row("Disk congestion: busy %",           "sig_disk_busy_pct",      self.sig_disk_busy_pct,      "%")
         row("Disk congestion: samples",          "sig_disk_busy_samples",  self.sig_disk_busy_samples,  "")
@@ -2764,7 +2830,7 @@ Min/Max Thresholds:
             ("CPU Bottleneck",                  "WARNING"),
             ("GPU Overheating (Hotspot)",        "CRITICAL"),
             ("GPU Thermal Warning",              "WARNING"),
-            ("GPU VRAM Overflow Analysis",       "WARNING"),
+            ("VRAM Swapping / System Memory Spillover", "CRITICAL/WARNING"),
             ("PSU +12V Rail Sag",               "CRITICAL/WARNING"),
             ("PSU +5V Rail Unstable",           "WARNING"),
             ("PSU +3.3V Rail Unstable",         "WARNING"),
@@ -2878,6 +2944,7 @@ Min/Max Thresholds:
                 self.sig_tdr_clock_frac      = float(entries['sig_tdr_clock_frac'].get())
                 self.sig_ppt_sat_pct         = float(entries['sig_ppt_sat_pct'].get())
                 self.sig_ppt_sat_samples     = int(float(entries['sig_ppt_sat_samples'].get()))
+                self.sig_gpu_osc_per_min     = float(entries['sig_gpu_osc_per_min'].get())
                 self.sig_clock_stretch_mhz   = float(entries['sig_clock_stretch_mhz'].get())
                 self.sig_disk_busy_pct       = float(entries['sig_disk_busy_pct'].get())
                 self.sig_disk_busy_samples   = int(float(entries['sig_disk_busy_samples'].get()))
@@ -2955,6 +3022,7 @@ Min/Max Thresholds:
                 self.sig_tdr_clock_frac      = misc['sig_tdr_clock_frac']
                 self.sig_ppt_sat_pct         = misc['sig_ppt_sat_pct']
                 self.sig_ppt_sat_samples     = int(misc['sig_ppt_sat_samples'])
+                self.sig_gpu_osc_per_min     = misc.get('sig_gpu_osc_per_min', 6.0)
                 self.sig_clock_stretch_mhz   = misc['sig_clock_stretch_mhz']
                 self.sig_disk_busy_pct       = misc['sig_disk_busy_pct']
                 self.sig_disk_busy_samples   = int(misc['sig_disk_busy_samples'])
@@ -3034,6 +3102,7 @@ Min/Max Thresholds:
             'sig_tdr_clock_frac':     self.sig_tdr_clock_frac,
             'sig_ppt_sat_pct':        self.sig_ppt_sat_pct,
             'sig_ppt_sat_samples':    self.sig_ppt_sat_samples,
+            'sig_gpu_osc_per_min':    self.sig_gpu_osc_per_min,
             'sig_clock_stretch_mhz':  self.sig_clock_stretch_mhz,
             'sig_disk_busy_pct':      self.sig_disk_busy_pct,
             'sig_disk_busy_samples':  self.sig_disk_busy_samples,
@@ -4074,14 +4143,14 @@ Min/Max Thresholds:
                 status_var.set(msg)
                 if prog is not None:
                     bar_fg.place(relwidth=min(prog, 1.0))
-            self.root.after(0, _do)
+            _post_ui(self.root, _do)
 
         def _close_wait():
             def _do():
                 if wait_win.winfo_exists():
                     wait_win.grab_release()
                     wait_win.destroy()
-            self.root.after(0, _do)
+            _post_ui(self.root, _do)
 
         def _generate():
             try:
@@ -4867,7 +4936,7 @@ Min/Max Thresholds:
                 def _done():
                     _close_wait()
                     self.show_toast(f'Report saved: {fname}')
-                self.root.after(0, _done)
+                _post_ui(self.root, _done)
 
             except Exception as e:
                 _err_text = f'{type(e).__name__}: {e}'
@@ -4875,7 +4944,7 @@ Min/Max Thresholds:
                     _close_wait()
                     from tkinter import messagebox
                     messagebox.showerror('Export Error', _err_text)
-                self.root.after(0, _fail)
+                _post_ui(self.root, _fail)
 
         threading.Thread(target=_generate, daemon=True).start()
 
@@ -5404,6 +5473,23 @@ Min/Max Thresholds:
             if hasattr(self, '_debug_win') and self._debug_win and self._debug_win.winfo_exists():
                 self._debug_win.destroy()
             self.show_toast("Debug mode OFF")
+    def _resolve_rail_map(self):
+
+        df = self.df
+
+        def _safe(key, fallback):
+            entry = self.analyzer.aliases.get(key)
+            if entry:
+                for c in (entry if isinstance(entry, list) else [entry]):
+                    if c and c in df.columns:
+                        return c
+            return fallback if (fallback and fallback in df.columns) else None
+
+        return {
+            '+12V':  _safe('rail_12v',  resolve_psu_rail_column(df, '+12V')),
+            '+5V':   _safe('rail_5v',   resolve_psu_rail_column(df, '+5V')),
+            '+3.3V': _safe('rail_33v',  resolve_psu_rail_column(df, '+3.3V')),
+        }
 
     def _open_debug_window(self):
         """Open (or refresh) the debug output window."""
@@ -5900,7 +5986,7 @@ Min/Max Thresholds:
         cpu_clock     = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col_excl(('CLOCK',), excl=('GPU', 'MEMORY', 'PCIE', 'BUS', 'RING', 'CACHE', 'CROSSBAR'))
         cpu_usage_col = self._col_excl(['CPU','USAGE'], excl=['°C','TEMP','W]']) or self._col_excl(['CPU','UTIL'], excl=['°C','TEMP','W]']) or self._col_excl(['CPU','LOAD'], excl=['°C','TEMP','W]']) or self._col('TOTAL', 'CPU')
         cpu_power     = self._col_excl(['CPU','PACKAGE','W'], excl=['°C','TEMP','USAGE','LOAD','%']) or self._col_excl(['CPU','PPT'], excl=['°C','TEMP']) or self._col_excl(['CPU','POWER'], excl=['°C','TEMP'])
-        throttle      = self._col('THROTTLE') or self._col('PROCHOT')
+        throttle = (self._col('PROCHOT') or self._col_excl(['THROTTLE'], excl=['GPU']))
 
         section("CPU COLUMNS")
         col("cpu_temp",      cpu_temp)
@@ -5951,6 +6037,204 @@ Min/Max Thresholds:
         wl(f"  Intel req cols ({len(intel_pcore_req)}): {intel_pcore_req[:3] or MISS}", 'val')
         wl(f"  Intel eff cols ({len(intel_pcore_eff)}): {intel_pcore_eff[:3] or MISS}", 'val')
 
+        section("DATA NORMALIZATION LOG")
+        _normalized_cols = []
+        for col_name in df.columns:
+            if 'YES' in str(df[col_name].dtype) or 'NO' in str(df[col_name].dtype):
+                continue
+            try:
+                col_upper = col_name.upper()
+                if any(x in col_upper for x in ['YES', 'NO', '[YES', '[NO']):
+                    unique_vals = df[col_name].dropna().unique()[:5]
+                    if any(str(v).upper() in ['YES', 'NO', 'Y', 'N', '1', '0'] for v in unique_vals):
+                        _yes_count = sum(1 for v in df[col_name] if str(v).strip().upper() in ['YES', 'Y', '1', 'TRUE'])
+                        _no_count = sum(1 for v in df[col_name] if str(v).strip().upper() in ['NO', 'N', '0', 'FALSE'])
+                        if _yes_count > 0 or _no_count > 0:
+                            _total = _yes_count + _no_count
+                            _normalized_cols.append({
+                                'name': col_name,
+                                'yes_count': _yes_count,
+                                'no_count': _no_count,
+                                'total': _total
+                            })
+            except Exception:
+                pass
+        
+        if _normalized_cols:
+            wl("Column Name                          | Original → Normalized | Count", 'section')
+            wl("─" * 72, 'section')
+            for nc in _normalized_cols:
+                wl(f"  {nc['name']:35s} | YES/NO → 1/0          | {nc['total']:4d}", 'val')
+            wl()
+            wl(f"Total Normalized Columns: {len(_normalized_cols)} | Total Values Converted: {sum(n['total'] for n in _normalized_cols)}", 'ok')
+        else:
+            wl("  No YES/NO columns found or normalized.", 'muted')
+        wl()
+
+        section("DATA TYPE ANALYSIS")
+        _dtypes_summary = {}
+        _has_issues = []
+        for col_name in df.columns:
+            dtype = str(df[col_name].dtype)
+            non_null = df[col_name].notna().sum()
+            non_null_pct = (non_null / len(df)) * 100 if len(df) > 0 else 0
+            _dtypes_summary[col_name] = {
+                'dtype': dtype,
+                'non_null': non_null,
+                'non_null_pct': non_null_pct
+            }
+            if non_null_pct < 50:
+                _has_issues.append((col_name, non_null_pct))
+        
+        wl("Column Name (first 20)               | Type       | Non-Null% | Status", 'section')
+        wl("─" * 72, 'section')
+        for i, c_name in enumerate(df.columns[:20]):
+            info = _dtypes_summary[c_name]
+            status_tag = 'crit' if info['non_null_pct'] < 50 else ('warn' if info['non_null_pct'] < 80 else 'ok')
+            status = '✗ ISSUE' if info['non_null_pct'] < 50 else ('⚠ SPARSE' if info['non_null_pct'] < 80 else '✓')
+            wl(f"  {c_name:35s} | {info['dtype']:10s} | {info['non_null_pct']:6.1f}%  | {status}", status_tag)
+        
+        if len(df.columns) > 20:
+            wl(f"  ... and {len(df.columns) - 20} more columns", 'muted')
+        wl()
+        
+        _numeric_count = len(df.select_dtypes(include=['int', 'float']).columns)
+        _object_count = len(df.select_dtypes(include=['object'], exclude=['str']).columns)
+        _bool_count = len(df.select_dtypes(include=['bool']).columns)
+        wl(f"Total Columns: {len(df.columns)} | Numeric: {_numeric_count} | " +
+           f"Object/String: {_object_count} | Boolean: {_bool_count}", 'val')
+        
+        if _has_issues:
+            wl()
+            wl("⚠ Data Quality Issues Found:", 'warn')
+            for issue_col, pct in _has_issues[:5]:
+                wl(f"  • {issue_col}: {pct:.1f}% non-null (mostly NaN!)", 'warn')
+        wl()
+
+        section("SIGNATURE EXECUTION STATUS")
+        try:
+            _sig_hits = self._run_signatures()
+            _sig_by_severity = {'CRITICAL': 0, 'WARNING': 0, 'INFO': 0}
+            _sig_names_hit = set()
+            for hit in _sig_hits:
+                _sig_by_severity[hit.get('severity', 'INFO')] += 1
+                _sig_names_hit.add(hit['name'])
+            
+            wl("Signature Name (first 15)            | Status | Fired | Severity", 'section')
+            wl("─" * 72, 'section')
+            
+            _all_sigs = sorted(set(h['name'] for h in _sig_hits) if _sig_hits else [])
+            for sig_name in _all_sigs[:15]:
+                _fired = sum(1 for h in _sig_hits if h['name'] == sig_name)
+                _severities = set(h.get('severity', 'INFO') for h in _sig_hits if h['name'] == sig_name)
+                _sev_str = ', '.join(sorted(_severities)) if _severities else 'N/A'
+                _tag = 'crit' if 'CRITICAL' in _severities else ('warn' if 'WARNING' in _severities else 'ok')
+                _status = '✓' if _fired > 0 else '○'
+                wl(f"  {sig_name:35s} | {_status:^6s} | {_fired:5d} | {_sev_str}", _tag)
+            
+            if len(_all_sigs) > 15:
+                wl(f"  ... and {len(_all_sigs) - 15} more signatures", 'muted')
+            wl()
+            wl(f"Total Signatures: {len(_all_sigs)} | Fired: {len(_sig_names_hit)} | " +
+               f"Critical: {_sig_by_severity['CRITICAL']} | Warnings: {_sig_by_severity['WARNING']} | Info: {_sig_by_severity['INFO']}", 'val')
+        except Exception as _e:
+            wl(f"  ✗ Error running signatures: {str(_e)}", 'crit')
+        wl()
+
+        section("CUSTOM SIGNATURE VALIDATION")
+        try:
+            _custom_sigs = load_custom_signatures()
+            if _custom_sigs:
+                wl("Name                                | Status | Keywords Matched | Usable", 'section')
+                wl("─" * 72, 'section')
+                for sig_name, sig_def in sorted(_custom_sigs.items())[:15]:
+                    try:
+                        if isinstance(sig_def, dict) and 'keywords' in sig_def:
+                            _keywords = sig_def.get('keywords', [])
+                            if isinstance(_keywords, list):
+                                _matched = sum(1 for kw in _keywords if any(kw in col_name for col_name in df.columns))
+                                _match_pct = (_matched / len(_keywords) * 100) if _keywords else 0
+                                _usable = 'YES' if _match_pct >= 50 else 'NO' if _match_pct == 0 else 'PARTIAL'
+                                _tag = 'ok' if _match_pct == 100 else ('warn' if _match_pct > 0 else 'miss')
+                                wl(f"  {sig_name:35s} | {_usable:^6s} | {_matched:}/{len(_keywords):3d} ({_match_pct:.0f}%) | {'✓' if _match_pct >= 50 else '✗'}", _tag)
+                            else:
+                                wl(f"  {sig_name:35s} | ERROR  | Invalid format       | ✗", 'crit')
+                        else:
+                            wl(f"  {sig_name:35s} | ERROR  | Missing keywords      | ✗", 'crit')
+                    except Exception:
+                        wl(f"  {sig_name:35s} | ERROR  | Exception             | ✗", 'crit')
+                
+                if len(_custom_sigs) > 15:
+                    wl(f"  ... and {len(_custom_sigs) - 15} more custom signatures", 'muted')
+                wl()
+                _fully_matched = sum(1 for sig_def in _custom_sigs.values() 
+                                   if isinstance(sig_def, dict) and 'keywords' in sig_def and 
+                                   all(any(kw in col_name for col_name in df.columns) for kw in sig_def.get('keywords', [])))
+                wl(f"Loaded: {len(_custom_sigs)} | Fully Matched: {_fully_matched} | " +
+                   f"Partially Matched: {sum(1 for sig_def in _custom_sigs.values() if isinstance(sig_def, dict))}", 'val')
+            else:
+                wl("  No custom signatures loaded.", 'muted')
+        except Exception as _e:
+            wl(f"  ✗ Error loading custom signatures: {str(_e)}", 'crit')
+        wl()
+
+        section("COLUMN DETECTION DETAILS")
+        _detection_results = {
+            'cpu_temp': None,
+            'gpu_hotspot': None,
+            'cpu_power': None,
+            'gpu_power': None,
+            'cpu_clock': None,
+            'gpu_clock': None,
+        }
+        
+        _cpu_temp = self._col('TCTL') or self._col('TDIE') or self._col_excl(['CPU'], excl=['USAGE','UTIL','LOAD','THREAD','W]','%]','MHz','RPM'])
+        _gpu_hotspot = self._col_excl(('GPU', 'HOT'), excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU', 'LIMIT', 'MEMORY'))
+        _cpu_power = self._col_excl(['CPU','PACKAGE','W'], excl=['°C','TEMP','USAGE','LOAD','%']) or self._col_excl(['CPU','PPT'], excl=['°C','TEMP'])
+        _gpu_power = self._col_active(('GPU', 'POWER')) or self._col('BOARD', 'POWER') or self._col('TGP')
+        _cpu_clock = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col_excl(('CLOCK',), excl=('GPU', 'MEMORY', 'PCIE', 'BUS'))
+        _gpu_clock = self._col_active(('GPU', 'EFFECTIVE', 'CLOCK'), excl=('MEMORY', 'CROSSBAR'))
+        
+        wl("Component                            | Found | Selected Column", 'section')
+        wl("─" * 72, 'section')
+        _detections = [
+            ('CPU Temperature', _cpu_temp),
+            ('GPU Hotspot', _gpu_hotspot),
+            ('CPU Power', _cpu_power),
+            ('GPU Power', _gpu_power),
+            ('CPU Clock', _cpu_clock),
+            ('GPU Clock', _gpu_clock),
+        ]
+        for comp_name, col_val in _detections:
+            tag = 'ok' if col_val else 'miss'
+            sym = '✓' if col_val else '✗'
+            wl(f"  {comp_name:35s} | {sym:^5s} | {col_val or MISS}", tag)
+        wl()
+        wl(f"Total Detected: {sum(1 for _, c in _detections if c)}/{len(_detections)} core components", 'val')
+        wl()
+
+        section("PERFORMANCE METRICS")
+        import time as _time
+        _start_time = getattr(self, '_debug_start_time', _time.time())
+        _metrics = {
+            'dataframe_rows': len(df),
+            'dataframe_cols': len(df.columns),
+            'dataframe_mb': df.memory_usage(deep=True).sum() / 1024 / 1024 if hasattr(df, 'memory_usage') else 0,
+            'normalized_cols': len(_normalized_cols),
+            'signatures_evaluated': len(_all_sigs) if '_all_sigs' in locals() else 0,
+            'signatures_fired': len(_sig_names_hit) if '_sig_names_hit' in locals() else 0,
+        }
+        
+        wl("Metric                               | Value", 'section')
+        wl("─" * 72, 'section')
+        wl(f"  DataFrame Rows                     | {_metrics['dataframe_rows']:,}", 'val')
+        wl(f"  DataFrame Columns                  | {_metrics['dataframe_cols']:,}", 'val')
+        wl(f"  DataFrame Memory (estimated)       | {_metrics['dataframe_mb']:.1f} MB", 'val')
+        wl(f"  Normalized YES/NO Columns          | {_metrics['normalized_cols']}", 'val' if _metrics['normalized_cols'] > 0 else 'muted')
+        wl(f"  Signatures Evaluated               | {_metrics['signatures_evaluated']}", 'val')
+        wl(f"  Signatures That Fired              | {_metrics['signatures_fired']}", 'warn' if _metrics['signatures_fired'] > 0 else 'muted')
+        wl()
+
         section("INTEL P-CORE CLOCK STRETCHING DEBUG")
         wl(f"  Condition: not req_cols={not req_cols}, intel_pcore_req={bool(intel_pcore_req)}, intel_pcore_eff={bool(intel_pcore_eff)}", 'val')
         will_enter_intel = not req_cols and intel_pcore_req and intel_pcore_eff
@@ -5984,7 +6268,7 @@ Min/Max Thresholds:
                 core_ratios_temp = []
                 core_weights_temp = []
                 active_count = 0
-                
+                                
                 for eff_col in eff_cols_for_core:
                     if eff_col not in df.columns:
                         continue
@@ -6056,6 +6340,86 @@ Min/Max Thresholds:
             gpu_edge = _gpu_edge_cands[0] if _gpu_edge_cands[0] != gpu_hotspot else None
         else:
             gpu_edge = None
+
+        section("SIGNATURE KEYWORD MATCHING (Top 5)")
+        try:
+            if '_sig_hits' in locals() and _sig_hits:
+                _top_sigs = sorted(set(h['name'] for h in _sig_hits), key=lambda s: sum(1 for h in _sig_hits if h['name'] == s), reverse=True)[:5]
+                
+                for sig_name in _top_sigs:
+                    try:
+                        wl(f"Signature: {sig_name}", 'section')
+                        _sig_cols = self._sensors_for_sig(sig_name)
+                        if _sig_cols:
+                            _matched_cols = [c for c in _sig_cols if c in df.columns]
+                            wl(f"  Keywords Found: {len(_matched_cols)} columns match", 'ok' if _matched_cols else 'warn')
+                            for col_name in _matched_cols[:5]:
+                                wl(f"    • {col_name}", 'val')
+                            if len(_matched_cols) > 5:
+                                wl(f"    ... and {len(_matched_cols) - 5} more", 'muted')
+                        else:
+                            wl(f"  No columns matched for this signature.", 'warn')
+                        wl()
+                    except Exception:
+                        pass
+            else:
+                wl("  Signatures not yet evaluated. Run analysis or refresh debug window.", 'muted')
+        except Exception as _e:
+            wl(f"  ✗ Error: {str(_e)}", 'crit')
+        wl()
+
+        section("ANALYSIS READINESS")
+        wl("Core Components Status:", 'section')
+        wl()
+        
+        _readiness = {
+            'Thermal Analysis': {
+                'CPU Temp': _cpu_temp,
+                'GPU Temp': _gpu_hotspot,
+                'Status': None
+            },
+            'Power Analysis': {
+                'CPU Power': _cpu_power,
+                'GPU Power': _gpu_power,
+                '+12V Rail': resolve_psu_rail_column(df, '+12V'),
+                'Status': None
+            },
+            'Clock Stretching': {
+                'CPU Clock': _cpu_clock,
+                'CPU Ratio': self._col('CORE', 'RATIO') or self._col('CPU', 'RATIO'),
+                'Status': None
+            },
+            'Storage Analysis': {
+                'S.M.A.R.T': any('FAILURE' in c or 'WARNING' in c for c in df.columns),
+                'Drive Temp': any('DRIVE' in c.upper() and 'TEMP' in c.upper() for c in df.columns),
+                'Status': None
+            }
+        }
+        
+        for category, checks in _readiness.items():
+            found = sum(1 for k, v in checks.items() if k != 'Status' and v)
+            total = sum(1 for k in checks.keys() if k != 'Status')
+            
+            if found == total:
+                status_tag, status_text = 'ok', '✓ READY'
+            elif found == 0:
+                status_tag, status_text = 'miss', '✗ NOT AVAILABLE'
+            else:
+                status_tag, status_text = 'warn', '⚠ PARTIAL'
+            
+            wl(f"  {category:25s}: {status_text}", status_tag)
+            for k, v in checks.items():
+                if k != 'Status':
+                    sym = '✓' if v else '✗'
+                    wl(f"    {sym} {k:20s}: {v if v else MISS}", 'ok' if v else 'muted')
+        
+        wl()
+        _total_ready = sum(1 for cat, checks in _readiness.items() 
+                          if sum(1 for k, v in checks.items() if k != 'Status' and v) == 
+                             sum(1 for k in checks.keys() if k != 'Status'))
+        wl(f"Overall: {_total_ready}/{len(_readiness)} core analysis components ready", 
+           'ok' if _total_ready == len(_readiness) else 'warn' if _total_ready > 0 else 'crit')
+        wl()
 
         section("GPU COLUMNS")
         col("gpu_hotspot",        gpu_hotspot)
@@ -6130,17 +6494,23 @@ Min/Max Thresholds:
 
         if gpu_clock and gpu_usage_col:
             section("GPU CLOCK / TDR VALUES")
-            val("Max clock",  mx(gpu_clock))
-            val("Min clock",  df[gpu_clock].min())
-            val("Clock std",  df[gpu_clock].std())
-            low_u  = df[gpu_usage_col] < 5
-            stall  = (df[gpu_clock].rolling(3).std() < 1.0) & (df[gpu_clock] > 0)
-            tdr_ev = (low_u & stall).rolling(5).sum() >= 3
-            val("TDR candidate samples", int(tdr_ev.sum()), "d")
+            val("Max clock", mx(gpu_clock))
+            val("Min clock", df[gpu_clock].min())
+            def _v(name, v): ...
+            if getattr(self, 'tdr_offline_reason', None):
+                val("TDR detector", "OFFLINE")
+                val("Reason", self.tdr_offline_reason)
+            else:
+                val("TDR candidate samples", getattr(self, 'tdr_candidate_samples', 0), "d")
+                val("TDR confirmed samples", getattr(self, 'tdr_confirmed_samples', 0), "d")
+                val("TDR events (rising edges)", getattr(self, 'tdr_event_count', 0), "d")
 
         ft_col      = self._col('Frametime [ms]') or self._col('Frame Time')
         gpu_busy_ms = self._col('GPU Busy (avg) [ms]')
         gpu_wait_ms = self._col('GPU Wait (avg) [ms]')
+
+        section("VRAM SWAP / SPILL ANALYSIS")
+        self._dbg_vram_swap(w)
 
         section("FRAME TIMING COLUMNS")
         col("ft_col",      ft_col)
@@ -6186,65 +6556,7 @@ Min/Max Thresholds:
 
         section("PSU RAIL COLUMNS")
 
-        _RAIL_EXCL = ['[W]', '[A]', 'POWER', 'CURRENT', 'WATT', 'VID', 'OFFSET',
-                      'LIMIT', 'PPT', 'TDP', 'PCIE', 'INPUT', 'GPU', 'HPWR', 'FBVDD']
-
-        def _safe_alias(key, *fallbacks):
-            """Return alias or fallback column only if it exists in df.
-            Supports list of aliases - tries each in order."""
-            entry = self.analyzer.aliases.get(key)
-            if entry:
-                candidates = entry if isinstance(entry, list) else [entry]
-                for c in candidates:
-                    if c and c in df.columns:
-                        return c
-            for c in fallbacks:
-                if c and c in df.columns:
-                    return c
-            return None
-
-        def _find_rail(keywords, excl, target_v, tolerance=0.5):
-            """Find best matching voltage column.
-            First tries columns whose mean value is within tolerance of target_v,
-            then falls back to first keyword match regardless of value."""
-            matches = []
-            for c in df.columns:
-                cu = c.upper()
-                if '[V]' not in cu:
-                    continue
-                if any(e in cu for e in excl):
-                    continue
-                if any(k.upper() in cu for k in keywords):
-                    s = df[c].dropna()
-                    if not s.empty:
-                        mean_v = pd.to_numeric(s, errors='coerce').dropna().mean()
-                        matches.append((c, mean_v))
-
-            if not matches:
-                return None
-            close = [(c, v) for c, v in matches
-                     if not pd.isna(v) and abs(v - target_v) <= tolerance]
-            if close:
-                return min(close, key=lambda x: abs(x[1] - target_v))[0]
-            return matches[0][0]
-
-        rail_map = {
-            '+12V':  _find_rail(
-                ['12V', '12 V', 'ATX 12', 'EPS 12'],
-                excl=_RAIL_EXCL + ['PCIE', 'INPUT'],
-                target_v=12.0, tolerance=1.0),
-            '+5V':   _find_rail(
-                ['+5V', '5V [V', 'ATX 5', '5VSB', 'AVCC'],
-                excl=_RAIL_EXCL + ['12V', '3.3', '3V3'],
-                target_v=5.0, tolerance=0.4),
-            '+3.3V': _safe_alias('rail_33v',
-                _find_rail(
-                    ['+3.3V', '3.3V', '3V3', 'VCC3', 'VCCIO', 'AVCC3',
-                     'AVDD', 'VDD (SWA)', '3VSB', '3.3VSB'],
-                    excl=['[W]', '[A]', 'POWER', 'CURRENT', 'GPU', 'VDDQ TX',
-                          'VDDQ (SWB)', '12V', '+5V', 'VPP'],
-                    target_v=3.3, tolerance=0.4)),
-        }
+        rail_map = self._resolve_rail_map()
 
         for r_name, c in rail_map.items():
             col(r_name, c)
@@ -6405,6 +6717,7 @@ Min/Max Thresholds:
             ("sig_stutter_min_hits", f"{self.sig_stutter_min_hits}"),
             ("sig_tdr_clock_frac",   f"{self.sig_tdr_clock_frac}"),
             ("sig_ppt_sat_pct",      f"{self.sig_ppt_sat_pct}"),
+            ("sig_gpu_osc_per_min",  f"{self.sig_gpu_osc_per_min}/min"),
             ("sig_clock_stretch_mhz",f"{self.sig_clock_stretch_mhz} MHz"),
         ]
         for name, v in misc_display:
@@ -6738,6 +7051,43 @@ Min/Max Thresholds:
         """Legacy stub - debug output now goes to the in-app window via _open_debug_window()."""
         self._open_debug_window()
 
+    def _dbg_vram_swap(self, w):
+        s = getattr(self, 'vram_stats', None)
+        if s is None:
+            w("[VRAM-SWAP] not initialized — signature pass has not run yet\n")
+            return
+        if s['funnel'] is None:
+            w(f"[VRAM-SWAP] SECTION OFFLINE — {s['offline_reason']}\n")
+            return
+        c, f = s['cols'], s['funnel']
+        w(f"[VRAM-SWAP] cols ded={c['ded']!r} dyn={c['dyn']!r} pct={c['pct']!r} "
+          f"ft={c['ft']!r} bus={c['bus']!r}\n")
+        if s['pct_max'] is not None:
+            scale = "percent OK" if s['pct_max'] > 1.5 else "FRACTION-SUSPECT (0-1 scale?)"
+            w(f"  pct max={s['pct_max']:.1f} ({scale})\n")
+        else:
+            w(f"  pct OFFLINE — {s['offline_reason']}\n")
+        if s['cap_est'] is not None:
+            w(f"  cap est={s['cap_est']:,.0f} MB (candidate {s['cap_cand']:,.0f} MB)\n")
+        else:
+            w(f"  cap OFFLINE — {s['offline_reason']}\n")
+        w(f"  sat basis='{s['sat_basis']}' saturated={f['saturated']}/{f['samples']}\n")
+        w(f"  floor={s['floor']:,.0f} MB ({s['floor_path']}) "
+          f"spill_base={s['spill_base']:,.0f} MB\n")
+        w(f"  poll={s['poll_sec']:.2f} s ({s['dt_src']}) "
+          f"growth_thr={s['growth_thr']:.1f} MB/sample\n")
+        w(f"  funnel samples={f['samples']} sat={f['saturated']} level={f['level']} "
+          f"growth={f['growth']} spilling={f['spilling']} confirmed={f['confirmed']} "
+          f"({s['spill_frac']*100:.1f}%)\n")
+        fr = f"{s['ft_ratio']:.1f}x" if s['ft_ratio'] is not None else "n/a"
+        mg = f"{s['max_growth']:.1f}" if s['max_growth'] is not None else "n/a"
+        w(f"  corroborate ft_ratio={fr} max_growth={mg} MB/sample\n")
+        if s['emitted']:
+            w(f"  VERDICT: EVENT {s['severity']} "
+              f"(spill_frac={s['spill_frac']*100:.1f}%, ft_ratio={fr})\n")
+        else:
+            w("  VERDICT: no event (confirmed=0)\n")
+
     def _start_sig_watcher(self):
         """Start the background signature evaluation loop.
         Runs signatures in a thread whenever _sig_dirty is True,
@@ -6759,7 +7109,8 @@ Min/Max Thresholds:
 
                     if not sel:
                         self.update_plot()
-            self.root.after(0, _done)
+            if not _post_ui(self.root, _done):
+                self._sig_running = False
 
         def _tick():
             if self._sig_dirty and not self._sig_running:
@@ -6987,33 +7338,122 @@ Min/Max Thresholds:
 
                 add("GPU Thermal Warning", "WARNING", msg, evidence, cols=[gpu_hotspot, gpu_edge])
 
-        if not is_laptop:
-            v12 = self._col('+12V')
-            if v12:
-                v_min = df[v12].min()
-                if v_min < self.sig_v12_lo:
-                    severity = "CRITICAL" if v_min < 11.2 else "WARNING"
-                    add("PSU +12V Rail Sag", severity,
-                        "The 12V rail (GPU/CPU power) is sagging below safe limits. This causes system-wide instability or 'black screen' crashes under load. "
-                        "ADVICE: Check that PCIe and EPS power cables are fully seated. If the sag persists, the PSU is likely underpowered or failing.",
-                        [f"Min Voltage: {v_min:.2f}V", f"Safety Limit: {self.sig_v12_lo}V"])
+        v12 = _a('rail_12v') or resolve_psu_rail_column(df, '+12V')
+        if v12:
+            v_min = df[v12].min()
+            if v_min < self.sig_v12_lo:
+                severity = "CRITICAL" if v_min < 11.2 else "WARNING"
+                add("PSU +12V Rail Sag", severity,
+                    "The 12V rail (GPU/CPU power) is sagging below safe limits. This causes system-wide instability or 'black screen' crashes under load. "
+                    "ADVICE: Check that PCIe and EPS power cables are fully seated. If the sag persists, the PSU is likely underpowered or failing.",
+                    [f"Min Voltage: {v_min:.2f}V", f"Safety Limit: {self.sig_v12_lo}V"])
+
+        # GPU Driver TDR (Timeout) detector
+        self.tdr_offline_reason     = None
+        self.tdr_candidate_samples  = 0
+        self.tdr_confirmed_samples  = 0
+        self.tdr_event_count        = 0
 
         if gpu_usage_col and gpu_clock:
-            low_usage = df[gpu_usage_col] < 5
-            clock_stall = (df[gpu_clock].rolling(3).std() < 1.0) & (df[gpu_clock] > 0)
+            usage = df[gpu_usage_col]
+            clock = df[gpu_clock]
 
-            tdr_mask = low_usage & clock_stall
+            usage_max = pd.to_numeric(usage, errors='coerce').max()
+            if pd.isna(usage_max) or float(usage_max) > 100.5:
+                tdr_offline_reason = (
+                    f"usage column '{gpu_usage_col}' does not look like a percentage "
+                    f"(max {usage_max:.0f}) - TDR detection skipped")
+            else:
+                low_usage   = usage < 5
+                clock_stall = (clock.rolling(3).std() < 1.0) & (clock > 0)
 
-            confirmed_tdr = tdr_mask.rolling(5).sum() >= 3
+                tdr_candidate_samples = int((low_usage & clock_stall).sum())
 
-            if (df[gpu_usage_col].rolling(10).mean() > 20).any() and confirmed_tdr.any():
-                add(
-                    "GPU Driver TDR (Timeout)", "CRITICAL",
-                    "A GPU driver timeout pattern was detected. Likely driver stall or reset event.",
-                    [
-                f"Confirmed Events: {int(confirmed_tdr.sum())} samples detected."
-                    ],
-                    mask=confirmed_tdr, cols=[gpu_usage_col, gpu_clock])
+                pre_mean    = usage.shift(3).rolling(10, min_periods=3).mean()
+                busy_before = pre_mean > 30
+                hist_ok     = pre_mean.notna()
+
+                tdr_mask      = low_usage & clock_stall & busy_before
+                confirmed_tdr = tdr_mask.rolling(5).sum() >= 3
+
+                early_unverified = int((low_usage & clock_stall & ~hist_ok).sum())
+
+                n_tdr = 0
+                n_parked = 0
+                worst_freeze = 0.0
+                busy_clock = clock[usage > 30].median()
+
+                if confirmed_tdr.any():
+                    onset  = confirmed_tdr & ~confirmed_tdr.shift(1,  fill_value=False)
+                    offset = confirmed_tdr & ~confirmed_tdr.shift(-1, fill_value=False)
+                    starts = onset.to_numpy().nonzero()[0]
+                    ends   = offset.to_numpy().nonzero()[0]
+                    if len(ends) < len(starts):
+                        ends = list(ends) + [len(df) - 1]
+
+                    for s_i, e_i in zip(starts, ends):
+
+                        post = usage.iloc[e_i + 1: e_i + 11]
+                        recovered = bool((post > 30).any()) if len(post) else False
+
+                        freeze_ms = 0.0
+                        if ft_col:
+                            seg_max = df[ft_col].iloc[s_i: e_i + 1].max()
+                            if pd.notna(seg_max):
+                                freeze_ms = float(seg_max)
+
+
+                        stall_clock = float(clock.iloc[s_i: e_i + 1].median())
+                        frozen_at_load = (pd.notna(busy_clock)
+                                        and stall_clock >= 0.5 * float(busy_clock))
+
+                        if recovered or freeze_ms > 500 or frozen_at_load:
+                            n_tdr += 1
+                            worst_freeze = max(worst_freeze, freeze_ms)
+                        else:
+                            n_parked += 1   # alt-tab / menu park / session end
+
+                tdr_confirmed_samples = int(confirmed_tdr.sum())
+                tdr_event_count       = n_tdr
+
+                if n_tdr >= 1:
+                    severity = "CRITICAL" if n_tdr >= 2 else "WARNING"
+                    extra = []
+                    if worst_freeze > 500:
+                        extra.append(f"Coincident frame freeze: {worst_freeze:.1f} ms")
+                    if n_parked:
+                        extra.append(f"{n_parked} idle period(s) after activity excluded "
+                                    "(alt-tab / parked GPU), not counted as TDR")
+                    if early_unverified:
+                        extra.append(f"Note: {early_unverified} early stall-like samples "
+                                     "could not be verified (short log history)")
+
+                    add(
+                        "GPU Driver TDR (Timeout)", severity,
+                        "A GPU driver timeout pattern was detected: the GPU was busy, "
+                        "then usage dropped while the clock froze, matching a driver "
+                        "stall or reset event. Brief application switches (alt-tab) "
+                        "can produce a similar pattern; these are excluded where possible.",
+                        [
+                            f"Confirmed Events: {n_tdr} "
+                            f"({int(tdr_mask.sum())} candidate samples)",
+                            *extra,
+                        ],
+                        mask=confirmed_tdr, cols=[gpu_usage_col, gpu_clock]
+                    )
+
+                elif early_unverified >= 3:
+                    add(
+                        "Unverified GPU Stall at Log Start", "INFO",
+                        "Stall-like patterns were detected in the first seconds of "
+                        "logging, but there was not enough prior load history to "
+                        "conclusively confirm a TDR event.",
+                        [
+                            f"Unverified Candidate Samples: {early_unverified}",
+                            "Advice: Start logging before launching the workload.",
+                        ],
+                        cols=[gpu_usage_col, gpu_clock]
+                    )
 
         _DRIVE_EXCL = ['GPU', 'CPU', 'CHIPSET', 'MOTHERBOARD', 'AMBIENT', 'ROOM',
                        'VRM', 'MOSFet', 'WATER', 'COOLANT', 'PCH', 'CASE']
@@ -7121,67 +7561,6 @@ Min/Max Thresholds:
                         break
 
         df = df.copy()
-        if gpu_mem_usage and gpu_mem_dynamic:
-
-            vram = df[gpu_mem_usage]
-            spill = df[gpu_mem_dynamic]
-
-            vram_pct = vram / vram.max() * 100
-            spill_trend = spill.diff().rolling(5, min_periods=1).mean()
-            spill_active = spill_trend > spill.std() * 0.6
-            overflow = (vram_pct > 95) & spill_active
-            overflow = overflow.rolling(3, min_periods=1).sum() >= 2
-            overflow_shifted = overflow.shift(1, fill_value=False)
-
-            event_start = (~overflow_shifted) & overflow
-            event_end   = overflow_shifted & (~overflow)
-
-            overflow_events = event_start.sum()
-            df["_overflow_state"] = overflow.astype(int)
-            if "Timestamp" in df.columns:
-                df["Timestamp"] = pd.to_datetime(df["Timestamp"])
-                df["_time_diff"] = df["Timestamp"].diff().dt.total_seconds().fillna(0)
-                time_unit = "seconds"
-            else:
-                df["_time_diff"] = 1
-                time_unit = "samples"
-
-            overflow_time = df["_time_diff"] * df["_overflow_state"]
-
-            total_overflow_duration = overflow_time.sum()
-
-            event_durations = []
-            current = 0
-
-            for state, dt in zip(overflow, df["_time_diff"]):
-                if state:
-                    current += dt
-                elif current > 0:
-                    event_durations.append(current)
-                    current = 0
-
-            if current > 0:
-                event_durations.append(current)
-
-            avg_duration = sum(event_durations) / len(event_durations) if event_durations else 0
-
-            if overflow_events > 0:
-
-                add(
-                    "GPU VRAM Overflow Analysis",
-                    "WARNING",
-                    "VRAM pressure caused system memory spillover. This leads to PCIe transfers, "
-                    "stuttering, and frame-time instability.",
-                    [
-                        f"Overflow Events: {int(overflow_events)}",
-                        f"Total Duration: {total_overflow_duration:.2f} {time_unit}",
-                        f"Average Event Duration: {avg_duration:.2f} {time_unit}",
-                        f"Max VRAM Pressure: {vram_pct.max():.1f}%",
-                        f"Max Spill Memory: {spill.max():.0f}"
-                    ],
-                    mask=overflow, cols=[gpu_mem_usage, gpu_mem_dynamic])
-
-            df.drop(columns=["_overflow_state", "_time_diff"], inplace=True, errors="ignore")
 
         fail_cols = [c for c in df.columns if any(k in c.upper() for k in ['DRIVE', 'SSD', 'NVME'])
                      and any(k in c.upper() for k in ['FAILURE', 'WARNING'])]
@@ -7521,10 +7900,14 @@ Min/Max Thresholds:
                         ]
                     )
 
-        if not is_laptop:
-            for r_name, low, high in [('+5V', self.sig_v5_lo, self.sig_v5_hi),
-                                       ('+3.3V', self.sig_v33_lo, self.sig_v33_hi)]:
-                col = self._col(r_name)
+        _has_atx_rails = any(resolve_psu_rail_column(df, _r)
+                             for _r in ('+12V', '+5V', '+3.3V'))
+        if not is_laptop or _has_atx_rails:
+            v5_col  = _a('rail_5v')  or resolve_psu_rail_column(df, '+5V')
+            v33_col = _a('rail_33v') or resolve_psu_rail_column(df, '+3.3V')
+            for r_name, low, high, col in [
+                    ('+5V', self.sig_v5_lo, self.sig_v5_hi, v5_col),
+                    ('+3.3V', self.sig_v33_lo, self.sig_v33_hi, v33_col)]:
                 if col and (df[col].min() < low or df[col].max() > high):
                     add(f"PSU {r_name} Rail Unstable", "WARNING",
                         f"Low-voltage rail {r_name} is out of spec. ADVICE: This can cause random USB disconnects or drive errors. Check PSU health.",
@@ -7534,37 +7917,7 @@ Min/Max Thresholds:
             _psu_evidence = []
             _psu_severity_score = 0
 
-            def _best_rail_col(keywords, excl, target_v, tol=0.5):
-                """Return the voltage column closest in mean value to target_v."""
-                import pandas as _pd
-                matches = []
-                for c in df.columns:
-                    cu = c.upper()
-                    if '[V]' not in cu:
-                        continue
-                    if any(e in cu for e in excl):
-                        continue
-                    if any(k.upper() in cu for k in keywords):
-                        try:
-                            mean_v = _pd.to_numeric(df[c], errors='coerce').dropna().mean()
-                            matches.append((c, mean_v))
-                        except Exception:
-                            pass
-                if not matches:
-                    return None
-                close = [(c, v) for c, v in matches
-                         if not _pd.isna(v) and abs(v - target_v) <= tol]
-                if close:
-                    return min(close, key=lambda x: abs(x[1] - target_v))[0]
-                return matches[0][0]
-
-            _SIG_EXCL_BASE = ['[W]','[A]','POWER','CURRENT','WATT','VID','OFFSET',
-                               'LIMIT','PPT','TDP','GPU','HPWR','FBVDD']
-
-            v12_col = _a('rail_12v') or _best_rail_col(
-                ['12V', '12 V', 'ATX 12', 'EPS 12'],
-                excl=_SIG_EXCL_BASE + ['PCIE','INPUT'],
-                target_v=12.0, tol=1.0)
+            v12_col = _a('rail_12v') or resolve_psu_rail_column(df, '+12V')
             if v12_col:
                 v12s = df[v12_col].dropna()
                 sag_mask = v12s < self.sig_v12_lo
@@ -7573,20 +7926,11 @@ Min/Max Thresholds:
                     _psu_evidence.append(f"+12V sagging below {self.sig_v12_lo}V in {sag_pct:.1f}% of samples (min {v12s.min():.2f}V)")
                     _psu_severity_score += 2 if v12s.min() < 11.2 else 1
 
-            v5_col = _a('rail_5v') or _best_rail_col(
-                ['+5V', '5V [V', 'ATX 5', '5VSB', 'AVCC'],
-                excl=_SIG_EXCL_BASE + ['12V','3.3','3V3'],
-                target_v=5.0, tol=0.4)
             if v5_col:
                 v5s = df[v5_col].dropna()
                 if v5s.min() < self.sig_v5_lo or v5s.max() > self.sig_v5_hi:
                     _psu_evidence.append(f"+5V rail out of spec: {v5s.min():.2f}V \u2013 {v5s.max():.2f}V (spec {self.sig_v5_lo}\u2013{self.sig_v5_hi}V)")
                     _psu_severity_score += 1
-
-            v33_col = _a('rail_33v') or _best_rail_col(
-                ['+3.3V', '3.3V', '3V3', 'VCC3', 'AVCC3', '3VSB', 'VDD (SWA)'],
-                excl=['[W]','[A]','POWER','CURRENT','GPU','VDDQ TX','VDDQ (SWB)','12V','+5V','VPP'],
-                target_v=3.3, tol=0.4)
             if v33_col:
                 v33s = df[v33_col].dropna()
                 if v33s.min() < self.sig_v33_lo or v33s.max() > self.sig_v33_hi:
@@ -7799,45 +8143,216 @@ Min/Max Thresholds:
                             "ADVICE: Disable 'Hardware Acceleration' in Discord (Advanced) and your browser."
                         ]
                     )
-        if gpu_mem_dedicated and gpu_mem_dynamic:
+        
+        # VRAM Swapping / System Memory Spillover
 
+        self.vram_stats = {
+            'offline_reason': None, 'cap_est': None, 'cap_cand': None,
+            'spill_base': None, 'floor': None, 'floor_path': None,
+            'sat_basis': None, 'spill_frac': 0.0, 'confirmed_samples': 0,
+            'max_growth': None, 'poll_sec': None, 'dt_src': None,
+            'pct_max': None, 'growth_thr': None, 'ft_ratio': None,
+            'cols': None, 'funnel': None, 'emitted': False, 'severity': None,
+        }
+
+        if gpu_mem_dedicated and gpu_mem_dynamic:
             vram_used = df[gpu_mem_dedicated]
             spill_mem = df[gpu_mem_dynamic]
 
-            vram_saturated = vram_used > vram_used.quantile(0.98)
-            spill_growth = spill_mem.diff().rolling(3, min_periods=1).mean()
+            pct = None
+            pct_offline = None
+            if gpu_mem_usage:
+                p = pd.to_numeric(df[gpu_mem_usage], errors='coerce')
+                if p.notna().any():
+                    p_max = float(p.max())
+                    if p_max <= 100.5:
+                        pct = p
+                    else:
+                        pct_offline = (f"'{gpu_mem_usage}' does not look like a "
+                                       f"percentage (max {p_max:.0f})")
+                else:
+                    pct_offline = f"'{gpu_mem_usage}' has no numeric samples"
+            else:
+                pct_offline = "no VRAM % column in this log"
 
-            spill_threshold = spill_mem.std() * 0.6
-            is_spilling = vram_saturated & (spill_growth > spill_threshold)
+            cap_est = None
+            cap_cand = None
+            if pct is not None:
+                busy = pct > 50
+                if int(busy.sum()) >= 5:
+                    valid_mask = busy & (pct > 0)
+                    if int(valid_mask.sum()) >= 5:
+                        raw_caps = (vram_used[valid_mask] / (pct[valid_mask] / 100.0))
+                        raw_caps = raw_caps.replace([np.inf, -np.inf], np.nan).dropna()
+                        if not raw_caps.empty:
+                            cand = float(raw_caps.median())
+                            cap_cand = cand
+                            if 1000.0 <= cand <= 100000.0:
+                                if cand >= float(vram_used.max()):
+                                    cap_est = cand
+                                else:
+                                    pct_offline = ("capacity estimate below usage peak — "
+                                                   "sensor inconsistency, fallback floor used")
+                            else:
+                                pct_offline = (f"capacity candidate {cand:,.0f} MB outside "
+                                               f"sanity range (1,000-100,000 MB)")
+                        else:
+                            pct_offline = "capacity: no valid (used, pct) sample pairs"
+                    else:
+                        pct_offline = "capacity: fewer than 5 busy samples with pct > 0"
+                else:
+                    pct_offline = "capacity: fewer than 5 samples above 50% usage"
 
-            persistence = is_spilling.rolling(window=5, min_periods=1).sum() >= 3
+            if pct is not None:
+                vram_saturated = pct > 90
+                sat_basis = f"{gpu_mem_usage} > 90%"
+            else:
+                vram_saturated = vram_used > vram_used.quantile(0.98)
+                sat_basis = "session quantile(0.98) — no VRAM % column"
+
+            if pd.notna(spill_mem).any():
+                spill_base = float(spill_mem.quantile(0.05))
+            else:
+                spill_base = 0.0
+
+            if pct is not None and cap_est:
+
+                SPILL_FLOOR = max(512.0, 0.08 * cap_est)
+                floor_path = "absolute (capacity-scaled)"
+            else:
+
+                SPILL_FLOOR = max(spill_base + 512.0, 1024.0)
+                floor_path = "fallback (baseline-relative)"
+
+            dt_sec = 1.0
+            dt_src = "default 1.0 s (no interval evidence)"
+            mp = getattr(self, 'median_poll_sec', None)
+            if isinstance(mp, (int, float)) and not isinstance(mp, bool) \
+                    and 0.1 <= float(mp) <= 60.0:
+                dt_sec = float(mp)
+                dt_src = f"engine median_poll_sec ({dt_sec:.2f} s)"
+            else:
+                _ts = getattr(self.analyzer, 'time_series', None)
+                _tc = getattr(self.analyzer, 'time_col', '')
+                s = 0.0
+                if _ts is not None and len(_ts) > 1:
+                    try:
+                        _d = _ts.diff().median()
+                        s = float(_d.total_seconds()) if hasattr(_d, 'total_seconds') else 0.0
+                    except Exception:
+                        s = 0.0
+                elif _tc and _tc in df.columns:
+                    try:
+                        t_diff = df[_tc].diff().median()
+                        if isinstance(t_diff, pd.Timedelta):
+                            s = t_diff.total_seconds()
+                        elif isinstance(t_diff, (int, float)) and not isinstance(t_diff, bool):
+                            s = float(t_diff)
+                            if s > 50.0:
+                                s /= 1000.0
+                    except (TypeError, ValueError):
+                        s = 0.0
+                if s > 0:
+                    dt_sec = min(max(s, 0.1), 60.0)      # clamp 0.1-60 s
+                    dt_src = f"analyzer time diff median ({dt_sec:.2f} s)"
+
+            GROWTH_MB_PER_SAMPLE = 25.0 * dt_sec
+
+            spill_level    = spill_mem > SPILL_FLOOR
+            spill_growth   = spill_mem.diff().rolling(3, min_periods=1).mean()
+            active_growth  = spill_growth > GROWTH_MB_PER_SAMPLE
+            is_spilling    = vram_saturated & (spill_level | active_growth)
+
+            persistence     = is_spilling.rolling(5, min_periods=3).sum() >= 3
             confirmed_spill = is_spilling & persistence
+            spill_frac      = float(confirmed_spill.mean()) if len(confirmed_spill) else 0.0
 
-            avg_bus_load = 0
+            _mg = spill_growth.max() if len(spill_growth) else None
+            self.vram_stats.update({
+                'offline_reason': pct_offline, 'cap_est': cap_est,
+                'cap_cand': cap_cand, 'spill_base': spill_base,
+                'floor': SPILL_FLOOR, 'floor_path': floor_path,
+                'sat_basis': sat_basis, 'spill_frac': spill_frac,
+                'confirmed_samples': int(confirmed_spill.sum()),
+                'max_growth': float(_mg) if _mg is not None and pd.notna(_mg) else None,
+                'poll_sec': dt_sec, 'dt_src': dt_src,
+                'pct_max': float(pct.max()) if pct is not None else None,
+                'growth_thr': GROWTH_MB_PER_SAMPLE,
+                'cols': dict(ded=gpu_mem_dedicated, dyn=gpu_mem_dynamic,
+                             pct=gpu_mem_usage or None, ft=ft_col or None,
+                             bus=gpu_bus_col or None),
+                'funnel': dict(samples=int(len(df)),
+                               saturated=int(vram_saturated.sum()),
+                               level=int(spill_level.sum()),
+                               growth=int(active_growth.sum()),
+                               spilling=int(is_spilling.sum()),
+                               confirmed=int(confirmed_spill.sum())),
+            })
 
+            ft_ratio, ft_note = None, None
+            vs = self.vram_stats
+            if ft_col and confirmed_spill.any():
+                inside  = df.loc[confirmed_spill, ft_col].dropna()
+                outside = df.loc[~is_spilling, ft_col].dropna()
+
+                if len(inside) >= 5 and len(outside) >= 5:
+                    p99_in, med_out = float(inside.quantile(0.99)), float(outside.median())
+                    if med_out > 0:
+                        ft_ratio = p99_in / med_out
+                        ft_note = (f"Frame time P99 during spill: {p99_in:.1f} ms vs "
+                                   f"{med_out:.1f} ms median outside ({ft_ratio:.1f}x)")
+                        vs['ft_ratio'] = ft_ratio
+
+            avg_bus_load = None
             if gpu_bus_col and confirmed_spill.any():
                 bus_series = df.loc[confirmed_spill, gpu_bus_col].dropna()
-
                 if not bus_series.empty:
-                    avg_bus_load = bus_series.median()
+                    avg_bus_load = float(bus_series.median())
 
             if confirmed_spill.any():
-                severity = "CRITICAL" if spill_mem.max() > spill_mem.quantile(0.99) else "WARNING"
+                has_severe_ft = (ft_ratio is not None) \
+                    and (not np.isnan(ft_ratio)) and (ft_ratio >= 2.0)
+                severity = "CRITICAL" if (spill_frac > 0.10 or has_severe_ft) else "WARNING"
+
+                ev = []
+                if cap_est:
+                    ev.append(f"VRAM Usage Peak: {vram_used.max():,.0f} MB "
+                              f"of ~{cap_est:,.0f} MB (estimated capacity)")
+                else:
+                    ev.append(f"VRAM Usage Peak: {vram_used.max():,.0f} MB")
+                ev.append(f"Dynamic Memory Peak: {spill_mem.max():,.0f} MB "
+                          f"(+{max(0.0, float(spill_mem.max()) - spill_base):,.0f} MB "
+                          f"above {spill_base:,.0f} MB baseline)")
+                ev.append(f"Saturation basis: {sat_basis}")
+                ev.append(f"Spill floor used: {SPILL_FLOOR:,.0f} MB ({floor_path})")
+                ev.append(f"Spill present in {spill_frac * 100:.1f}% of session")
+                if ft_note:
+                    ev.append(ft_note)
+                ev.append(f"PCIe Bus Load (median during event): {avg_bus_load:.1f}%"
+                          if avg_bus_load is not None else "PCIe Bus Load: N/A")
 
                 add(
                     name="VRAM Swapping / System Memory Spillover",
                     severity=severity,
                     description=(
-                        "The GPU has exceeded effective VRAM capacity and is now spilling into "
+                        "The GPU has exceeded effective VRAM capacity and is spilling into "
                         "system memory (D3D dynamic allocation). This causes PCIe transfers, "
-                        "high latency, and severe frame-time instability."
+                        "high latency, and severe frame-time instability. "
+                        "ADVICE: Lower the in-game texture/VRAM pool setting; close browsers "
+                        "and apps using GPU memory (hardware acceleration)."
                     ),
-                    evidence=[
-                        f"VRAM Usage Peak: {vram_used.max():.0f}",
-                        f"System Spill Memory Peak: {spill_mem.max():.0f} MB",
-                        f"PCIe Bus Load (median during event): {avg_bus_load:.1f}%" if gpu_bus_col else "PCIe Bus Load: N/A"
-                    ]
+                    evidence=ev,
+                    mask=confirmed_spill,
+                    cols=[gpu_mem_dedicated, gpu_mem_dynamic]
                 )
+                self.vram_stats['emitted'] = True
+                self.vram_stats['severity'] = severity
+
+        else:
+            self.vram_stats['offline_reason'] = (
+                "required GPU memory column(s) missing: "
+                f"dedicated={gpu_mem_dedicated!r}, dynamic={gpu_mem_dynamic!r}")
+
         if gpu_12v_input_v and gpu_12v_input_w:
 
             high_load_mask = df[gpu_12v_input_w] > 300
@@ -7998,41 +8513,88 @@ Min/Max Thresholds:
                     )
 
         if mclk_col:
-            m_med = df[mclk_col].median()
-
-            is_ddr5_mem = m_med > 2400
-
-            xmp_threshold = 3000 if is_ddr5_mem else 1600
-            stock_ceiling = 2400 if is_ddr5_mem else 1333
-            if m_med <= stock_ceiling:
-                effective = int(m_med * 2)
-                rated_guess = 6000 if is_ddr5_mem else 3200
+            m_val = df[mclk_col].quantile(0.90)
+            if m_val > 4600:
+                mclk_mhz = m_val / 2.0
+            else:
+                mclk_mhz = m_val
+            effective_mts = int(round(mclk_mhz * 2))
+            is_ddr5 = mclk_mhz > 2300
+            stock_ceiling_mhz = 2400 if is_ddr5 else 1333
+            rated_guess = 6000 if is_ddr5 else 3200
+            if mclk_mhz <= stock_ceiling_mhz * 1.02:
                 add(
                     name="Memory XMP/EXPO Profile Disabled",
-                    severity="WARNING",
+                    severity="INFO" if is_laptop else "WARNING",
                     description=(
-                        f"RAM is running at its stock JEDEC speed ({effective} MT/s effective), "
-                        f"which is well below its likely rated XMP/EXPO profile (typically "
-                        f"{rated_guess}+ MT/s for modern kits). "
-                        "Running at stock speed increases memory latency and reduces bandwidth, "
-                        "directly impacting CPU-bound and latency-sensitive workloads. "
-                        "ADVICE: Enter BIOS and enable the XMP (Intel) or EXPO (AMD) profile."
+                        f"RAM is running at base JEDEC speed ({effective_mts} MT/s), "
+                        f"below typical performance profiles ({rated_guess}+ MT/s). "
+                        + ("Laptop memory is usually locked at JEDEC speeds - this is expected. "
+                        if is_laptop else
+                        "Base speed increases memory latency and reduces bandwidth, "
+                        "impacting CPU-bound workloads and frame time stability. "
+                        "ADVICE: Enter BIOS and enable the XMP (Intel) or EXPO (AMD) profile.")
                     ),
                     evidence=[
-                        f"Detected MCLK: {m_med:.0f} MHz ({effective} MT/s effective)",
-                        f"Stock JEDEC ceiling: {int(stock_ceiling * 2)} MT/s",
+                        f"Detected MCLK: {mclk_mhz:.0f} MHz ({effective_mts} MT/s effective)",
+                        f"Base JEDEC ceiling: {int(stock_ceiling_mhz * 2)} MT/s",
                         "Action: Enable XMP/EXPO in BIOS → Save & Exit"
                     ],
                     cols=[mclk_col]
                 )
 
         if gpu_pwr_limit and gpu_clk_col:
-            limit_active = df[gpu_pwr_limit].apply(lambda x: 1 if x == 'Yes' else 0)
 
-            toggles = limit_active.diff().abs().sum()
+            _pl_raw = df[gpu_pwr_limit]
+            if pd.api.types.is_numeric_dtype(_pl_raw):
+                limit_active = (_pl_raw.fillna(0.0) >= 1.0).astype(int)
+            else:
+                limit_active = (_pl_raw.astype(str).str.strip().str.upper()
+                                .isin(('YES', 'JA', 'PWR', 'TRUE', '1', '1.0'))
+                                ).astype(int)
 
-            if toggles > 5:
-                clk_variance = df[gpu_clk_col].std()
+            toggles   = int(limit_active.diff().abs().sum())
+            n_samples = int(limit_active.size)
+
+            _dur_min = None
+            try:
+                _ts = getattr(getattr(self, 'analyzer', None), 'time_series', None)
+                if _ts is not None and len(_ts) == n_samples and n_samples > 1:
+                    _secs = _ts.dt.total_seconds()
+                    _span = float(_secs.iloc[-1] - _secs.iloc[0])
+                    if _span > 0:
+                        _dur_min = _span / 60.0
+            except Exception:
+                _dur_min = None
+            if _dur_min is None:
+                _dur_min = max(n_samples - 1, 1) / 60.0
+
+            duty_pct = (100.0 * float(limit_active.sum()) / n_samples) if n_samples else 0.0
+            rate_min = toggles / _dur_min if _dur_min > 0 else 0.0
+
+            if (toggles >= 4
+                    and rate_min >= self.sig_gpu_osc_per_min
+                    and 2.0 <= duty_pct <= 97.0):
+                _t_idx = np.flatnonzero(limit_active.diff().abs().values > 0)
+
+                if _t_idx.size:
+                    _r0, _r1 = int(_t_idx[0]), int(_t_idx[-1]) + 1
+                else:
+                    _r0, _r1 = 0, n_samples
+                _reg_clk = df[gpu_clk_col].iloc[_r0:_r1]
+                _on_m  = (limit_active.iloc[_r0:_r1] == 1)
+                _off_m = (limit_active.iloc[_r0:_r1] == 0)
+                if gpu_usage_col and gpu_usage_col in df.columns:
+                    _loaded = df[gpu_usage_col].iloc[_r0:_r1] > 50
+                    if ((_on_m & _loaded).sum() >= 5
+                            and (_off_m & _loaded).sum() >= 5):
+                        _on_m, _off_m = _on_m & _loaded, _off_m & _loaded
+                _clk_on  = _reg_clk[_on_m]
+                _clk_off = _reg_clk[_off_m]
+                clk_std  = _reg_clk.std()
+                clk_std  = float(clk_std) if pd.notna(clk_std) else 0.0
+                _swing   = (float(_clk_off.median() - _clk_on.median())
+                            if (len(_clk_on) and len(_clk_off)) else 0.0)
                 add(
                     name="GPU Power Limit Oscillation",
                     severity="WARNING",
@@ -8041,10 +8603,15 @@ Min/Max Thresholds:
                         "This causes clock speed fluctuations and uneven frame delivery."
                     ),
                     evidence=[
-                        f"Power Limit Toggles: {toggles:.0f} times",
-                        f"Clock Std Dev: {clk_variance:.1f} MHz",
+                        f"Power Limit Toggles: {toggles} ({rate_min:.1f} per minute)",
+                        f"Limit Active: {duty_pct:.1f}% of session",
+                        f"Clock Std Dev: {clk_std:.1f} MHz",
+                        (f"Clock Drop at Limit: {_swing:.0f} MHz average"
+                         if _swing > 0 else "Clock Drop at Limit: n/a"),
                         "ADVICE: Increase Power Limit in Afterburner or undervolt the GPU."
-                    ]
+                    ],
+                    mask=(limit_active == 1),
+                    cols=[gpu_pwr_limit, gpu_clk_col]
                 )
         if cpu_utility:
 
@@ -8064,32 +8631,53 @@ Min/Max Thresholds:
                     ]
                 )
 
-        drive_activity   = self._col('Total Activity [%]') or self._col('Read Activity [%]')
-        drive_warn_cols  = self._col_candidates(('DRIVE', 'WARNING'))
-        drive_fail_cols  = self._col_candidates(('DRIVE', 'FAILURE'))
+        drive_activity_cols = (self._col_candidates(('TOTAL', 'ACTIVITY'))
+                               + self._col_candidates(('READ', 'ACTIVITY'))
+                               + self._col_candidates(('WRITE', 'ACTIVITY')))
+        drive_activity_cols = [c for c in drive_activity_cols
+                               if 'GPU' not in c.upper()]
+        drive_warn_cols = self._col_candidates(('DRIVE', 'WARNING'))
+        drive_fail_cols = self._col_candidates(('DRIVE', 'FAILURE'))
 
         def _any_drive_flag(flag_cols):
             for c in flag_cols:
-                if (df[c].astype(str).str.strip().str.upper() == 'YES').any():
+                s = pd.to_numeric(df[c], errors='coerce').fillna(0.0)
+                if (s >= 1.0).any():
+                    return c
+                u = df[c].astype(str).str.strip().str.upper()
+                if u.isin(('YES', 'TRUE')).any():
                     return c
             return None
 
         warned_drive_col = _any_drive_flag(drive_warn_cols)
         failed_drive_col = _any_drive_flag(drive_fail_cols)
-        drive_warning     = warned_drive_col or (drive_warn_cols[0] if drive_warn_cols else None)
 
-        if drive_activity:
-            is_pinned = (df[drive_activity] > 98).sum() > 3
+        is_pinned, pinned_ev = False, None
+        if drive_activity_cols:
+            counts = {c: int((pd.to_numeric(df[c], errors='coerce')
+                              > self.sig_disk_busy_pct).sum())
+                      for c in drive_activity_cols}
+            worst = max(counts, key=counts.get)
+            if counts[worst] >= self.sig_disk_busy_samples:
+                is_pinned = True
+                pinned_ev = (f"Drive activity >{self.sig_disk_busy_pct:.1f}% in "
+                             f"{counts[worst]} samples of '{worst}' "
+                             f"(peak {pd.to_numeric(df[worst], errors='coerce').max():.0f}%)")
 
-            if is_pinned or warned_drive_col or failed_drive_col:
-                flagged_col = failed_drive_col or warned_drive_col
-                add(
-                    name="Storage I/O Bottleneck / Hitching",
-                    severity="CRITICAL" if (warned_drive_col or failed_drive_col) else "WARNING",
-                    description="The system drive is maxed out or reporting hardware warnings, causing asset-loading hitches.",
-                    evidence=["Drive at 100% activity" if is_pinned else f"Hardware Warning Flag Detected ({flagged_col})",
-                              "ADVICE: Check SSD health or move game to a faster drive."],
-                )
+        if is_pinned or warned_drive_col or failed_drive_col:   # flags no longer gated
+            severity = ("CRITICAL" if failed_drive_col
+                        else "WARNING" if (warned_drive_col or is_pinned) else "INFO")
+            evidence = ([pinned_ev] if pinned_ev else []) + (
+                [f"Hardware FAILURE flag: {failed_drive_col}"] if failed_drive_col
+                else [f"Hardware warning flag: {warned_drive_col}"] if warned_drive_col
+                else [])
+            evidence.append("ADVICE: Check SSD health or move game to a faster drive.")
+            add(
+                name="Storage I/O Bottleneck / Hitching",
+                severity=severity,
+                description="The system drive is maxed out or reporting hardware warnings, causing asset-loading hitches.",
+                evidence=evidence,
+            )
 
         if usb_v_col or chipset_t:
             if chipset_t and (df[chipset_t] > self.sig_chipset_temp_max).any():
@@ -9262,7 +9850,7 @@ Min/Max Thresholds:
             def _done():
                 _tk_refs.clear()
                 _show_results(hw)
-            self.root.after(0, _done)
+            _post_ui(self.root, _done)
 
         def _show_results(hw):
             if wait_win.winfo_exists():
@@ -9432,26 +10020,26 @@ Min/Max Thresholds:
                 status_var.set(msg)
                 if progress is not None:
                     bar_fg.place(relwidth=min(progress, 1.0))
-            self.root.after(0, _do)
+            _post_ui(self.root, _do)
 
         def _close_wait():
             def _do():
                 if wait_win.winfo_exists():
                     wait_win.grab_release()
                     wait_win.destroy()
-            self.root.after(0, _do)
+            _post_ui(self.root, _do)
 
         def _show_error(err_msg: str):
             def _do():
                 _close_wait()
                 messagebox.showerror("Report Export Error", err_msg)
-            self.root.after(0, _do)
+            _post_ui(self.root, _do)
 
         def _show_success(filename: str):
             def _do():
                 _close_wait()
                 self.show_toast(f"Report saved: {filename}")
-            self.root.after(0, _do)
+            _post_ui(self.root, _do)
 
         def _generate():
             try:
@@ -9543,29 +10131,11 @@ Min/Max Thresholds:
 
                 _set_status("Rendering PSU rail charts\u2026", 0.50)
                 psu_charts_html = ""
-                _RAIL_SPECS = {
-                    '+12V':  (['12V', '12 V'], ['PCIE', 'INPUT'] + ['[W]', '[A]', 'POWER', 'CURRENT', 'WATT', 'VID', 'OFFSET', 'LIMIT', 'PPT', 'TDP', 'GPU', 'HPWR', 'VDDQ', 'FBVDD'], 12.0, 1.0),
-                    '+5V':   (['+5V', '5V [V', 'ATX 5', '5VSB', 'AVCC'], ['12V', '3.3', '3V3', '[W]', '[A]', 'POWER', 'CURRENT', 'WATT', 'VID', 'OFFSET', 'LIMIT', 'PPT', 'TDP', 'GPU', 'HPWR', 'FBVDD'], 5.0, 0.4),
-                    '+3.3V': (['+3.3V', '3.3V', '3V3', 'VCC3', 'AVCC3', '3VSB'], ['VDDQ TX', 'VDDQ (SWB)', '12V', '+5V', 'VPP', '[W]', '[A]', 'POWER', 'CURRENT', 'GPU'], 3.3, 0.4),
-                }
-                for rail_name, (keywords, excl, target_v, tol) in _RAIL_SPECS.items():
-                    rail_matches = []
-                    for c in cols:
-                        if c not in df.columns:
-                            continue
-                        cu = c.upper()
-                        if '[V]' not in cu:
-                            continue
-                        if any(ex in cu for ex in excl):
-                            continue
-                        if any(k.upper() in cu for k in keywords):
-                            mean_v = df[c].dropna().mean()
-                            rail_matches.append((c, mean_v))
-                    if not rail_matches:
+                for rail_name in ('+12V', '+5V', '+3.3V'):
+                    rail_col = resolve_psu_rail_column(df, rail_name)
+                    if not rail_col:
                         continue
-                    close = [(c, v) for c, v in rail_matches
-                             if not pd.isna(v) and abs(v - target_v) <= tol]
-                    rail_cols = [c for c, _ in (close or rail_matches)]
+                    rail_cols = [rail_col]
                     lo, hi = self.volt_rails.get(rail_name, (None, None))
 
                     def _make_rail_chart(rcols, rtitle, rlo, rhi):
@@ -10013,17 +10583,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                             _cols("GPU", "CLOCK")
                         ),
 
-                        "GPU VRAM Overflow Analysis": (
-                            _any("VRAM", "GPU MEMORY", "D3D MEMORY", "GPU MEM",
-                                 "MEMORY ALLOCATED", "MEMORY AVAILABLE [MB",
-                                 "GPU D3D", "DEDICATED VIDEO", "VIDEO MEMORY",
-                                 "VIRTUAL MEMORY", "GDDR", "HBM",
-                                 "GPU MEMORY USAGE", "GPU MEMORY LOAD",
-                                 "GPU MEMORY ALLOCATED", "GPU MEMORY AVAILABLE",
-                                 "D3D MEMORY DEDICATED", "D3D MEMORY DYNAMIC",
-                                 "SHARED MEMORY")
-                        ),
-
                         "VRAM Thermal Throttling": (
                             _any("GPU MEMORY JUNCTION", "MEMORY JUNCTION",
                                  "VRAM TEMP", "VRAM TEMPERATURE",
@@ -10043,7 +10602,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         "PSU +12V Rail Sag": (
                             _any("+12V [V]", "+12V VOLTAGE", "12V RAIL",
                                  "ATX 12V", "EPS 12V", "12V SUPPLY",
-                                 "VBUS 12", "12V OUT", "12 VOLT",
+                                 "VBUS 12", "12V OUT", "12V VOLT",
                                  "VCC 12V", "12VDC",
                                  "+12.0V", "12.000V",
                                  "VCORE 12V", "MAIN 12V") |
@@ -10053,7 +10612,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         "PSU +5V Rail Unstable": (
                             _any("+5V [V]", "+5V VOLTAGE", "5V RAIL",
                                  "ATX 5V", "5V SUPPLY", "5VSB", "5V STANDBY",
-                                 "VBUS 5", "5V OUT", "5 VOLT",
+                                 "VBUS 5", "5V OUT", "5V VOLT",
                                  "VCC 5V", "5VDC", "+5.0V", "5.000V",
                                  "MAIN 5V", "+5VS", "5V SB",
                                  "VIN 5V", "AVCC")
@@ -10062,7 +10621,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         "PSU +3.3V Rail Unstable": (
                             _any("+3.3V [V]", "+3.3V VOLTAGE", "3.3V RAIL",
                                  "3V3", "3.3V SUPPLY", "3.3V OUT",
-                                 "ATX 3.3", "3.3 VOLT", "3.3VDC",
+                                 "ATX 3.3", "3.3V VOLT", "3.3VDC",
                                  "VCC 3.3", "+3.3VS", "3.3V SB",
                                  "VDD 3.3", "VDDA", "AVDD",
                                  "+3.30V", "3.300V", "3.3000V",
@@ -10158,7 +10717,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         "S.M.A.R.T. Hardware Failure": (
                             _any("DRIVE FAIL", "DRIVE WARN", "DRIVE WARNING",
                                  "DRIVE FAILURE", "S.M.A.R.T", "SMART",
-                                 "FAILURE [YES", "WARNING [YES",
+                                 "FAILURE [1", "WARNING [1",
                                  "REALLOCATED", "PENDING SECTOR",
                                  "UNCORRECTABLE", "OFFLINE UNCORRECTABLE",
                                  "CRC ERROR", "ULTRA DMA CRC")
@@ -10530,7 +11089,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     self._sig_running = False
                     self._update_sig_badge()
                     _show(results)
-                self.root.after(0, _done)
+                if not _post_ui(self.root, _done):
+                    self._sig_running = False
             threading.Thread(target=_run, daemon=True).start()
 
     def _open_about(self):
@@ -11536,7 +12096,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     finally:
                         _close()
                         _release_tk_refs()
-                self.root.after(0, _done)
+                _post_ui(self.root, _done)
             except Exception as exc:
                 _captured_exc = exc
                 def _fail():
@@ -11546,7 +12106,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         on_error(_captured_exc)
                     else:
                         messagebox.showerror("Load Error", str(_captured_exc))
-                self.root.after(0, _fail)
+                _post_ui(self.root, _fail)
 
         threading.Thread(target=_worker, daemon=True).start()
 
@@ -12284,12 +12844,11 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             "GPU Driver TDR (Timeout)": (_cols("GPU","USAGE") | _cols("GPU","LOAD") | _cols("GPU","CLOCK") | _cols("GPU","FREQUENCY") | _any("GPU AUSLASTUNG","GPU TAKT","GPU CORE USAGE","GPU CORE CLOCK","GPU EFFECTIVE CLOCK","GPU CROSSBAR")),
             "GPU Power Limit Saturated": (_any("GPU POWER","GPU BOARD POWER","GPU PACKAGE POWER","TGP","TBP","GPU TGP","GPU TBP","GPU WATT","GPU LEISTUNG","PERFORMANCE LIMIT - POWER","PERFORMANCE LIMIT - THERMAL","PERFORMANCE LIMIT - UTILIZATION","PERFORMANCE LIMIT - RELIABILITY","PERFORMANCE LIMIT - MAX","PERFCAP","POWER LIMIT","PERF LIMIT","GPU INPUT POWER","GPU RAIL POWER","GPU 12VHPWR","NVVDD","FBVDD") | _cols("GPU","CLOCK") | _cols("GPU","USAGE")),
             "GPU Power Limit Oscillation": (_any("GPU POWER","GPU BOARD POWER","TGP","TBP","PERFORMANCE LIMIT - POWER","PERFCAP","POWER LIMIT","GPU WATT","GPU LEISTUNG","GPU INPUT POWER","NVVDD","FBVDD") | _cols("GPU","CLOCK")),
-            "GPU VRAM Overflow Analysis": _any("VRAM","GPU MEMORY","D3D MEMORY","GPU MEM","MEMORY ALLOCATED","MEMORY AVAILABLE [MB","GPU D3D","DEDICATED VIDEO","VIDEO MEMORY","VIRTUAL MEMORY","GDDR","HBM","GPU MEMORY USAGE","GPU MEMORY LOAD","GPU MEMORY ALLOCATED","GPU MEMORY AVAILABLE","D3D MEMORY DEDICATED","D3D MEMORY DYNAMIC","SHARED MEMORY"),
             "VRAM Thermal Throttling": (_any("GPU MEMORY JUNCTION","MEMORY JUNCTION","VRAM TEMP","VRAM TEMPERATURE","GPU MEM TEMP","HBM TEMP","GDDR TEMP","GPU MEMORY TEMP","MEMORY TEMP") | _cols("GPU","MEMORY","CLOCK") | _cols("GPU","CLOCK")),
             "VRAM Swapping / System Memory Spillover": _any("GPU D3D MEMORY","D3D MEMORY DYNAMIC","D3D MEMORY DEDICATED","GPU MEMORY ALLOCATED","SHARED MEMORY","VIRTUAL MEMORY","PAGE FILE","GPU MEMORY AVAILABLE","DEDICATED VIDEO MEMORY"),
-            "PSU +12V Rail Sag": (_any("+12V [V]","+12V VOLTAGE","12V RAIL","ATX 12V","EPS 12V","12V SUPPLY","VBUS 12","12V OUT","12 VOLT","VCC 12V","12VDC","+12.0V","12.000V","VCORE 12V","MAIN 12V") | _cols("GPU","POWER")),
-            "PSU +5V Rail Unstable": _any("+5V [V]","+5V VOLTAGE","5V RAIL","ATX 5V","5V SUPPLY","5VSB","5V STANDBY","VBUS 5","5V OUT","5 VOLT","VCC 5V","5VDC","+5.0V","5.000V","MAIN 5V","+5VS","5V SB","VIN 5V","AVCC"),
-            "PSU +3.3V Rail Unstable": _any("+3.3V [V]","+3.3V VOLTAGE","3.3V RAIL","3V3","3.3V SUPPLY","3.3V OUT","ATX 3.3","3.3 VOLT","3.3VDC","VCC 3.3","+3.3VS","3.3V SB","VDD 3.3","VDDA","AVDD","+3.30V","3.300V","3.3000V","VDD (SWA)","VDDQ (SWB)","VPP (SWC)","1.8V VOUT","1.0V VOUT","3VSB","3V SB","3.3VSB","VIN 3.3","+3V3","3V3 RAIL","3.3V VOLTAGE","3.3V SENSOR","VCC3","VCC 3","VCCIO"),
+            "PSU +12V Rail Sag": (_any("+12V [V]","+12V VOLTAGE","12V RAIL","ATX 12V","EPS 12V","12V SUPPLY","VBUS 12","12V OUT","12V VOLT","VCC 12V","12VDC","+12.0V","12.000V","VCORE 12V","MAIN 12V") | _cols("GPU","POWER")),
+            "PSU +5V Rail Unstable": _any("+5V [V]","+5V VOLTAGE","5V RAIL","ATX 5V","5V SUPPLY","5VSB","5V STANDBY","VBUS 5","5V OUT","5V VOLT","VCC 5V","5VDC","+5.0V","5.000V","MAIN 5V","+5VS","5V SB","VIN 5V","AVCC"),
+            "PSU +3.3V Rail Unstable": _any("+3.3V [V]","+3.3V VOLTAGE","3.3V RAIL","3V3","3.3V SUPPLY","3.3V OUT","ATX 3.3","3.3V VOLT","3.3VDC","VCC 3.3","+3.3VS","3.3V SB","VDD 3.3","VDDA","AVDD","+3.30V","3.300V","3.3000V","VDD (SWA)","VDDQ (SWB)","VPP (SWC)","1.8V VOUT","1.0V VOUT","3VSB","3V SB","3.3VSB","VIN 3.3","+3V3","3V3 RAIL","3.3V VOLTAGE","3.3V SENSOR","VCC3","VCC 3","VCCIO"),
             "PSU Hardware Failure Indicators": (_any("+12V [V]","+12V VOLTAGE","12V RAIL","ATX 12V","EPS 12V") | _any("+5V [V]","+5V VOLTAGE","5V RAIL","ATX 5V") | _any("+3.3V [V]","+3.3V VOLTAGE","3.3V RAIL","3V3") | _any("POWER SUPPLY","HARDWARE LIMIT","SOFTWARE LIMIT","AVG. POWER (PL1)","BURST POWER (PL2)","CURRENT (PL4)","THROTTL","PERFORMANCE LIMIT") | _cols("GPU","USAGE") | _cols("GPU","CLOCK")),
             "Fan Stall Detected": (_any("FAN","RPM","PUMP","COOLER","FAN SPEED","FAN RPM","CPU FAN","GPU FAN","CHASSIS FAN","CASE FAN","SYS FAN","AIO PUMP","WATER PUMP","LüFTER","VENTILATEUR","CPU [RPM]","GPU [RPM]","FAN1","FAN2","FAN3") | _cols("CPU","TEMP") | _cols("GPU","TEMP")),
             "VRM Overheating": _any("VRM","MOSFET","CHOKE","MOS TEMP","PHASE TEMP","VCORE TEMP","CPU VRM","GPU VRM","SVI","VDDCR","VDDCR_SOC","POWER STAGE","PWM TEMP","PWMIC","DIGI+ VRM","ASUS VRM","VRM HOT","VRM TEMPERATURE","MOSFet","FET TEMP","IA VR","GT VR","SA VR","VR TEMP"),
@@ -12299,7 +12858,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             "Storage Overheating": _any("DRIVE TEMP","SSD TEMP","NVME TEMP","HDD TEMP","DRIVE TEMPERATURE","DISK TEMP","M.2 TEMP","COMPOSITE TEMP","STORAGE TEMP","DRIVE TEMPERATURE 2","DRIVE TEMPERATURE 3","SENSOR 1 TEMP","SENSOR 2 TEMP"),
             "Storage Congestion": _any("READ RATE","WRITE RATE","READ ACTIVITY","WRITE ACTIVITY","TOTAL ACTIVITY","DRIVE ACTIVITY","DISK ACTIVITY","IO RATE","READ TOTAL","WRITE TOTAL","READ SPEED","WRITE SPEED","DISK SPEED","MB/S","READ [MB","WRITE [MB"),
             "Storage I/O Bottleneck / Hitching": _any("READ RATE","WRITE RATE","READ ACTIVITY","WRITE ACTIVITY","TOTAL ACTIVITY","READ SPEED","WRITE SPEED","IO RATE","FRAME TIME","FRAMETIME","GPU BUSY","CPU BUSY"),
-            "S.M.A.R.T. Hardware Failure": _any("DRIVE FAIL","DRIVE WARN","DRIVE WARNING","DRIVE FAILURE","S.M.A.R.T","SMART","FAILURE [YES","WARNING [YES","REALLOCATED","PENDING SECTOR","UNCORRECTABLE","OFFLINE UNCORRECTABLE","CRC ERROR","ULTRA DMA CRC"),
+            "S.M.A.R.T. Hardware Failure": _any("DRIVE FAIL","DRIVE WARN","DRIVE WARNING","DRIVE FAILURE","S.M.A.R.T","SMART","FAILURE [1","WARNING [1","REALLOCATED","PENDING SECTOR","UNCORRECTABLE","OFFLINE UNCORRECTABLE","CRC ERROR","ULTRA DMA CRC"),
             "SSD Lifespan Critical": _any("REMAINING LIFE","DRIVE HEALTH","WEAR LEVEL","AVAILABLE SPARE","DRIVE REMAINING","NAND ENDURANCE","MEDIA WEAROUT","PERCENT USED","PERCENT LIFETIME","TOTAL BYTES WRITTEN","TOTAL HOST WRITES","HOST WRITES","NAND WRITES","DRIVE REMAINING LIFE","SSD HEALTH","ENDURANCE REMAINING"),
             "SSD Wear Warning": _any("REMAINING LIFE","DRIVE HEALTH","WEAR LEVEL","AVAILABLE SPARE","NAND ENDURANCE","PERCENT USED","PERCENT LIFETIME","TOTAL HOST WRITES","HOST WRITES","DRIVE REMAINING LIFE","SSD HEALTH","ENDURANCE REMAINING"),
             "Micro-Stuttering Detected": _any("FRAME TIME","FRAMETIME","FPS","FRAME RATE","GPU BUSY","CPU BUSY","GPU WAIT","CPU WAIT","PRESENTED","DISPLAYED","ANIMATION ERROR","FRAME TIME PRESENTED","FRAME TIME DISPLAYED","FRAMERATE PRESENTED","FRAMERATE DISPLAYED","1% LOW","0.1% LOW","99TH","1ST PERCENTILE","LATENCY","RENDER TIME"),
@@ -13393,7 +13952,7 @@ if __name__ == "__main__":
                         splash.grab_release()
                         splash.destroy()
                     root.after(100, lambda: _apply_icon(root))
-                root.after(0, _done)
+                _post_ui(root, _done)
             except Exception as exc:
                 _captured_exc = exc
                 refs = _tk_refs[:]
@@ -13403,6 +13962,6 @@ if __name__ == "__main__":
                     splash.destroy()
                     messagebox.showerror("Error", str(_captured_exc))
                     root.destroy()
-                root.after(0, _fail)
+                _post_ui(root, _fail)
         threading.Thread(target=_worker, daemon=True).start()
         root.mainloop()
