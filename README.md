@@ -3,8 +3,14 @@
 ![Build Status](https://github.com/ERRORX2/HD2-LOG-VIEWER/actions/workflows/build.yml/badge.svg)
 ![Latest Release](https://img.shields.io/github/v/release/ERRORX2/HD2-LOG-VIEWER?color=blue&label=Latest%20Version)
 
-**HD2 LOG VIEWER** is a professional-grade telemetry utility designed for high-frequency hardware log analysis. Optimized for stability testing, thermal diagnostics, and hardware troubleshooting, it provides an interactive interface for visualizing and diagnosing data from **HWiNFO64**, **GPU-Z**, and **MSI Afterburner**.
+> Professional-grade telemetry analysis for high-frequency hardware logs. Load a HWiNFO64 or MangoHud CSV, and turn thousands of sensor rows into an interactive chart, a 44-detector failure-scan, and a shareable diagnosis 
 
+| | |
+|---|---|
+| **Input formats** | HWiNFO64 CSV (best), MangoHud CSV, generic CSV (auto separator + encoding sniffing: UTF-8 / Latin-1 / CP1252) |
+| **Platforms** | Windows EXE, Linux (Arch/CachyOS tested), any OS with Python 3.12+ and Tkinter |
+| **Core deps** | pandas ≥ 1.3, numpy ≥ 1.21, matplotlib ≥ 3.4 (+ optional Pillow, psutil, scipy) |
+| **Config files** | `groups.json`, `sensor_aliases.json`, `theme.json`, `custom_sig.json` - all plain JSON, all portable |
 ---
 
 ## 🚀 Installation & Deployment
@@ -40,140 +46,86 @@
 ---
 
 ### 🛠️ Option 2: Running on Linux (Arch/CachyOS)
-1. Install dependencies 
-```sudo pacman -S git python tk python-pandas python-matplotlib python-numpy python-pip python-scipy python-psutil```
-2. git clone ``https://github.com/ERRORX2/HD2-LOG-VIEWER.git``
-3. cd ``HD2-LOG-VIEWER``
-4. python ``HD2_LOG_VIEWER.pyw``
+
+```bash
+sudo pacman -S git python tk python-pandas python-matplotlib python-numpy python-pillow python-pip python-psutil
+git clone https://github.com/ERRORX2/HD2-LOG-VIEWER.git
+cd HD2-LOG-VIEWER && python HD2_LOG_VIEWER.pyw
+```
 
 ---
 
 ### 🛠️ Option 3: Running from Source (For Developers)
 
-**Prerequisites:**
-* Python 3.13.14
-* pip
-
-1. git clone ``https://github.com/ERRORX2/HD2-LOG-VIEWER.git``
-2. cd ``HD2-LOG-VIEWER``
-3. pip install ``-r requirements.txt``
-4. pythonw ``HD2_LOG_VIEWER.pyw``
+```bash
+git clone https://github.com/ERRORX2/HD2-LOG-VIEWER.git
+cd HD2-LOG-VIEWER
+pip install -r requirements.txt
+pythonw HD2_LOG_VIEWER.pyw    # python on Linux
+```
 
 ---
 
 ## 📖 Usage
 
-1. **Load a Log:** Launch the app and select your HWiNFO64 CSV. A spinner dialog loads it in the background.
-2. **Select Sensors:** Use the categorized sidebar to toggle sensors, or apply a saved preset. Use the search box to filter by name.
-3. **Analyze:** Hover over the chart for a live synchronized readout. Use Multi-Plot, Heatmap, Delta, or Time mode to change the view.
-4. **Diagnose:** Click **🔬 Diagnose Hardware Signatures** to run the full analysis and review any findings. Use **📋 Copy Discord Summary** to share results instantly.
-5. **Save Presets:** Type a name and click Save to store the current sensor selection. Share it via the clipboard icon next to each preset.
-6. **Export:** Save a PNG of the current chart or generate a full HTML report for offline sharing or archiving.
+**1 · Load.** Pick a CSV - a themed splash parses it in the background. The app flags logging gaps > 2.5 s (row ranges, missing time, usability verdict), trims crash-corrupted trailing rows, asks you to confirm any sensor column it can't auto-detect (and remembers your answer forever), then identifies the hardware in the log across 13 categories. **New CSV** swaps logs without a restart.
+
+**2 · Explore.** Sensors are grouped into categories (Temps, Load, Clocks, Power, Voltage, Fans, Frametimes, FPS + GPU/CPU/Other fallbacks) with live search and a one-click **🚨 Out-of-Spec** filter. Pick a view:
+
+| Mode | What it does |
+|---|---|
+| **Multi-Plot** | One subplot per sensor category, side-by-side, no scale overlap |
+| **Heatmap** | View multiple sensors at once, shows known thersholds of sensors in severity bands depending on the selected theme. |
+| **Δ Delta** | Absolute difference of the first two selected sensors, both sources + delta annotated with Min/Avg/Max |
+| **Time** | X-axis switches from polling ticks to real elapsed time when a timestamp column exists |
+
+**3 · Diagnose.** **🔬 Diagnose Hardware Signatures** runs 44 detectors and shows severity-tagged cards with plain-English explanations, evidence values, and one-click jumps to the relevant chart. A background scan keeps the sidebar's Critical/Warning/Info badges live, and a narrative engine summarizes the causal relationships between findings. **📋 Copy Discord Summary** turns it all into a paste-ready report.
 
 ---
 
-## 🛠️ Core Features
+## 🔬 Detection Coverage (44 detectors)
 
-### 📊 Visualization
-* **Multi-Plot Mode:** Split sensors into categorized subplots - temperatures, clocks, voltages, utilization - for side-by-side comparison without overlap.
-* **Heatmap Mode:** Color-coded stress visualization across all selected sensors simultaneously, using absolute thresholds for known sensor types and per-sensor normalization as fallback.
-* **Δ Delta Mode:** Graph the absolute difference between sensor values over time - useful for tracking GPU core vs. hotspot spread or VRM thermal delta.
-* **Time Mode:** Switch the X-axis between raw polling ticks and actual elapsed time when a timestamp column is detected.
-* **Interactive Tooltip:** Hover over any point on the chart for a synchronized readout of all plotted sensors at that exact moment.
-* **Signal Event Timeline:** A dedicated timeline strip below the chart marks where hardware anomalies were detected. Click any marker to jump directly to that moment and see what triggered it.
-* **Chart Export:** Save the current view as a high-resolution PNG (300 DPI) including the full sensor legend, or copy it directly to the clipboard with `Ctrl+C`.
+| Domain | Signatures include |
+|---|---|
+| 🌡️ **Thermal & Cooling** | CPU thermal throttling (sustained + spike), GPU hotspot overheat with near-limit early warning and edge↔hotspot delta (paste pump-out / mounting pressure), VRAM junction throttling, VRM/MOSFET overheating, chipset/PCH throttling, fan stall under load, drive thermal throttling (separate HDD/SSD thresholds) |
+| ⚡ **Power & Voltage** | CPU clock stretching major/minor (effective-vs-requested ratio, AMD Ryzen + Intel P/E-core naming), PPT/PL1/PL2 saturation, GPU power-limit saturation + oscillation, 12VHPWR connector drop (melting/fire risk), +12V sag & ripple, multi-rail OOS (+12V/+5V/+3.3V), PSU degradation cross-scoring, laptop limp-mode, phantom clock cap |
+| 🧬 **Memory & Fabric** | RAM exhaustion, pagefile/virtual-memory overflow, VRAM spillover to system RAM, Ryzen FCLK/UCLK desync (1:1 / 1:2 / invalid states), XMP/EXPO disabled, memory controller mismatch |
+| 🧩 **System & OS** | WHEA errors, GPU TDR patterns (+ INFO-tier "unverified stall at log start" when evidence is inconclusive), CPU bottleneck, background process interference, GPU priority conflicts, engine-wait bottleneck (PresentMon), median-relative micro-stutter, DPC/ISR latency, PCIe chokepoint + signal instability |
+| 💾 **Storage & I/O** | I/O bottleneck + hitching + sustained 100% activity (WARNING/INFO tiers), NVMe/SSD thermal throttling, S.M.A.R.T. failure flags, SSD lifespan/wear, pagefile overuse, USB rail sag |
+| 🧪 **Meta & Platform** | Sensor alias validation, crash-truncation cleanup, locale-aware parsing (comma decimals, German Yes/No, multi-encoding), plus your own custom signatures |
 
-### 🔍 Sensor Management
-* **Categorized Sensor List:** Sensors are automatically sorted into groups - Temperatures, Utilization, Clocks, Power, Voltage, Fan Speeds - for fast navigation across large logs.
-* **Live Search:** Filter the sensor list in real time by typing; results update instantly.
-* **Out-of-Spec Filter:** One click hides all normal sensors and shows only those currently reading outside safe thresholds, highlighted in the list.
-* **Sensor Alias System:** Permanently rename ambiguous or hardware-specific sensor columns so they are correctly identified across any future log file from the same machine.
-* **Preset Groups:** Save any combination of selected sensors as a named preset. Apply, rename, delete, or share presets via clipboard - paste a shared preset from another user directly into the app.
-
-### 🔬 Diagnostics
-* **Hardware Failure Diagnosis:** Runs a full signature scan and presents findings as severity-tagged cards (Critical / Warning / Info) with plain-English descriptions, evidence values, and one-click sensor selection to jump straight to the relevant chart.
-* **Session Summary Narrative:** Automatically generates a plain-English paragraph summarizing the most significant findings and any causal relationships between issues detected.
-* **Discord Summary Copy:** Copies a compact, formatted summary of the session narrative and all detected signals - including severity and evidence - ready to paste directly into Discord or a support ticket.
-* **Real-Time Signature Badges:** The sidebar shows a live count of critical, warning, and info signals as soon as the scan completes in the background, without opening the diagnosis window.
-* **Out-of-Spec Detection:** Independently flags individual sensors that exceed configured thresholds, separate from the full signature engine.
-* **Detected Hardware View:** Parses the CSV label rows to identify and display the actual hardware devices present in the log - CPU, GPU, storage drives, network adapters, and more - grouped by category.
-
-### 🔁 Session Comparison
-* **Reference Baseline:** Pin the current session as a reference, then load a second CSV to compare directly against it.
-* **Overlay Mode:** Draws both sessions on the same axes so differences in thermals, clocks, or power are immediately visible.
-* **Delta Summary Panel:** Shows avg/max/min differences between the current and reference session for every selected sensor, displayed as an annotated panel on the chart.
-* **Swap Reference:** Swap the current and reference sessions without reloading either file.
-
-### 📄 Reporting
-* **HTML Report Export:** Generates a fully self-contained HTML report including detected hardware, session summary, all signature findings, out-of-spec sensors, per-sensor charts (selected and by category), PSU rail voltages, and a full statistics table. No internet connection required to view.
-
-### 🎨 Theming
-* **21 Built-in Themes:** Dark (Default), Light (Default), Slate, Teal, Forest Green, Crimson, Steel, Lime, Violet, Lavender, Cobalt, Neon Blue, Sand, Monochrome, Helldivers 2, Cathode, Garnet, Glacier, Vaporwave, Bunker, and Stingray Analyzer.
-* **Theme Editor:** Customize any theme's background, surface, border, text, accent, plot line colors, and heatmap band colors using a color picker. Save as a named user theme.
-* **Import / Export Themes:** Share themes as `.json` files. Import a theme file and it is immediately available in the editor.
-* **Persistent Theme:** The active theme and all customizations are saved and restored between sessions.
-
-### ⚙️ Settings & Configuration
-* **Limits Editor:** Configure every detection threshold - temperature limits per component type, voltage rail safe ranges, power maximums, fan stall thresholds, frametime limits, and all signature-specific sensitivity parameters.
-* **Signature Controls:** Enable or disable individual signatures from the settings panel. The signal timeline and badge counts update accordingly.
-* **Tooltip Toggle:** Enable or disable the hover tooltip from the top bar without restarting.
-* **Crash Recovery:** Automatically trims corrupted or zeroed rows commonly left at the end of logs after crashes or hard resets.
-* **Update Notifications:** Checks for new releases silently on startup. If an update is found, you can open the release page, ignore that specific version, or disable future notifications. A manual check is available via the ⟳ button at any time.
-* **Debug Dump:** A hidden developer panel (`Ctrl+F8`) shows all resolved sensor columns, detected values, CPU architecture detection, dependency status, runtime environment info, fabric clock ratios, PSU rail analysis, and internal state - useful for diagnosing why a signature did or did not fire.
+**Custom Signature Wizard:** build your own detectors - Simple or Advanced mode, min/max value gates, excluded sensors, trigger modes, count-based severity thresholds, custom description/advice text, built-in Reference and Examples, and a **🧪 Test** button that runs your rule against the current log before you save it. Stored in `custom_sig.json`, editable and deletable at any time.
 
 ---
 
-## 🔬 Diagnostics Engine
+## ⌨️ Shortcuts & Tools
 
-HD2 LOG VIEWER includes an advanced signature detection system that analyzes system behavior across thermals, power delivery, memory stability, storage performance, and OS-level scheduling.
+| Input | Action |
+|---|---|
+| `Ctrl+C` | Copy current chart (+ legend) to clipboard - Windows, needs Pillow |
+| `Ctrl+F8` | Debug dump: ~45 sections of engine internals (column resolution, per-signature status, keyword matching, PSU/fabric analysis, active thresholds & aliases) with search, match-jumping, problems-only filter, copy-all and save |
+| Chart click / right-click | Pin nearest line / unpin |
+| Legend row click | Pin / unpin that sensor |
+| Signature Timeline marker click (enable in settings) | Auto-select that signature's sensors |
 
-### 🧠 Detection Coverage
+---
 
-**🌡️ Thermal & Cooling**
-* CPU thermal throttling and sustained temperature stress
-* GPU hotspot and edge-to-hotspot delta analysis
-* VRAM junction temperature throttling
-* VRM and MOSFET overheating
-* Chipset / PCH thermal throttling
-* Fan stall detection during active load
-* Drive thermal throttling with separate HDD and SSD/NVMe thresholds
+## 🎨 Theming & Settings
 
-**⚡ Power & Voltage**
-* CPU clock stretching (major and minor) — effective vs. requested clock ratio analysis per core, with support for both **AMD Ryzen** and **Intel P-core / E-core** naming
-* GPU power limit saturation and oscillation
-* PSU +12V rail sag and ripple analysis
-* Multi-rail voltage out-of-spec detection (+12V, +5V, +3.3V)
-* Laptop power delivery failure / limp mode detection
-* Phantom GPU clock cap detection
+* **21 built-in themes** - Dark, Light, Slate, Teal, Forest Green, Crimson, Steel, Lime, Violet, Lavender, Cobalt, Neon Blue, Sand, Monochrome, **Helldivers 2**, Cathode, Garnet, Glacier, Vaporwave, Bunker, Stingray Analyzer.
+* **Theme editor** - background, surface, border, text, accent + secondary, 6 plot-line colors, 6 heatmap band colors; import/export as JSON; everything persists across sessions.
+* **Limits editor** - every threshold in one place: per-component temperature limits, rail safe ranges, component voltages, power caps, frame-time/latency limits, fan stall thresholds, drive health, memory load, stability ratios, 20+ signature sensitivity parameters, and the PSU rail specs. One-click reset to defaults.
+* **Signature controls** - enable/disable individual detectors (23 of the 44 currently exposed; full coverage on the roadmap).
+* **Updates** - silent startup check; view release page, ignore one version, or opt out entirely; manual **⟳ Check for Updates** in the About dialog (updates are not automatic, they are just to notify you about a new release).
 
-**🧬 Memory & Fabric**
-* System RAM exhaustion and virtual memory / pagefile overflow
-* VRAM overflow with spillover into system memory
-* Ryzen FCLK/UCLK fabric desync (DDR4 and DDR5 modes)
-* Memory XMP/EXPO profile disabled detection
-* Memory controller clock mismatch
+## 🗂️ Files It Writes
 
-**🧩 System & OS**
-* Hardware (WHEA) errors
-* GPU driver TDR / timeout pattern detection
-* CPU bottleneck (GPU idle while CPU saturated)
-* Background process CPU interference
-* GPU priority conflict from background applications
-* GPU engine wait bottleneck (PresentMon frame data)
-* Kernel driver / DPC latency spikes
-* PCIe bus interface chokepoint and signal instability
-
-**💾 Storage & I/O**
-* Drive I/O bottleneck and sustained 100% activity
-* NVMe and SSD thermal throttling
-* S.M.A.R.T. hardware failure flags
-* SSD lifespan critical and wear warnings
-* Pagefile overuse
-
-**🧪 Meta & Platform**
-* Sensor alias validation and auto-detection prompting
-* Log row integrity and crash-truncation cleanup
-* USB rail voltage sag
+| File | Purpose |
+|---|---|
+| `groups.json` | Saved sensor presets (selection + view mode) - shareable via clipboard |
+| `sensor_aliases.json` | Your confirmed sensor-column mappings (multiple per sensor) |
+| `theme.json` | Active theme + custom user themes |
+| `custom_sig.json` | Your custom signatures |
 
 ---
 
