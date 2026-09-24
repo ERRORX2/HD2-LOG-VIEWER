@@ -90,7 +90,7 @@ _PSU_RAIL_SPECS = {
 
     '+12V': dict(
         tokens=(r'\+12\s*V',                        # '+12V', '+12 V', 'ATX +12V'
-                r'(?<![\d.])12\s*V(?:IN)?(?![A-Z0-9])',   # '12V', '12 V', '12VIN' - never '12 Voltage'
+                r'(?<![\d.])12\s*V(?:IN)?(?![A-Z0-9])',   # '12V', '12 V', '12VIN'
                 r'\b12\s*VOLT\b',                  # '12 Volt [V]' (LHM style)
                 r'\bVBUS\s*12\b', r'\bVIN0\b',
                 r'\bEPS\s*12\b', r'\bATX\s*12\b'),
@@ -149,6 +149,152 @@ def resolve_psu_rail_column(df, rail, alias=None):
         if best_dist is None or dist < best_dist:
             best, best_dist = c, dist
     return best
+
+_VRAM_PCT_GROUPS = (
+
+    (('GPU', 'MEMORY', 'USAGE'),     ()),
+    (('GPU', 'MEMORY', 'ALLOCATED'), ()),
+    (('GPU', 'MEM', 'USAGE'),        ()),
+    (('GPU', 'MEM', 'LOAD'),         ('CONTROLLER',)),
+    (('D3D', 'MEMORY'),              ()),
+    (('VRAM', 'USAGE'),              ()),
+    (('FRAMEBUFFER',),               ()),
+    (('ADAPTER', 'MEMORY'),          ()),
+)
+
+_UNIT_BRACKET_RE = re.compile(r'\[([^\[\]]*)\]\s*(?:\.\d+)?$')
+
+
+def _col_unit(name):
+
+    m = _UNIT_BRACKET_RE.search(str(name).strip())
+    return m.group(1).strip().upper() if m else None
+
+
+def _instance_suffix(name):
+
+    m = re.search(r'(\.\d+)$', str(name).strip())
+    return m.group(1) if m else ''
+
+
+def _vram_candidates(df, keywords, excl=()):
+
+    out = []
+    for c in df.columns:
+        cu = str(c).upper()
+        if all(k in cu for k in keywords) and not any(e in cu for e in excl):
+            out.append(c)
+    return out
+
+
+def _pct_shape_ok(series):
+
+    s = pd.to_numeric(series, errors='coerce').dropna()
+    return (len(s) >= 5 and float(s.max()) <= 100.5
+            and float(s.min()) >= -0.5)
+
+
+def _cap_coherent(ded_col, pct_series, df):
+
+    ded = pd.to_numeric(df[ded_col], errors='coerce')
+    ded_ok = ded.dropna()
+    if ded_ok.empty:
+        return False
+    busy = (pct_series > 50) & (pct_series > 0)
+    if int(busy.sum()) < 5:
+        return False
+    caps = ded[busy] / (pct_series[busy] / 100.0)
+    caps = caps.replace([np.inf, -np.inf], np.nan).dropna()
+    if caps.empty:
+        return False
+    med = float(caps.median())
+    return 1000.0 <= med <= 100000.0 and med >= float(ded_ok.max())
+
+
+def resolve_vram_columns(df):
+
+    if df is None:
+        return {'ded': None, 'dyn': None, 'pct': None,
+                'pct_note': 'no DataFrame loaded'}
+
+    def _mb_first(cands):
+        return ([c for c in cands if 'MB' in (_col_unit(c) or '')]
+                + [c for c in cands if 'MB' not in (_col_unit(c) or '')])
+
+    ded_all = _mb_first(_vram_candidates(df, ('GPU D3D MEMORY DEDICATED',)))
+    dyn_all = _mb_first(_vram_candidates(df, ('GPU D3D MEMORY DYNAMIC',)))
+    ded = ded_all[0] if ded_all else None
+    dyn = dyn_all[0] if dyn_all else None
+
+    pct_named, unitless, excluded = [], [], []
+    for keywords, excl in _VRAM_PCT_GROUPS:
+        for c in _vram_candidates(df, keywords, excl):
+            if c in pct_named or c in unitless or c in excluded:
+                continue
+            unit = _col_unit(c)
+            if unit is None:
+                unitless.append(c)
+            elif '%' in unit:
+                pct_named.append(c)
+            else:
+                excluded.append(c)
+
+    pct_ranked = pct_named + unitless
+    if not pct_ranked:
+        if excluded:
+            note = (f"no VRAM % column in this log - nearest candidate "
+                    f"{excluded[0]!r} is {_col_unit(excluded[0])}-unit, "
+                    f"not a percentage")
+        else:
+            note = 'no VRAM % column in this log'
+        return {'ded': ded, 'dyn': dyn, 'pct': None, 'pct_note': note}
+
+    shapes = {c: _pct_shape_ok(df[c]) for c in pct_ranked}
+    pct_ranked.sort(key=lambda c: not shapes[c])
+    pct = pct_ranked[0]
+
+    pct_pool = [c for c in pct_ranked if shapes[c]]
+    if ded is not None and pct_pool:
+        pair = next(
+            ((d, p) for d in ded_all for p in pct_pool
+             if _cap_coherent(d, pd.to_numeric(df[p], errors='coerce'), df)),
+            None)
+        if pair is not None and (len(ded_all) > 1 or len(pct_pool) > 1):
+            ded, pct = pair
+
+    if dyn_all:
+        sfx = _instance_suffix(ded) if ded else ''
+        same = [c for c in dyn_all if _instance_suffix(c) == sfx]
+        dyn = (same or dyn_all)[0]
+
+    return {'ded': ded, 'dyn': dyn, 'pct': pct, 'pct_note': None}
+
+def resolve_chipset_temp_column(df, alias_entry=None):
+
+    if df is None:
+        return None
+    if alias_entry:
+        cands = alias_entry if isinstance(alias_entry, list) else [alias_entry]
+        for c in cands:
+            if c and c in df.columns:
+                return c
+    cols = list(df.columns)
+
+    for probe in ('CHIPSET [°C]', 'MOTHERBOARD [°C]'):
+        for c in cols:
+            if probe in str(c).upper():
+                return c
+
+    for c in cols:
+        u = str(c).upper()
+        if not any(k in u for k in ('CHIPSET', 'PCH', 'SMU')):
+            continue
+        if '°C' not in u and 'TEMP' not in u:
+            continue
+        s = pd.to_numeric(df[c], errors='coerce').dropna()
+        if len(s) and 0.0 < float(s.median()) < 120.0:
+            return c
+    return None
 
 GROUPS_FILE         = "groups.json"
 SENSOR_ALIASES_FILE = "sensor_aliases.json"
@@ -373,8 +519,79 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.6"
+CURRENT_VERSION = "1.7.7"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
+
+SIGNATURE_REGISTRY = [
+    # -- Thermal & Cooling ---------------------------------------------------
+    ("CPU Thermal Throttling",                         "CRITICAL/WARNING", "Thermal & Cooling"),
+    ("GPU Overheating (Hotspot)",                      "CRITICAL",         "Thermal & Cooling"),
+    ("GPU Thermal Warning",                            "WARNING",          "Thermal & Cooling"),
+    ("VRAM Thermal Throttling",                        "CRITICAL/WARNING", "Thermal & Cooling"),
+    ("VRM Overheating",                                "CRITICAL",         "Thermal & Cooling"),
+    ("Chipset Thermal Throttling",                     "WARNING",          "Thermal & Cooling"),
+    ("Fan Stall Detected",                             "CRITICAL",         "Thermal & Cooling"),
+    ("Storage Thermal Critical",                       "CRITICAL",         "Thermal & Cooling"),
+    ("Storage Overheating",                            "WARNING",          "Thermal & Cooling"),
+    # -- Power & Voltage -----------------------------------------------------
+    ("PSU +12V Rail Sag",                              "CRITICAL/WARNING", "Power & Voltage"),
+    ("PSU +5V Rail Unstable",                          "WARNING",          "Power & Voltage"),
+    ("PSU +3.3V Rail Unstable",                        "WARNING",          "Power & Voltage"),
+    ("PSU Hardware Failure Indicators",                "CRITICAL",         "Power & Voltage"),
+    ("GPU Power Connector Safety Risk (Melting/Fire)", "CRITICAL/WARNING", "Power & Voltage"),
+    ("Laptop Power Delivery Failure (Limp Mode)",      "CRITICAL",         "Power & Voltage"),
+    ("Phantom Clock Cap",                              "CRITICAL",         "Power & Voltage"),
+    ("CPU Power Limit Reached",                        "WARNING",          "Power & Voltage"),
+    ("GPU Power Limit Saturated",                      "INFO",             "Power & Voltage"),
+    ("GPU Power Limit Oscillation",                    "WARNING",          "Power & Voltage"),
+    ("CPU Clock Stretching (Major)",                   "CRITICAL",         "Power & Voltage"),
+    ("CPU Clock Stretching (Minor)",                   "WARNING",          "Power & Voltage"),
+    # -- Memory & Fabric -----------------------------------------------------
+    ("System RAM Exhaustion",                          "CRITICAL",         "Memory & Fabric"),
+    ("Virtual Memory Limit",                           "CRITICAL",         "Memory & Fabric"),
+    ("VRAM Swapping / System Memory Spillover",        "CRITICAL/WARNING", "Memory & Fabric"),
+    ("Memory XMP/EXPO Profile Disabled",               "WARNING",          "Memory & Fabric"),
+    ("Memory Controller Desync",                       "WARNING",          "Memory & Fabric"),
+    ("Ryzen Fabric Desync",                            "CRITICAL/WARNING", "Memory & Fabric"),
+    # -- System & OS ---------------------------------------------------------
+    ("Hardware (WHEA) Errors",                         "CRITICAL",         "System & OS"),
+    ("GPU Driver TDR (Timeout)",                       "CRITICAL/WARNING", "System & OS"),
+    ("Unverified GPU Stall at Log Start",              "INFO",             "System & OS"),
+    ("CPU Bottleneck",                                 "INFO",             "System & OS"),
+    ("Background Process Interference",                "WARNING",          "System & OS"),
+    ("GPU Priority Conflict (Background App)",         "WARNING",          "System & OS"),
+    ("GPU Engine Wait Bottleneck",                     "CRITICAL/WARNING", "System & OS"),
+    ("Micro-Stuttering Detected",                      "WARNING",          "System & OS"),
+    ("Kernel Driver Latency (DPC/ISR)",                "INFO",             "System & OS"),
+    # -- Storage & I/O -------------------------------------------------------
+    ("Storage I/O Bottleneck / Hitching",              "CRITICAL/WARNING", "Storage & I/O"),
+    ("Storage Congestion",                             "INFO",             "Storage & I/O"),
+    ("S.M.A.R.T. Hardware Failure",                    "CRITICAL",         "Storage & I/O"),
+    ("SSD Lifespan Critical",                          "CRITICAL",         "Storage & I/O"),
+    ("SSD Wear Warning",                               "WARNING",          "Storage & I/O"),
+    ("USB Rail Voltage Sag",                           "WARNING",          "Storage & I/O"),
+    # -- Platform / Interconnect ---------------------------------------------
+    ("PCIe Bus Interface Chokepoint",                  "CRITICAL/WARNING", "Platform / Interconnect"),
+    ("PCIe Bus Signal Instability",                    "CRITICAL",         "Platform / Interconnect"),
+]
+
+_SIG_DISABLE_ALIASES = {
+    "CPU Clock Stretching - Major": "CPU Clock Stretching (Major)",
+    "CPU Clock Stretching - Minor": "CPU Clock Stretching (Minor)",
+}
+
+REPORT_CHART_PALETTE = {
+    'fig_bg':    '#13132b',
+    'ax_bg':     '#0d0d1a',
+    'title':     '#4f8ef7',
+    'ticks':     '#94a3b8',
+    'grid':      '#2a2a4a',
+    'spine':     '#1e1e3a',
+    'legend':    '#e2e8f0',
+    'line_cycle': ['#4f8ef7', '#22c55e', '#f59e0b',
+                   '#ef4444', '#a78bfa', '#06b6d4',
+                   '#f472b6', '#84cc16'],
+}
 
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
                 ignored_version: str = "", updates_disabled: bool = False, time_mode: bool = False,
@@ -399,7 +616,7 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
     try:
         with open(GROUPS_FILE, 'w') as f:
             json.dump(config, f, indent=4)
-    except:
+    except Exception:
         pass
 
 def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, list, bool, bool]:
@@ -423,7 +640,7 @@ def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, 
                         sets.get("sig_timeline_enabled", True),
                         sets.get("tooltip_enabled", True))
             return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False, [], True, True
-    except:
+    except Exception:
         return {}, False, False, False, "", False, False, {}, False, [], False, True
 
 def _post_ui(root, fn):
@@ -698,7 +915,7 @@ class TelemetryAnalyzer:
                 sample = f.readline() + f.readline()
                 dialect = csv.Sniffer().sniff(sample)
                 sep = dialect.delimiter
-        except:
+        except (OSError, csv.Error):
             sep = None
 
         for enc in ['utf-8-sig', 'latin-1', 'cp1252']:
@@ -709,7 +926,7 @@ class TelemetryAnalyzer:
                     self.df = df
                     success = True
                     break
-            except:
+            except Exception:
                 continue
 
         if not success:
@@ -727,7 +944,7 @@ class TelemetryAnalyzer:
                 s = self.df[col].astype(str).str.replace(',', '.', regex=False)
                 cleaned = s.str.replace(r'[^\d\.\-eE]', '', regex=True)
                 self.df[col] = pd.to_numeric(cleaned, errors='coerce')
-            except:
+            except Exception:
                 continue
 
         while len(self.df) > 1:
@@ -1203,6 +1420,7 @@ class TelemetryApp:
         self.sig_drive_temp_max     = misc['sig_drive_temp_max']
         self.sig_vrm_temp_max       = misc['sig_vrm_temp_max']
         self.sig_chipset_temp_max   = misc.get('sig_chipset_temp_max', 80.0)
+        self.sig_usb_v_min          = misc.get('sig_usb_v_min', 4.75)
         self.sig_ram_exhaust_pct    = misc['sig_ram_exhaust_pct']
         self.sig_vram_overflow_pct  = misc['sig_vram_overflow_pct']
         self.sig_cpu_bn_gpu_pct     = misc['sig_cpu_bn_gpu_pct']
@@ -2454,12 +2672,12 @@ if col in df.columns:
                     if min_str:
                         try:
                             mins[sensor] = float(min_str)
-                        except:
+                        except ValueError:
                             pass
                     if max_str:
                         try:
                             maxs[sensor] = float(max_str)
-                        except:
+                        except ValueError:
                             pass
                 
                 if not mins and not maxs:
@@ -2474,7 +2692,7 @@ if col in df.columns:
                         state['current_sig']['info_count'] = int(info_var.get() or 5)
                         state['current_sig']['warn_count'] = int(warn_var.get() or 10)
                         state['current_sig']['crit_count'] = int(crit_var.get() or 15)
-                    except:
+                    except (ValueError, TypeError):
                         pass
                 
                 if state['advanced_mode']:
@@ -2824,36 +3042,18 @@ Min/Max Thresholds:
                  bg=bg, fg="#888", font=('Segoe UI', 8), wraplength=480,
                  justify='left').pack(anchor='w', padx=8, pady=(2, 6))
 
-        _ALL_SIGNATURES = [
-            ("CPU Thermal Throttling",          "CRITICAL/WARNING"),
-            ("CPU Power Limit Reached",         "WARNING"),
-            ("CPU Bottleneck",                  "WARNING"),
-            ("GPU Overheating (Hotspot)",        "CRITICAL"),
-            ("GPU Thermal Warning",              "WARNING"),
-            ("VRAM Swapping / System Memory Spillover", "CRITICAL/WARNING"),
-            ("PSU +12V Rail Sag",               "CRITICAL/WARNING"),
-            ("PSU +5V Rail Unstable",           "WARNING"),
-            ("PSU +3.3V Rail Unstable",         "WARNING"),
-            ("Fan Stall Detected",              "CRITICAL"),
-            ("PSU Hardware Failure Indicators", "CRITICAL"),
-            ("Hardware (WHEA) Errors",          "CRITICAL"),
-            ("VRM Overheating",                 "CRITICAL"),
-            ("System RAM Exhaustion",           "WARNING"),
-            ("Virtual Memory Limit",            "CRITICAL"),
-            ("Storage Thermal Critical",        "CRITICAL"),
-            ("Storage Overheating",             "WARNING"),
-            ("Storage Congestion",              "INFO"),
-            ("S.M.A.R.T. Hardware Failure",     "CRITICAL"),
-            ("SSD Lifespan Critical",           "CRITICAL"),
-            ("SSD Wear Warning",                "WARNING"),
-            ("Micro-Stuttering Detected",       "WARNING"),
-            ("Memory XMP/EXPO Profile Disabled", "WARNING"),
-        ]
+        _ALL_SIGNATURES = SIGNATURE_REGISTRY
 
         _SEV_COLORS = {"CRITICAL": "#ff4d4d", "WARNING": "#f59e0b",
                        "INFO": "#38bdf8", "CRITICAL/WARNING": "#ff8c42"}
         sig_vars = {}
-        for sig_name, sev_hint in _ALL_SIGNATURES:
+        _cur_domain = None
+        for sig_name, sev_hint, sig_domain in _ALL_SIGNATURES:
+            if sig_domain != _cur_domain:
+                _cur_domain = sig_domain
+                tk.Label(body, text=sig_domain, bg=bg, fg=accent,
+                         font=('Segoe UI', 9, 'bold'),
+                         anchor='w').pack(fill=tk.X, padx=8, pady=(8, 1))
             enabled = sig_name not in self.disabled_sigs
             var = tk.BooleanVar(value=enabled)
             sig_vars[sig_name] = var
@@ -3012,6 +3212,7 @@ Min/Max Thresholds:
                 self.sig_drive_temp_max      = misc['sig_drive_temp_max']
                 self.sig_vrm_temp_max        = misc['sig_vrm_temp_max']
                 self.sig_chipset_temp_max    = misc.get('sig_chipset_temp_max', 80.0)
+                self.sig_usb_v_min           = misc.get('sig_usb_v_min', 4.75)
                 self.sig_ram_exhaust_pct     = misc['sig_ram_exhaust_pct']
                 self.sig_vram_overflow_pct   = misc['sig_vram_overflow_pct']
                 self.sig_cpu_bn_gpu_pct      = misc['sig_cpu_bn_gpu_pct']
@@ -3675,7 +3876,7 @@ Min/Max Thresholds:
 
         def _pct(series, p):
             try:    return float(np.percentile(series.dropna(), p))
-            except: return float('nan')
+            except (TypeError, ValueError, IndexError): return float('nan')
 
         STAT_COLS = [
             ('Min',  lambda s: float(s.min())),
@@ -4165,7 +4366,7 @@ Min/Max Thresholds:
 
                 def _pct2(series, p):
                     try:    return float(np.percentile(series.dropna(), p))
-                    except: return float('nan')
+                    except (TypeError, ValueError, IndexError): return float('nan')
 
                 STAT_COLS = [
                     ('Min',  lambda s: float(s.min())),
@@ -4177,11 +4378,13 @@ Min/Max Thresholds:
                     ('σ',    lambda s: float(s.std())),
                 ]
 
+                _RC = REPORT_CHART_PALETTE  # shared with _export_html_report
+
                 def _fig_to_b64(fig):
                     FigureCanvasAgg(fig)
                     buf = io.BytesIO()
                     fig.savefig(buf, format='png', dpi=150,
-                                bbox_inches='tight', facecolor='#0d0d1a')
+                                bbox_inches='tight', facecolor=_RC['fig_bg'])
                     buf.seek(0)
                     return base64.b64encode(buf.read()).decode()
 
@@ -4190,9 +4393,9 @@ Min/Max Thresholds:
                 chart_blocks = []
                 for sensor in sensors[:8]:
                     fig = Figure(figsize=(13, 3.5))
-                    fig.patch.set_facecolor('#0d0d1a')
+                    fig.patch.set_facecolor(_RC['fig_bg'])
                     ax = fig.add_subplot(111)
-                    ax.set_facecolor('#13132b')
+                    ax.set_facecolor(_RC['ax_bg'])
                     lib = _lib(sensor)
                     session1_vals = None
                     for si, sess in enumerate(self.sessions):
@@ -4215,16 +4418,16 @@ Min/Max Thresholds:
                     if use_time:
                         ax.xaxis.set_major_formatter(
                             _ticker.FuncFormatter(lambda v, _: self._format_elapsed(v)))
-                    ax.set_title(sensor[:70], color='#a0c4ff', fontsize=8, pad=3)
-                    ax.tick_params(colors='#ccc', labelsize=7)
-                    ax.grid(True, ls=':', alpha=0.3, color='#444')
+                    ax.set_title(sensor[:70], color=_RC['title'], fontsize=8, pad=3)
+                    ax.tick_params(colors=_RC['ticks'], labelsize=7)
+                    ax.grid(True, ls=':', alpha=0.3, color=_RC['grid'])
                     for spine in ax.spines.values():
-                        spine.set_edgecolor('#333')
+                        spine.set_edgecolor(_RC['spine'])
                     leg = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1),
                                     fontsize=6, frameon=False)
                     if leg:
                         for t in leg.get_texts():
-                            t.set_color('#ddd')
+                            t.set_color(_RC['legend'])
                     fig.subplots_adjust(right=0.72)
                     b64 = _fig_to_b64(fig)
                     fig.clf()
@@ -5721,7 +5924,7 @@ Min/Max Thresholds:
 
         def val(name, value, fmt=".2f"):
             try:    v = f"{value:{fmt}}" if value is not None else MISS
-            except: v = str(value)
+            except (TypeError, ValueError): v = str(value)
             w(f"       {name:44s} = ")
             wl(v, 'val')
 
@@ -6323,9 +6526,10 @@ Min/Max Thresholds:
         gpu_throttle      = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
         gpu_pwr_limit     = self._col('Performance Limit - Power [Yes/No]') or self._col('PERFCAP', 'PWR')
         gpu_eff_clock     = self._col('GPU Effective Clock [MHz]')
-        gpu_mem_usage     = self._col('GPU', 'MEMORY', 'USAGE') or self._col('GPU', 'MEMORY', 'ALLOCATED')
-        gpu_mem_dedicated = self._col('GPU D3D Memory Dedicated')
-        gpu_mem_dynamic   = self._col('GPU D3D Memory Dynamic')
+        _vram_cols        = resolve_vram_columns(df)
+        gpu_mem_usage     = _vram_cols['pct']
+        gpu_mem_dedicated = _vram_cols['ded']
+        gpu_mem_dynamic   = _vram_cols['dyn']
         gpu_bus_col       = self._col('GPU Bus Load') or self._col('Bus Load')
         vram_junc         = self._col('GPU Memory Junction Temperature [°C]')
         _gpu_edge_cands = [c for c in df.columns
@@ -6625,11 +6829,12 @@ Min/Max Thresholds:
         if not any([v12c, v5c, v33c]):
             wl("  No voltage rail columns found - PSU analysis unavailable.", 'muted')
 
-        chipset_t      = self._col('Chipset [°C]') or self._col('Motherboard [°C]')
+        chipset_t      = resolve_chipset_temp_column(
+            df, self.analyzer.aliases.get('chipset_temp'))
         pcie_errors    = self._col('PCI Express Error Counters (avg)')
         sys_interrupts = self._col('System Interrupts') or self._col('DPC Latency')
         is_laptop      = any(k in "".join(df.columns).upper()
-                             for k in ['BATTERY','CHARGE','AC ADAPTER','DISCHARGE'])
+                             for k in ['BATTERY','CHARGE','AC ADAPTER','DISCHARGE','MOBILE','LAPTOP'])
 
         section("SYSTEM COLUMNS")
         col("chipset_t",      chipset_t)
@@ -7156,7 +7361,7 @@ Min/Max Thresholds:
         def add(name, severity, description, evidence, mask=None, cols=None, advice=None):
             if advice:
                 description = description + " " + advice
-            if name in self.disabled_sigs:
+            if name in self.disabled_sigs or _SIG_DISABLE_ALIASES.get(name) in self.disabled_sigs:
                 return
             clean_ev = [str(e) for e in evidence if e and str(e).strip()]
             start_idx, end_idx = None, None
@@ -7245,14 +7450,16 @@ Min/Max Thresholds:
         gpu_12v_input_w = self._col('GPU 12VHPWR Power') or self._col('GPU Power [W]') or self._col('GPU Board Power')
         gpu_pwr_limit   = self._col('Performance Limit - Power [Yes/No]') or self._col('PERFCAP', 'PWR')
 
-        gpu_mem_usage = self._col('GPU','MEMORY','USAGE') or self._col('GPU','MEMORY','ALLOCATED') or self._col('GPU','MEM','USAGE') or self._col('GPU','MEM','LOAD') or self._col('D3D','MEMORY') or self._col('VRAM','USAGE') or self._col('FRAMEBUFFER') or self._col('ADAPTER','MEMORY')
+        _vram_cols = resolve_vram_columns(df)
+        gpu_mem_usage     = _vram_cols['pct']
         vram_junction_temp = self._col('GPU Memory Junction Temperature [°C]')
-        gpu_mem_dedicated = self._col('GPU D3D Memory Dedicated')
-        gpu_mem_dynamic   = self._col('GPU D3D Memory Dynamic')
+        gpu_mem_dedicated = _vram_cols['ded']
+        gpu_mem_dynamic   = _vram_cols['dyn']
         gpu_bus_col       = self._col('GPU Bus Load') or self._col('Bus Load')
 
         is_laptop     = any(k in "".join(self.df.columns).upper() for k in ['BATTERY', 'CHARGE', 'AC ADAPTER', 'DISCHARGE', 'MOBILE', 'LAPTOP'])
-        chipset_t     = _a('chipset_temp') or self._col('Chipset [°C]') or self._col('Motherboard [°C]') or self._col('PCH') or self._col('SMU')
+        chipset_t     = resolve_chipset_temp_column(
+            df, self.analyzer.aliases.get('chipset_temp'))
         usb_v_col     = self._col('USB VCC') or self._col('USB Voltage')
         pcie_errors   = _a('pcie_errors') or self._col('PCI Express Error Counters (avg)')
         system_interrupts = _a('sys_interrupts') or self._col('System Interrupts') or self._col('DPC Latency')
@@ -8173,7 +8380,8 @@ Min/Max Thresholds:
                 else:
                     pct_offline = f"'{gpu_mem_usage}' has no numeric samples"
             else:
-                pct_offline = "no VRAM % column in this log"
+                pct_offline = (_vram_cols['pct_note']
+                               or "no VRAM % column in this log")
 
             cap_est = None
             cap_cand = None
@@ -8691,13 +8899,16 @@ Min/Max Thresholds:
                 )
 
             if usb_v_col:
-                min_usb_v = df[usb_v_col].min()
-                if min_usb_v < 4.75:
+                usb_v = pd.to_numeric(df[usb_v_col], errors='coerce')
+                sag = usb_v[(usb_v > 0.0) & (usb_v < self.sig_usb_v_min)]
+                if len(sag):
                     add(
                         name="USB Rail Voltage Sag",
                         severity="WARNING",
                         description="USB 5V rail dropped below safety limits. This causes peripheral disconnects.",
-                        evidence=[f"Min USB Voltage: {min_usb_v:.2f}V"],
+                        evidence=[f"Min USB Voltage: {sag.min():.2f}V "
+                                  f"({len(sag)} of {int(usb_v.notna().sum())} samples "
+                                  f"below {self.sig_usb_v_min:.2f}V)"],
                         advice="Unplug non-essential USB devices or use a powered USB hub."
                     )
 
@@ -8967,7 +9178,7 @@ Min/Max Thresholds:
 
         def _lum(h):
             try: r,g,b_=int(h[1:3],16),int(h[3:5],16),int(h[5:7],16); return 0.2126*r+0.7152*g+0.0722*b_
-            except: return 128
+            except (ValueError, TypeError): return 128
 
         t        = self._get_theme()
         bg       = t["bg"]
@@ -9215,7 +9426,7 @@ Min/Max Thresholds:
             try:
                 r,g,b_=int(btn_accent[1:3],16),int(btn_accent[3:5],16),int(btn_accent[5:7],16)
                 btn_fg = "#000000" if (0.2126*r+0.7152*g+0.0722*b_) > 140 else "#ffffff"
-            except: btn_fg = "#ffffff"
+            except (ValueError, TypeError): btn_fg = "#ffffff"
             is_active = (pname == active_name)
             btn = tk.Button(preset_frame, text=("✓ " if is_active else "") + pname,
                             font=('Segoe UI', 8, 'bold' if is_active else 'normal'),
@@ -9239,7 +9450,7 @@ Min/Max Thresholds:
                 try:
                     r,g,b_=int(u_accent[1:3],16),int(u_accent[3:5],16),int(u_accent[5:7],16)
                     u_fg = "#000000" if (0.2126*r+0.7152*g+0.0722*b_) > 140 else "#ffffff"
-                except: u_fg = "#ffffff"
+                except (ValueError, TypeError): u_fg = "#ffffff"
                 is_active = (utheme_name == active_name)
                 ubtn = tk.Button(row, text=("✓ " if is_active else "") + utheme_name,
                           font=('Segoe UI', 8, 'bold' if is_active else 'normal'),
@@ -9586,7 +9797,7 @@ Min/Max Thresholds:
              "Used for chipset thermal throttling detection.\n"
              "Look for the motherboard chipset or PCH temperature in °C.\n"
              "Common names: PCH Temperature, Chipset [°C], Motherboard [°C]",
-             self._col('Chipset [°C]') or self._col('Motherboard [°C]') or self._col('PCH'),
+             resolve_chipset_temp_column(self.df),
              lambda c: any(k in c.upper() for k in
                            ['PCH','CHIPSET','MOTHERBOARD','NB TEMP','SMU'])
              and ('°C' in c or 'TEMP' in c.upper())),
@@ -10050,13 +10261,14 @@ Min/Max Thresholds:
                 cols = list(df.columns)
                 sel  = [c for c, v in self.vars.items() if v.get() and c in df.columns]
                 x_vals, ts, use_time = self._get_x_axis()
-                colors_cycle = matplotlib.rcParams['axes.prop_cycle'].by_key()['color']
+                # Report chart palette - shared with _export_compare_report
+                _RC = REPORT_CHART_PALETTE
 
                 def _fig_to_b64(fig) -> str:
                     FigureCanvasAgg(fig)
                     buf = io.BytesIO()
                     fig.savefig(buf, format='png', dpi=150, bbox_inches='tight',
-                                facecolor='#1a1a2e')
+                                facecolor=_RC['fig_bg'])
                     buf.seek(0)
                     return base64.b64encode(buf.read()).decode()
 
@@ -10067,25 +10279,25 @@ Min/Max Thresholds:
 
                 def _make_chart(sensor_cols: list, title: str, figsize=(13, 3.5)) -> str:
                     fig = Figure(figsize=figsize)
-                    fig.patch.set_facecolor('#1a1a2e')
+                    fig.patch.set_facecolor(_RC['fig_bg'])
                     ax = fig.add_subplot(111)
-                    ax.set_facecolor('#0f0f23')
+                    ax.set_facecolor(_RC['ax_bg'])
                     for i, col in enumerate(sensor_cols):
                         if col not in df.columns:
                             continue
                         ax.plot(x_vals, df[col], lw=1.2,
-                                color=colors_cycle[i % len(colors_cycle)],
+                                color=_RC['line_cycle'][i % len(_RC['line_cycle'])],
                                 label=col[:60])
-                    ax.set_title(title, color='#a0c4ff', fontsize=9, pad=4)
-                    ax.tick_params(colors='#ccc', labelsize=7)
-                    ax.grid(True, ls=':', alpha=0.3, color='#444')
+                    ax.set_title(title, color=_RC['title'], fontsize=9, pad=4)
+                    ax.tick_params(colors=_RC['ticks'], labelsize=7)
+                    ax.grid(True, ls=':', alpha=0.3, color=_RC['grid'])
                     for spine in ax.spines.values():
-                        spine.set_edgecolor('#333')
+                        spine.set_edgecolor(_RC['spine'])
                     leg = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1),
                                     fontsize=6, frameon=False)
                     if leg:
                         for t in leg.get_texts():
-                            t.set_color('#ddd')
+                            t.set_color(_RC['legend'])
                     if use_time:
                         ax.xaxis.set_major_formatter(
                             _ticker.FuncFormatter(lambda v, _: self._format_elapsed(v)))
@@ -10140,12 +10352,12 @@ Min/Max Thresholds:
 
                     def _make_rail_chart(rcols, rtitle, rlo, rhi):
                         fig = Figure(figsize=(13, 3.5))
-                        fig.patch.set_facecolor('#1a1a2e')
+                        fig.patch.set_facecolor(_RC['fig_bg'])
                         ax = fig.add_subplot(111)
-                        ax.set_facecolor('#0f0f23')
+                        ax.set_facecolor(_RC['ax_bg'])
                         for i, col in enumerate(rcols):
                             ax.plot(x_vals, df[col], lw=1.2,
-                                    color=colors_cycle[i % len(colors_cycle)],
+                                    color=_RC['line_cycle'][i % len(_RC['line_cycle'])],
                                     label=col[:60])
                         if rlo is not None and rhi is not None:
                             ax.axhline(rlo, color='#ff4d4d', ls='--', lw=1, alpha=0.7,
@@ -10154,16 +10366,16 @@ Min/Max Thresholds:
                                        label=f'Max spec ({rhi}V)')
                             ax.axhspan(rlo - 0.5, rlo, color='#ff4d4d', alpha=0.07)
                             ax.axhspan(rhi, rhi + 0.5, color='#ff4d4d', alpha=0.07)
-                        ax.set_title(rtitle, color='#a0c4ff', fontsize=9, pad=4)
-                        ax.tick_params(colors='#ccc', labelsize=7)
-                        ax.grid(True, ls=':', alpha=0.3, color='#444')
+                        ax.set_title(rtitle, color=_RC['title'], fontsize=9, pad=4)
+                        ax.tick_params(colors=_RC['ticks'], labelsize=7)
+                        ax.grid(True, ls=':', alpha=0.3, color=_RC['grid'])
                         for spine in ax.spines.values():
-                            spine.set_edgecolor('#333')
+                            spine.set_edgecolor(_RC['spine'])
                         leg = ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1),
                                         fontsize=6, frameon=False)
                         if leg:
                             for t in leg.get_texts():
-                                t.set_color('#ddd')
+                                t.set_color(_RC['legend'])
                         if use_time:
                             ax.xaxis.set_major_formatter(
                                 _ticker.FuncFormatter(lambda v, _: self._format_elapsed(v)))
@@ -10322,7 +10534,7 @@ body{{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sa
 .sev-warn .sev-badge{{background:var(--warn);color:#000;}}
 .sev-info .sev-badge{{background:var(--info);color:#000;}}
 .ev-list{{margin:8px 0 0 16px;color:#94a3b8;font-size:12px;font-family:monospace;}}
-.narrative-box{{background:var(--card);border-left:4px solid var(--accent2);border-radius:var(--radius);padding:16px 20px;font-size:13.5px;line-height:1.7;color:var(--fg);margin-bottom:4px;}}
+.narrative-box{{background:var(--bg2);border-left:4px solid var(--accent2);border-radius:var(--radius);padding:16px 20px;font-size:13.5px;line-height:1.7;color:var(--text);margin-bottom:4px;}}
 .ev-list li{{margin-bottom:2px;}}
 figure{{margin-bottom:20px;}}
 figure img{{width:100%;border-radius:8px;border:1px solid var(--border);display:block;}}
@@ -12226,21 +12438,21 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._last_cursor_idx = -1
         for line in self.cursor_lines:
             try: line.remove()
-            except: pass
+            except Exception: pass
         self.cursor_lines = []
         if self.cursor_text:
             try: self.cursor_text.remove()
-            except: pass
+            except Exception: pass
             self.cursor_text = None
         if hasattr(self, '_line_annotation') and self._line_annotation:
             try: self._line_annotation.remove()
-            except: pass
+            except Exception: pass
             self._line_annotation = None
         if hasattr(self, '_prev_highlight') and self._prev_highlight:
             try:
                 self._prev_highlight.set_linewidth(self._prev_highlight_lw)
                 self._prev_highlight.set_zorder(self._prev_highlight_z)
-            except: pass
+            except Exception: pass
             self._prev_highlight = None
 
     def _show_tk_tooltip(self, text, mpl_event, border_color):
@@ -13796,8 +14008,6 @@ if __name__ == "__main__":
     import threading
     import sys, os
 
-
-
     try:
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
@@ -13805,17 +14015,7 @@ if __name__ == "__main__":
         )
     except Exception:
         pass
-
-                           
-                                                                             
-                                                                             
-                                                                              
-                                                                             
-                                                                              
-                                                                            
-                                                                               
-                                                                             
-                                                 
+                                 
     try:
         import ctypes
         try:
@@ -13827,9 +14027,6 @@ if __name__ == "__main__":
 
     root = tk.Tk()
     root.withdraw()
-
-
-
 
     try:
         if getattr(sys, 'frozen', False):
@@ -13848,9 +14045,7 @@ if __name__ == "__main__":
         except Exception:
             pass
 
-
     _apply_icon(root)
-
 
     root.bind("<Map>", lambda e: _apply_icon(root) if e.widget is root else None)
 

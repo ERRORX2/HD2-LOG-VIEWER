@@ -160,6 +160,7 @@
                 "sig_tdr_clock_frac": 0.5,
                 "sig_ppt_sat_pct": 0.98,
                 "sig_ppt_sat_samples": 15,
+                "sig_gpu_osc_per_min": 6.0,
                 "sig_clock_stretch_mhz": 500.0,
                 "sig_disk_busy_pct": 99.9,
                 "sig_disk_busy_samples": 3,
