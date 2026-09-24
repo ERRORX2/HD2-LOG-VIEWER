@@ -1,4 +1,35 @@
 # Change Log
+## 📝 Changelog: v1.7.7 (2026-09-24)
+
+---
+
+### 🎯 Major Architectural & Resolver Refactor
+
+* **Centralized Signature Registry (`SIGNATURE_REGISTRY`):** Centralized all signature definitions into a unified registry with domain grouping and built-in alias support.
+* **Unit-Authoritative VRAM Resolver:** Centralized VRAM detection in `resolve_vram_columns()`, preventing capacity units (`[MB]`, `[GB]`) or controller load from being misidentified as percentage usage on multi-GPU setups.
+* **Capacity-Coherent GPU Pairing:** Multi-GPU setups now validate capacity coherence across `(dedicated, %)` pairs rather than relying on unaligned vendor instance suffixes (`.1`).
+* **Unified Chipset Resolver:** Replaced disparate keyword chains with `resolve_chipset_temp_column()`, preventing voltage (`[V]`) or fan (`[RPM]`) columns from resolving as chipset temperatures and reporting false thermal spikes.
+* **USB Rail Glitch Guard:** Excluded `0.0 V` sensor dropouts from triggering false USB rail sag warnings, made the minimum threshold configurable (`sig_usb_v_min`), and added violation sample counts to evidence logs.
+
+### ⚙️ Diagnostic & Detector Improvements
+
+* **VRAM Saturation Precision:** Shifted saturation detection to explicit `GPU Memory Usage [%] > 90%` with self-calibrating capacity estimation, upgrading warnings to CRITICAL when severe frame-time spikes occur during spillover.
+* **Dump & Engine Parity:** Synchronized column resolution and `is_laptop` keyword matching (`MOBILE`/`LAPTOP`) between the debug dump and signature engine to eliminate reporting discrepancies.
+
+### 🐛 Bug Fixes
+
+* **Exception Handling Hardening:** Replaced unhandled `except:` catch-alls across 18 call sites with explicit `except Exception` blocks, preventing critical system signals (`KeyboardInterrupt` and `SystemExit`) from being swallowed during report exports.
+
+### 🎨 UI & Report Improvements
+
+* **Unified Chart Palette (`REPORT_CHART_PALETTE`):** Shared a single dark-theme color palette across both main and comparison report builders, eliminating all hardcoded chart color hexes.
+* **CSS Variable Sync:** HTML report charts and narrative elements now dynamically sync with CSS root variables for consistent report styling.
+
+---
+
+### 📢 Notes
+
+* Keep `groups.json`, `theme.json`, and `custom_sig.json` when updating to preserve your custom sensor presets, aliases, themes, custom signatures, and saved configurations.
 
 ## 📝 Changelog: v1.7.6 (2026-09-21)
 
