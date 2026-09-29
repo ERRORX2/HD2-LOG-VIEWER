@@ -173,6 +173,7 @@
         },
         "disabled_sigs": [],
         "sig_timeline_enabled": false,
-        "tooltip_enabled": false
+        "tooltip_enabled": false,
+        "ui_mode": "modern"
     }
 }

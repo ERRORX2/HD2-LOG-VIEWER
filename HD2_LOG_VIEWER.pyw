@@ -484,6 +484,59 @@ BUILTIN_PRESETS = {
                       "hm_hot":  "#e85d04", "hm_crit": "#f85149", "hm_max": "#7a1410"},
 }
 
+def _hex_blend(c1: str, c2: str, t: float) -> str:
+    try:
+        a = tuple(int(c1.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
+        b = tuple(int(c2.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
+    except Exception:
+        return c1
+    m = max(0.0, min(1.0, float(t)))
+    return '#%02x%02x%02x' % tuple(
+        round(a[i] + (b[i] - a[i]) * m) for i in range(3))
+
+
+def _contrast_on(bg_hex: str) -> str:
+    try:
+        n = bg_hex.lstrip('#')
+        r, g, b = (int(n[i:i + 2], 16) for i in (0, 2, 4))
+    except Exception:
+        return '#ffffff'
+    lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0
+    return '#111111' if lum > 0.55 else '#ffffff'
+
+
+def _dim_color(theme: dict) -> str:
+    return _hex_blend(theme.get('fg', '#e0e0e0'),
+                      theme.get('bg', '#121212'), 0.45)
+
+
+def _splash_palette(theme: dict) -> dict:
+
+    accent = theme.get('accent', '#1f6aa5')
+    return {
+        'bg':     theme.get('bg', '#121212'),
+        'fg':     theme.get('fg', '#e0e0e0'),
+        'accent': accent,
+        'border': accent,
+        'track':  theme.get('bg3', '#2a2a2a'),
+    }
+
+
+def _resolve_active_theme(theme_data: dict) -> dict:
+
+    data = theme_data or {}
+    name = data.get("active", "Dark (Default)")
+    user = data.get("user_themes", {})
+    if name in user:
+        return dict(user[name])
+    if name in BUILTIN_PRESETS:
+        return {k: v for k, v in BUILTIN_PRESETS[name].items()
+                if not k.startswith("_")}
+    return dict(_DEFAULT_DARK_THEME)
+
+_CLASSIC_HEADER_TEXT = "DASHBOARD"
+
+
 def load_theme() -> dict:
     try:
         if Path(THEME_FILE).exists():
@@ -519,7 +572,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.7"
+CURRENT_VERSION = "1.7.8"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -596,7 +649,8 @@ REPORT_CHART_PALETTE = {
 def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delta_mode: bool = False,
                 ignored_version: str = "", updates_disabled: bool = False, time_mode: bool = False,
                 thresholds: Dict = None, heatmap_mode: bool = False, disabled_sigs: list = None,
-                sig_timeline_enabled: bool = True, tooltip_enabled: bool = True):
+                sig_timeline_enabled: bool = True, tooltip_enabled: bool = True,
+                ui_mode: str = "modern"):
     config = {
         "groups": groups_dict,
         "settings": {
@@ -611,6 +665,7 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
             "disabled_sigs": disabled_sigs or [],
             "sig_timeline_enabled": sig_timeline_enabled,
             "tooltip_enabled": tooltip_enabled,
+            "ui_mode": ui_mode,
         }
     }
     try:
@@ -619,9 +674,9 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
     except Exception:
         pass
 
-def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, list, bool, bool]:
+def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, list, bool, bool, str]:
     if not Path(GROUPS_FILE).exists():
-        return {}, False, False, False, "", False, False, {}, False, [], True, True
+        return {}, False, False, False, "", False, False, {}, False, [], True, True, "modern"
     try:
         with open(GROUPS_FILE, 'r') as f:
             data = json.load(f)
@@ -638,10 +693,11 @@ def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, 
                         sets.get("heatmap_mode", False),
                         sets.get("disabled_sigs", []),
                         sets.get("sig_timeline_enabled", True),
-                        sets.get("tooltip_enabled", True))
-            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False, [], True, True
+                        sets.get("tooltip_enabled", True),
+                        sets.get("ui_mode", "modern"))
+            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False, [], True, True, "modern"
     except Exception:
-        return {}, False, False, False, "", False, False, {}, False, [], False, True
+        return {}, False, False, False, "", False, False, {}, False, [], False, True, "modern"
 
 def _post_ui(root, fn):
     try:
@@ -1295,7 +1351,8 @@ class TelemetryApp:
 
         (self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
          self.ignored_version, self.updates_disabled, self.time_mode,
-         saved_thresholds, self.heatmap_mode, disabled_sigs_list, sig_tl_enabled, tooltip_en) = load_config()
+         saved_thresholds, self.heatmap_mode, disabled_sigs_list, sig_tl_enabled, tooltip_en,
+         ui_mode_saved) = load_config()
         self.sig_timeline_enabled = sig_tl_enabled
         self.disabled_sigs = set(disabled_sigs_list)
         self.custom_theme  = load_theme()
@@ -1307,6 +1364,7 @@ class TelemetryApp:
         self.cursor_lines = []
         self.cursor_text = None
         self._tooltip_enabled = tooltip_en
+        self.ui_mode = ui_mode_saved if ui_mode_saved in ("modern", "classic") else "modern"
         self.filter_active = False
         self.debug_mode    = False
 
@@ -3322,7 +3380,8 @@ Min/Max Thresholds:
                     self.ignored_version, self.updates_disabled, self.time_mode, thresholds,
                     self.heatmap_mode, list(self.disabled_sigs),
                     getattr(self, 'sig_timeline_enabled', True),
-                    getattr(self, '_tooltip_enabled', True))
+                    getattr(self, '_tooltip_enabled', True),
+                    getattr(self, 'ui_mode', 'modern'))
 
     def show_toast(self, message: str, duration: int = 2000):
         toast = tk.Toplevel(self.root)
@@ -3358,12 +3417,14 @@ Min/Max Thresholds:
     def _toggle_multi(self):
         self.multi_mode = not self.multi_mode
         self.multi_btn.config(text="📊 Multi: ON" if self.multi_mode else "📊 Multi: OFF")
+        self._style_toggle(self.multi_btn, self.multi_mode)
         self.update_plot()
         self._save_config()
 
     def _toggle_delta(self):
         self.delta_mode = not self.delta_mode
         self.delta_btn.config(text="Δ Delta: ON" if self.delta_mode else "Δ Delta: OFF")
+        self._style_toggle(self.delta_btn, self.delta_mode)
         self.update_plot()
         self._save_config()
 
@@ -3374,12 +3435,14 @@ Min/Max Thresholds:
             return
         self.time_mode = not self.time_mode
         self.time_btn.config(text="🕒 Time: ON" if self.time_mode else "🕒 Time: OFF")
+        self._style_toggle(self.time_btn, self.time_mode)
         self.update_plot()
         self._save_config()
 
     def _toggle_heatmap(self):
         self.heatmap_mode = not self.heatmap_mode
         self.heatmap_btn.config(text="🌡 Heatmap: ON" if self.heatmap_mode else "🌡 Heatmap: OFF")
+        self._style_toggle(self.heatmap_btn, self.heatmap_mode)
         self.update_plot()
         self._save_config()
 
@@ -3409,8 +3472,7 @@ Min/Max Thresholds:
         sel = [c for c in sel if c in self.df.columns and _is_numeric_column(c)]
 
         if not sel:
-            if hasattr(self, '_legend_panel'):
-                self._legend_panel.grid(row=0, column=1, sticky='ns')
+            self._set_legend_visible(True)
             self._update_tk_legend([])
             ax = self.fig.add_subplot(111)
             ax.set_facecolor(bg2_color)
@@ -3532,8 +3594,7 @@ Min/Max Thresholds:
         matrix = np.array(matrix)
         
         if len(matrix) == 0:
-            if hasattr(self, '_legend_panel'):
-                self._legend_panel.grid(row=0, column=1, sticky='ns')
+            self._set_legend_visible(True)
             self._update_tk_legend([])
             ax = self.fig.add_subplot(111)
             ax.set_facecolor(bg2_color)
@@ -3596,9 +3657,11 @@ Min/Max Thresholds:
             self._close_session_compare()
             if hasattr(self, 'session_cmp_btn'):
                 self.session_cmp_btn.config(text="📊 Session Compare")
+                self._style_toggle(self.session_cmp_btn, False)
         else:
             if hasattr(self, 'session_cmp_btn'):
                 self.session_cmp_btn.config(text="📊 Session Compare: ON")
+                self._style_toggle(self.session_cmp_btn, True)
             self._open_session_compare()
 
     def _get_ref_x_axis(self):
@@ -3648,8 +3711,7 @@ Min/Max Thresholds:
         self._cmp_fig    = None
         self._cmp_canvas = None
         self.root.bind('<Control-c>', lambda e: self._copy_png_to_clipboard())
-        if hasattr(self, '_legend_panel'):
-            self._legend_panel.grid(row=0, column=1, sticky='ns')
+        self._set_legend_visible(True)
         self.update_plot()
 
     def _draw_session_compare(self):
@@ -3681,8 +3743,7 @@ Min/Max Thresholds:
         self._hide_tk_tooltip()
         self.fig.patch.set_facecolor(bg)
 
-        if hasattr(self, '_legend_panel'):
-            self._legend_panel.grid_remove()
+        self._set_legend_visible(False)
 
         cmp_widget = getattr(self, '_cmp_widget', None)
         if cmp_widget and cmp_widget.winfo_exists():
@@ -5211,50 +5272,105 @@ Min/Max Thresholds:
         self.update_plot()
 
     def _get_theme(self):
-        """Return the active colour dict by name - user themes take priority, then built-ins."""
-        active = self.custom_theme.get("active", "Dark (Default)")
-        user = self.custom_theme.get("user_themes", {})
-        if active in user:
-            return dict(user[active])
-        if active in BUILTIN_PRESETS:
-            return {k: v for k, v in BUILTIN_PRESETS[active].items() if not k.startswith("_")}
-        return dict(_DEFAULT_DARK_THEME)
+        return _resolve_active_theme(self.custom_theme)
 
     def _apply_theme_colors(self):
         t        = self._get_theme()
         bg       = t["bg"]
         fg       = t["fg"]
         accent   = t["accent"]
-        hover_bg = t["bg3"]
+        t2    = t["bg2"]
+        t3    = t["bg3"]
+        dim   = _dim_color(t)
+        on_fg = _contrast_on(accent)
+        modern = (getattr(self, 'ui_mode', 'modern') == 'modern')
 
         self.style = ttk.Style()
         self.style.theme_use('clam')
-        self.style.configure(".", background=bg, foreground=fg, fieldbackground=bg, font=('Segoe UI', 9))
-        self.style.configure("TFrame", background=bg)
-        self.style.configure("TLabelframe", background=bg, foreground=fg, bordercolor="#444444")
-        self.style.configure("TLabelframe.Label", background=bg, foreground=accent, font=('Segoe UI', 9, 'bold'))
-        self.style.configure("TLabel", background=bg, foreground=fg)
-        self.style.configure("TButton", padding=3)
-        self.style.configure("Action.TButton", font=('Segoe UI', 9, 'bold'))
-        self.style.configure("Delete.TButton", foreground="#ff4d4d", font=('Segoe UI', 9, 'bold'))
-        self.style.configure("Issue.TButton", foreground="#ff9800", font=('Segoe UI', 9, 'bold'))
 
-        button_styles = ["TButton", "Action.TButton", "Delete.TButton", "Issue.TButton"]
-        for s in button_styles:
+        self.style.configure(".", background=bg, foreground=fg,
+                              fieldbackground=t2, font=('Segoe UI', 9))
+        self.style.configure("TFrame", background=bg)
+        self.style.configure("Header.TFrame", background=t2)
+        self.style.configure("TLabel", background=bg, foreground=fg)
+        self.style.configure("Dim.TLabel", background=t2, foreground=dim,
+                             font=('Segoe UI', 8))
+        self.style.configure("Wordmark.TLabel", background=t2, foreground=fg,
+                             font=('Segoe UI', 13, 'bold'))
+        self.style.configure("WordmarkAccent.TLabel", background=t2,
+                             foreground=accent, font=('Segoe UI', 13, 'bold'))
+        self.style.configure("TLabelframe", background=bg, foreground=fg,
+                              bordercolor=t3, relief=tk.SOLID, borderwidth=1)
+        self.style.configure("TLabelframe.Label", background=bg,
+                             foreground=accent, font=('Segoe UI', 9, 'bold'))
+        self.style.configure("TButton", padding=(8, 3), borderwidth=1,
+                              background=t2, foreground=fg,
+                              bordercolor=t2, lightcolor=t2, darkcolor=t2,
+                              focuscolor=accent, font=('Segoe UI', 9))
+        self.style.configure("Action.TButton", padding=(8, 3), borderwidth=1,
+                              background=accent, foreground=on_fg,
+                              bordercolor=accent, lightcolor=accent, darkcolor=accent,
+                              focuscolor=on_fg, font=('Segoe UI', 9, 'bold'))
+        self.style.configure("Delete.TButton", padding=(8, 3), borderwidth=1,
+                              foreground="#ff4d4d", font=('Segoe UI', 9, 'bold'),
+                              background=_hex_blend("#ff4d4d", bg, 0.88),
+                              bordercolor=_hex_blend("#ff4d4d", bg, 0.88),
+                              lightcolor=_hex_blend("#ff4d4d", bg, 0.88),
+                              darkcolor=_hex_blend("#ff4d4d", bg, 0.88))
+        self.style.configure("Issue.TButton", padding=(8, 3), borderwidth=1,
+                              foreground="#ff9800", font=('Segoe UI', 9, 'bold'),
+                              background=_hex_blend("#ff9800", bg, 0.88),
+                              bordercolor=_hex_blend("#ff9800", bg, 0.88),
+                              lightcolor=_hex_blend("#ff9800", bg, 0.88),
+                              darkcolor=_hex_blend("#ff9800", bg, 0.88))
+        self.style.configure("Toggle.TButton", padding=(8, 3), borderwidth=1,
+                              background=t2, foreground=dim,
+                              bordercolor=t3, lightcolor=t2, darkcolor=t2,
+                              focuscolor=accent, font=('Segoe UI', 9))
+        self.style.configure("ToggleOn.TButton", padding=(8, 3), borderwidth=1,
+                              background=accent, foreground=on_fg,
+                              bordercolor=accent, lightcolor=accent, darkcolor=accent,
+                              focuscolor=on_fg, font=('Segoe UI', 9, 'bold'))
+
+        button_styles = [
+            ("TButton",          t3),
+            ("Toggle.TButton",   t3),
+            ("Action.TButton",   _hex_blend(accent, on_fg, 0.12)),
+            ("ToggleOn.TButton", _hex_blend(accent, on_fg, 0.12)),
+            ("Delete.TButton",   _hex_blend("#ff4d4d", bg, 0.72)),
+            ("Issue.TButton",    _hex_blend("#ff9800", bg, 0.72)),
+        ]
+        for s, hover in button_styles:
             self.style.map(s,
-                background=[('pressed', accent), ('active', hover_bg)],
-                foreground=[('active', fg)],
-                lightcolor=[('active', hover_bg)],
-                darkcolor=[('active', hover_bg)],
-                bordercolor=[('active', accent)]
+                background=[('pressed', accent), ('active', hover),
+                            ('disabled', t3)],
+                foreground=[('disabled', dim)],
+                lightcolor=[('active', hover)],
+                darkcolor=[('active', hover)],
+                bordercolor=[('focus', accent), ('active', accent)]
             )
 
+        self.style.configure("TEntry", fieldbackground=t2, borderwidth=1,
+                              bordercolor=t3, lightcolor=t2, darkcolor=t2,
+                              insertwidth=2, insertcolor=fg, padding=(6, 4))
+        self.style.map("TEntry",
+            bordercolor=[('focus', accent), ('invalid', '#ff4d4d')],
+            lightcolor=[('focus', accent)],
+            fieldbackground=[('disabled', t3), ('readonly', t2)])
+
+        if not modern:
+            self._apply_classic_overrides(bg, fg, accent, t3)
+
         self.style.configure("TCheckbutton", background=bg, foreground=fg)
-        self.style.configure("Alert.TCheckbutton", background=bg, foreground="#ff4d4d", font=('Segoe UI', 9, 'bold'))
+        self.style.configure("Alert.TCheckbutton", background=bg,
+                              foreground="#ff4d4d", font=('Segoe UI', 9, 'bold'))
         self.style.map("TCheckbutton", background=[('active', bg)])
         self.style.map("Alert.TCheckbutton", background=[('active', bg)])
 
         self.root.configure(bg=bg)
+        if hasattr(self, '_header_rule') and self._header_rule.winfo_exists():
+            self._header_rule.configure(bg=accent if modern else bg)
+        self._apply_header_mode()
         self.canvas_checklist.configure(bg=bg)
         self.scroll_frame.configure(bg=bg)
         self.preset_canvas.configure(bg=bg)
@@ -5264,10 +5380,10 @@ Min/Max Thresholds:
             hdr.configure(bg=bg, fg=accent if self.is_dark else "#2c3e50")
 
         if hasattr(self, '_diag_row_frame'):
-            self._diag_row_frame.configure(bg=bg)
+            self._diag_row_frame.configure(bg=t2 if modern else bg)
             for lbl in (self._badge_crit_lbl, self._badge_warn_lbl,
                         self._badge_info_lbl, self._badge_ok_lbl):
-                try: lbl.configure(bg=bg)
+                try: lbl.configure(bg=t2 if modern else bg)
                 except Exception: pass
 
         if hasattr(self, '_legend_panel'):
@@ -5275,6 +5391,16 @@ Min/Max Thresholds:
                 bg2 = t["bg2"]
                 bg3 = t["bg3"]
                 self._legend_panel.configure(bg=bg2)
+                if hasattr(self, '_legend_col'):
+                    self._legend_col.configure(bg=bg2)
+                if hasattr(self, '_exports_frame'):
+                    self._exports_frame.configure(bg=bg2)
+                    if hasattr(self, '_exports_sep') and self._exports_sep.winfo_exists():
+                        self._exports_sep.configure(bg=bg3)
+                    if hasattr(self, '_exports_lbl') and self._exports_lbl.winfo_exists():
+                        self._exports_lbl.configure(
+                            bg=bg2, fg=accent,
+                            text="EXPORTS" if modern else "Exports")
                 if hasattr(self, '_legend_canvas'):
                     self._legend_canvas.configure(bg=bg2)
                 if hasattr(self, '_legend_scroll_frame'):
@@ -5282,7 +5408,8 @@ Min/Max Thresholds:
                 if hasattr(self, '_legend_inner'):
                     self._legend_inner.configure(bg=bg2)
                 if hasattr(self, '_legend_title'):
-                    self._legend_title.configure(bg=bg2, fg=accent)
+                    self._legend_title.configure(bg=bg2, fg=accent,
+                                                 text="LEGEND" if modern else "Legend")
                     try:
                         if hasattr(self, '_tk_tooltip') and self._tk_tooltip.winfo_exists():
                             self._tk_tooltip.configure(bg=bg2, fg=fg)
@@ -5292,20 +5419,233 @@ Min/Max Thresholds:
                         pass
                 if hasattr(self, '_legend_vsb'):
                     self._legend_vsb.configure(bg=bg3, troughcolor=bg2,
-                                               activebackground=accent)
-                if hasattr(self, '_legend_scroll_frame'):
-                    self._legend_scroll_frame.configure(bg=bg2)
+                                               activebackground=accent, width=12 if modern else 14)
+                if hasattr(self, '_legend_rule') and self._legend_rule.winfo_exists():
+                    if modern:
+                        self._legend_rule.configure(bg=accent)
+                        if not self._legend_rule.winfo_manager():
+                            self._legend_rule.pack(fill=tk.X, padx=6, pady=(0, 4))
+                    else:
+                        self._legend_rule.pack_forget()
+                _lh = getattr(self, '_legend_empty', None)
+                if _lh is not None and _lh.winfo_exists():
+                    if modern:
+                        _lh.configure(bg=bg2, fg=dim)
+                    else:
+                        _lh.destroy()
+                        self._legend_empty = None
+                self._retheme_legend_rows()
             except Exception:
                 pass
 
         if hasattr(self, 'sc_checklist'):
-            try: self.sc_checklist.configure(bg=bg3, troughcolor=bg, activebackground=accent)
+            try: self.sc_checklist.configure(bg=bg3, troughcolor=bg, activebackground=accent, width=12 if modern else 14)
             except Exception: pass
         if hasattr(self, 'preset_scroll'):
-            try: self.preset_scroll.configure(bg=bg3, troughcolor=bg, activebackground=accent)
+            try: self.preset_scroll.configure(bg=bg3, troughcolor=bg, activebackground=accent, width=12 if modern else 14)
             except Exception: pass
 
         self._style_mpl_toolbar()
+
+        _dwin = getattr(self, '_debug_win', None)
+        if _dwin is not None and _dwin.winfo_exists():
+            try:
+                self.root.after_idle(self._refresh_debug_window_if_open)
+            except Exception:
+                pass
+
+    def _refresh_debug_window_if_open(self):
+        _dwin = getattr(self, '_debug_win', None)
+        if _dwin is not None and _dwin.winfo_exists():
+            try:
+                self._open_debug_window()
+            except Exception:
+                pass
+
+    def _style_toggle(self, btn, on: bool):
+        try:
+            if getattr(self, 'ui_mode', 'modern') != 'modern':
+                return
+            btn.configure(style="ToggleOn.TButton" if on else "Toggle.TButton")
+        except Exception:
+            pass
+
+    def _apply_classic_overrides(self, bg, fg, accent, bg3):
+
+        s = self.style
+        s.configure(".", background=bg, foreground=fg, fieldbackground=bg)
+        s.configure("TFrame", background=bg)
+        s.configure("Header.TFrame", background=bg)
+        s.configure("TLabel", background=bg, foreground=fg)
+        s.configure("Dim.TLabel", background=bg, foreground=fg,
+                    font=('Segoe UI', 9))
+        s.configure("Wordmark.TLabel", background=bg, foreground=fg,
+                    font=('Segoe UI', 12, 'bold'))
+        s.configure("WordmarkAccent.TLabel", background=bg, foreground=fg,
+                    font=('Segoe UI', 12, 'bold'))
+        s.configure("TLabelframe", background=bg, foreground=fg,
+                    bordercolor="#444444", relief=tk.RAISED, borderwidth=2)
+        s.configure("TLabelframe.Label", background=bg,
+                    foreground=accent, font=('Segoe UI', 9, 'bold'))
+        for name in ("TButton", "Action.TButton", "Delete.TButton",
+                     "Issue.TButton", "Toggle.TButton", "ToggleOn.TButton"):
+            s.configure(name, padding=3, background=bg, foreground=fg,
+                        bordercolor="#9e9a91", lightcolor="#eeebe7",
+                        darkcolor="#cfcdc8", focuscolor=fg,
+                        font=('Segoe UI', 9), relief=tk.RAISED)
+        s.configure("Action.TButton", font=('Segoe UI', 9, 'bold'))
+        s.configure("Delete.TButton", foreground="#ff4d4d",
+                    font=('Segoe UI', 9, 'bold'))
+        s.configure("Issue.TButton", foreground="#ff9800",
+                    font=('Segoe UI', 9, 'bold'))
+        for name in ("TButton", "Action.TButton", "Delete.TButton",
+                     "Issue.TButton", "Toggle.TButton", "ToggleOn.TButton"):
+            s.map(name,
+                  background=[('pressed', accent), ('active', bg3)],
+                  foreground=[('active', fg)],
+                  lightcolor=[('active', bg3)],
+                  darkcolor=[('active', bg3)],
+                  bordercolor=[('active', accent)])
+        s.configure("TEntry", fieldbackground=bg, borderwidth=2,
+                    bordercolor="#9e9a91", lightcolor="#eeebe7",
+                    darkcolor="#cfcdc8", insertwidth=1, insertcolor=fg,
+                    padding=1)
+
+    def _apply_header_mode(self):
+        if not hasattr(self, '_wm_label'):
+            return
+        modern = (getattr(self, 'ui_mode', 'modern') == 'modern')
+        try:
+            if modern:
+                self._wm_label.configure(text="RESYNC")
+                self._wm_acc_label.configure(text=".ERR")
+                self._ver_label.configure(text=getattr(self, '_ver_text', ""))
+            else:
+                self._wm_label.configure(text=_CLASSIC_HEADER_TEXT)
+                self._wm_acc_label.configure(text="")
+                self._ver_label.configure(text="")
+            if hasattr(self, '_ui_mode_btn') and self._ui_mode_btn.winfo_exists():
+                self._ui_mode_btn.configure(
+                    text="UI: Modern" if modern else "UI: Classic")
+        except Exception:
+            pass
+
+    def _toggle_ui_mode(self):
+        self.ui_mode = ('classic'
+                        if getattr(self, 'ui_mode', 'modern') == 'modern'
+                        else 'modern')
+        self._apply_theme_colors()
+        self._save_config()
+        try:
+            self._apply_export_button_styles()
+            self._apply_export_layout()
+        except Exception:
+            pass
+        try:
+            self.update_plot()
+        except Exception:
+            pass
+        try:
+            self.show_toast(f"UI mode: {self.ui_mode.capitalize()}")
+        except Exception:
+            pass
+
+    def _update_legend_col_grid(self):
+
+        col = getattr(self, '_legend_col', None)
+        if col is None or not col.winfo_exists():
+            return
+        modern = (getattr(self, 'ui_mode', 'modern') == 'modern')
+        want = modern or getattr(self, '_legend_panel_wanted', True)
+        gridded = getattr(self, '_legend_col_gridded', True)
+        try:
+            if want and not gridded:
+                col.grid(row=0, column=1, sticky='ns')
+                self._legend_col_gridded = True
+            elif not want and gridded:
+                col.grid_remove()
+                self._legend_col_gridded = False
+        except Exception:
+            pass
+
+    def _relayout_legend_col(self):
+
+        col = getattr(self, '_legend_col', None)
+        if col is None or not col.winfo_exists():
+            return
+        dock = getattr(self, '_exports_frame', None)
+        panel = getattr(self, '_legend_panel', None)
+        for w in (dock, panel):
+            try:
+                if w is not None and w.winfo_exists() and w.winfo_manager():
+                    w.pack_forget()
+            except Exception:
+                pass
+        modern = (getattr(self, 'ui_mode', 'modern') == 'modern')
+        if modern and dock is not None and dock.winfo_exists():
+            try:
+                dock.pack(side=tk.BOTTOM, fill=tk.X)
+            except Exception:
+                pass
+        if (panel is not None and panel.winfo_exists()
+                and getattr(self, '_legend_panel_wanted', True)):
+            try:
+                panel.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            except Exception:
+                pass
+
+    def _set_legend_visible(self, visible):
+
+        self._legend_panel_wanted = bool(visible)
+        panel = getattr(self, '_legend_panel', None)
+        if panel is not None and panel.winfo_exists():
+            try:
+                if visible:
+                    if not panel.winfo_manager():
+                        self._relayout_legend_col()
+                elif panel.winfo_manager():
+                    panel.pack_forget()
+            except Exception:
+                pass
+        self._update_legend_col_grid()
+
+    def _apply_export_layout(self):
+
+        modern = (getattr(self, 'ui_mode', 'modern') == 'modern')
+        brow2 = getattr(self, '_left_export_row', None)
+        if brow2 is not None and brow2.winfo_exists():
+            try:
+                if modern:
+                    if brow2.winfo_manager():
+                        brow2.pack_forget()
+                elif not brow2.winfo_manager():
+                    brow2.pack(fill=tk.X)
+            except Exception:
+                pass
+        self._relayout_legend_col()
+        self._update_legend_col_grid()
+
+    def _apply_export_button_styles(self):
+
+        modern = (getattr(self, 'ui_mode', 'modern') == 'modern')
+        primary = "Action.TButton" if modern else "TButton"
+        export = "TButton" if modern else "Action.TButton"
+        for btn in (getattr(self, '_new_csv_btn', None),
+                    getattr(self, '_clear_btn', None)):
+            if btn is not None and btn.winfo_exists():
+                try:
+                    btn.configure(style=primary)
+                except Exception:
+                    pass
+        for btn in (getattr(self, '_export_png_btn', None),
+                    getattr(self, '_export_html_btn', None),
+                    getattr(self, '_left_export_png_btn', None),
+                    getattr(self, '_left_export_html_btn', None)):
+            if btn is not None and btn.winfo_exists():
+                try:
+                    btn.configure(style=export)
+                except Exception:
+                    pass
 
     def _style_mpl_toolbar(self):
         """Recolor the matplotlib NavigationToolbar2Tk (plain Tk widgets, not
@@ -5965,6 +6305,7 @@ Min/Max Thresholds:
         wl(f"  RAM in use: {mem_in_use}  (this process)", 'header')
         wl(f"  Disabled  : {sorted(self.disabled_sigs) or 'none'}", 'header')
         wl(f"  Format    : {'MangoHud' if self.analyzer.is_mangohud else 'HWiNFO64 / Generic CSV'}", 'header')
+        wl(f"  UI mode   : {getattr(self, 'ui_mode', 'modern')}  (UI: classic / modern)", 'header')
         wl('=' * 72, 'header')
 
         section("CSV GAP DETECTION")
@@ -6302,7 +6643,7 @@ Min/Max Thresholds:
         wl()
         
         _numeric_count = len(df.select_dtypes(include=['int', 'float']).columns)
-        _object_count = len(df.select_dtypes(include=['object'], exclude=['str']).columns)
+        _object_count = len(df.select_dtypes(include=['object']).columns)
         _bool_count = len(df.select_dtypes(include=['bool']).columns)
         wl(f"Total Columns: {len(df.columns)} | Numeric: {_numeric_count} | " +
            f"Object/String: {_object_count} | Boolean: {_bool_count}", 'val')
@@ -7052,6 +7393,175 @@ Min/Max Thresholds:
         w(f"       {'Heatmap mode':44s} = ");     wl(str(self.heatmap_mode), 'val')
         w(f"       {'Delta mode':44s} = ");       wl(str(self.delta_mode), 'val')
 
+        section("UI SYSTEM")
+
+        wl("  --- UI mode ---", 'section')
+        w(f"       {'ui_mode (runtime)':44s} = "); wl(getattr(self, 'ui_mode', 'modern'), 'val')
+        _wm_r7 = getattr(self, '_wm_label', None)
+        w(f"       {'header wordmark':44s} = ")
+        wl((_wm_r7.cget("text") if _wm_r7 is not None and _wm_r7.winfo_exists()
+            else "n/a"), 'val')
+        _uib_r7 = getattr(self, '_ui_mode_btn', None)
+        w(f"       {'toggle button label':44s} = ")
+        wl((_uib_r7.cget("text") if _uib_r7 is not None and _uib_r7.winfo_exists()
+            else "n/a"), 'val')
+        _saved_ui_r7 = "n/a (groups.json not found in cwd)"
+        try:
+            with open(GROUPS_FILE, 'r', encoding='utf-8') as _gf_r7:
+                _saved_ui_r7 = json.load(_gf_r7).get(
+                    "settings", {}).get("ui_mode", "modern (key absent)")
+        except Exception as _e_r7:
+            _saved_ui_r7 = f"unreadable ({_e_r7.__class__.__name__})"
+        w(f"       {'persisted groups.json ui_mode':44s} = "); wl(_saved_ui_r7, 'val')
+
+        wl()
+        wl("  --- Theme resolution (chain: user → builtin → default) ---", 'section')
+        _tname_r7 = self.custom_theme.get("active", "Dark (Default)")
+        _user_r7   = self.custom_theme.get("user_themes", {})
+        if _tname_r7 in _user_r7:
+            _tsrc_r7, _tsrc_tag_r7 = "user theme", 'ok'
+        elif _tname_r7 in BUILTIN_PRESETS:
+            _tsrc_r7, _tsrc_tag_r7 = "builtin preset", 'ok'
+        else:
+            _tsrc_r7, _tsrc_tag_r7 = "DARK DEFAULT (name unresolvable)", 'warn'
+        w(f"       {'active theme':44s} = "); wl(_tname_r7, 'val')
+        w(f"       {'resolved from':44s} = "); wl(_tsrc_r7, _tsrc_tag_r7)
+        w(f"       {'user themes / builtin presets':44s} = ")
+        wl(f"{len(_user_r7)} / {len(BUILTIN_PRESETS)}", 'val')
+        _th_r7 = self._get_theme()
+        w(f"       {'tokens bg / bg2 / bg3':44s} = ")
+        wl(f"{_th_r7['bg']} / {_th_r7['bg2']} / {_th_r7['bg3']}", 'val')
+        w(f"       {'tokens fg / accent':44s} = ")
+        wl(f"{_th_r7['fg']} / {_th_r7['accent']}", 'val')
+        _sp_r7 = _splash_palette(_th_r7)
+        w(f"       {'splash palette (border / track)':44s} = ")
+        wl(f"{_sp_r7['border']} / {_sp_r7['track']}", 'val')
+
+        wl()
+        wl("  --- View-mode chips (uniform widths) ---", 'section')
+        _chips_r7 = []
+        for _attr_r7, _nm_r7 in (('multi_btn', 'Multi'), ('delta_btn', 'Delta'),
+                                 ('time_btn', 'Time'), ('heatmap_btn', 'Heatmap'),
+                                 ('session_cmp_btn', 'Session Compare')):
+            _b_r7 = getattr(self, _attr_r7, None)
+            if _b_r7 is None or not _b_r7.winfo_exists():
+                wl(f"  [✗] {_nm_r7:16s} button missing", 'miss')
+                continue
+            try:
+                _sty_r7 = _b_r7.cget("style") or "TButton"
+            except Exception:
+                _sty_r7 = "?"
+            _chips_r7.append((_nm_r7, _b_r7))
+            wl(f"       {_nm_r7:16s} width={_b_r7.winfo_width():4d}  "
+               f"mapped={_b_r7.winfo_ismapped()}  style={_sty_r7}  "
+               f"text={_b_r7.cget('text')!r}", 'val')
+        for _rowlbl_r7, _pair_r7 in (("row 1 (Multi|Delta)",  ('Multi', 'Delta')),
+                                     ("row 3 (Time|Heatmap)", ('Time', 'Heatmap'))):
+            _ws_r7 = [b.winfo_width() for nm, b in _chips_r7
+                      if nm in _pair_r7 and b.winfo_ismapped()]
+            if len(_ws_r7) == 2 and all(x > 1 for x in _ws_r7):
+                _same_r7 = (_ws_r7[0] == _ws_r7[1])
+                _sym_r7 = '✓' if _same_r7 else '✗'
+                wl(f"  [{_sym_r7}] "
+                   f"{_rowlbl_r7} equal widths: {_ws_r7[0]} vs {_ws_r7[1]}",
+                   'ok' if _same_r7 else 'crit')
+
+        wl()
+        wl("  --- Action & export buttons (priorities) ---", 'section')
+        for _attr_r7, _nm_r7 in (('_new_csv_btn', 'New CSV'), ('_clear_btn', 'Clear'),
+                                 ('_export_png_btn', 'Export PNG (dock)'),
+                                 ('_export_html_btn', 'Export HTML (dock)'),
+                                 ('_left_export_png_btn', 'Export PNG (left row)'),
+                                 ('_left_export_html_btn', 'Export HTML (left row)')):
+            _b_r7 = getattr(self, _attr_r7, None)
+            if _b_r7 is None or not _b_r7.winfo_exists():
+                wl(f"       {_nm_r7:22s} (not created)", 'muted')
+                continue
+            try:
+                _sty_r7 = _b_r7.cget("style") or "TButton"
+            except Exception:
+                _sty_r7 = "?"
+            wl(f"       {_nm_r7:22s} mapped={_b_r7.winfo_ismapped()}  "
+               f"size={_b_r7.winfo_width()}x{_b_r7.winfo_height()}  "
+               f"style={_sty_r7}", 'val')
+        _lrow_r7 = getattr(self, '_left_export_row', None)
+        w(f"       {'classic left export row':44s} = ")
+        wl(("packed (visible)" if (_lrow_r7 is not None and _lrow_r7.winfo_exists()
+                                   and _lrow_r7.winfo_manager()) else "hidden"), 'val')
+
+        wl()
+        wl("  --- Right column / export dock ---", 'section')
+        _lcol_r7 = getattr(self, '_legend_col', None)
+        w(f"       {'legend column':44s} = ")
+        wl((f"mapped={_lcol_r7.winfo_ismapped()}  "
+            f"size={_lcol_r7.winfo_width()}x{_lcol_r7.winfo_height()}"
+            if _lcol_r7 is not None and _lcol_r7.winfo_exists() else "not created"),
+           'val')
+        w(f"       {'legend column gridded':44s} = ")
+        wl(str(getattr(self, '_legend_col_gridded', None)), 'val')
+        w(f"       {'legend panel wanted':44s} = ")
+        wl(str(getattr(self, '_legend_panel_wanted', None)), 'val')
+        _lpan_r7 = getattr(self, '_legend_panel', None)
+        w(f"       {'legend panel':44s} = ")
+        wl(("mapped" if (_lpan_r7 is not None and _lpan_r7.winfo_exists()
+                         and _lpan_r7.winfo_ismapped()) else "hidden / none"), 'val')
+        _efr_r7 = getattr(self, '_exports_frame', None)
+        w(f"       {'export dock (modern)':44s} = ")
+        wl((f"mapped={_efr_r7.winfo_ismapped()}  "
+            f"size={_efr_r7.winfo_width()}x{_efr_r7.winfo_height()}"
+            if _efr_r7 is not None and _efr_r7.winfo_exists() else "not created"),
+           'val')
+        w(f"       {'legend empty-state hint':44s} = ")
+        wl(("shown" if getattr(self, '_legend_empty', None) is not None
+            else "not shown"), 'val')
+
+        wl()
+        wl("  --- Legend rows (pinned values) ---", 'section')
+        _refs_r7 = getattr(self, '_legend_row_refs', [])
+        w(f"       {'sensor rows in legend':44s} = "); wl(str(len(_refs_r7)), 'val')
+        _pin_r7 = [r for r in _refs_r7 if r.get('pinned')]
+        if _pin_r7:
+            _pr_r7 = _pin_r7[0]
+            _stw_r7 = (_pr_r7['stats'].winfo_width()
+                       if _pr_r7['stats'] is not None else 0)
+            w(f"       {'pinned sensor':44s} = "); wl(str(_pr_r7['col']), 'val')
+            w(f"       {'pinned name label':44s} = ")
+            wl(repr(_pr_r7['name'].cget('text')[:40]), 'val')
+            w(f"       {'pinned stats label':44s} = ")
+            if _pr_r7['stats'] is not None:
+                wl(repr(_pr_r7['stats'].cget('text')[:40]), 'val')
+            else:
+                wl("NONE (r6 regression: pinned row shows no values)", 'crit')
+            w(f"       {'pinned stats label width':44s} = ")
+            wl(f"{_stw_r7}px", 'ok' if _stw_r7 >= 100 else 'crit')
+            w(f"       {'pinned accent bar':44s} = ")
+            wl("present" if _pr_r7.get('bar') is not None
+               else "none (classic mode)", 'val')
+        else:
+            w(f"       {'pinned sensor':44s} = "); wl("none", 'muted')
+        _nostats_r7 = [r['col'] for r in _refs_r7 if r.get('stats') is None]
+        if _nostats_r7:
+            wl(f"       rows without a stats label: {len(_nostats_r7)}", 'warn')
+            for _c_r7 in _nostats_r7[:5]:
+                wl(f"         - {_c_r7}", 'warn')
+
+        wl()
+        wl("  --- Theme editor (live apply) ---", 'section')
+        _edlg_r7 = getattr(self, '_theme_editor_dialog', None)
+        _edopen_r7 = bool(_edlg_r7 is not None and _edlg_r7.winfo_exists())
+        _est_r7 = getattr(self, '_theme_editor_state', None) or {}
+        w(f"       {'editor open':44s} = "); wl(str(_edopen_r7), 'val')
+        w(f"       {'editor opened with theme':44s} = ")
+        wl(str(_est_r7.get('opened_with', 'unknown (opened pre-r7)')), 'val')
+        w(f"       {'last applied via editor':44s} = ")
+        wl(str(_est_r7.get('last_applied', 'n/a')), 'val')
+        w(f"       {'apply count (this open)':44s} = ")
+        wl(str(_est_r7.get('apply_count', 0)), 'val')
+        if _edopen_r7:
+            _live_r7 = ("yes (applied while open)"
+                        if _est_r7.get('apply_count', 0) else "pending first apply")
+            w(f"       {'live restyle in place':44s} = "); wl(_live_r7, 'val')
+
         section("LEGEND & PLOT WIDGET STATE")
         def _winfo(widget, label):
             try:
@@ -7259,10 +7769,10 @@ Min/Max Thresholds:
     def _dbg_vram_swap(self, w):
         s = getattr(self, 'vram_stats', None)
         if s is None:
-            w("[VRAM-SWAP] not initialized — signature pass has not run yet\n")
+            w("[VRAM-SWAP] not initialized - signature pass has not run yet\n")
             return
         if s['funnel'] is None:
-            w(f"[VRAM-SWAP] SECTION OFFLINE — {s['offline_reason']}\n")
+            w(f"[VRAM-SWAP] SECTION OFFLINE - {s['offline_reason']}\n")
             return
         c, f = s['cols'], s['funnel']
         w(f"[VRAM-SWAP] cols ded={c['ded']!r} dyn={c['dyn']!r} pct={c['pct']!r} "
@@ -7271,11 +7781,11 @@ Min/Max Thresholds:
             scale = "percent OK" if s['pct_max'] > 1.5 else "FRACTION-SUSPECT (0-1 scale?)"
             w(f"  pct max={s['pct_max']:.1f} ({scale})\n")
         else:
-            w(f"  pct OFFLINE — {s['offline_reason']}\n")
+            w(f"  pct OFFLINE - {s['offline_reason']}\n")
         if s['cap_est'] is not None:
             w(f"  cap est={s['cap_est']:,.0f} MB (candidate {s['cap_cand']:,.0f} MB)\n")
         else:
-            w(f"  cap OFFLINE — {s['offline_reason']}\n")
+            w(f"  cap OFFLINE - {s['offline_reason']}\n")
         w(f"  sat basis='{s['sat_basis']}' saturated={f['saturated']}/{f['samples']}\n")
         w(f"  floor={s['floor']:,.0f} MB ({s['floor_path']}) "
           f"spill_base={s['spill_base']:,.0f} MB\n")
@@ -8399,7 +8909,7 @@ Min/Max Thresholds:
                                 if cand >= float(vram_used.max()):
                                     cap_est = cand
                                 else:
-                                    pct_offline = ("capacity estimate below usage peak — "
+                                    pct_offline = ("capacity estimate below usage peak - "
                                                    "sensor inconsistency, fallback floor used")
                             else:
                                 pct_offline = (f"capacity candidate {cand:,.0f} MB outside "
@@ -8416,7 +8926,7 @@ Min/Max Thresholds:
                 sat_basis = f"{gpu_mem_usage} > 90%"
             else:
                 vram_saturated = vram_used > vram_used.quantile(0.98)
-                sat_basis = "session quantile(0.98) — no VRAM % column"
+                sat_basis = "session quantile(0.98) - no VRAM % column"
 
             if pd.notna(spill_mem).any():
                 spill_base = float(spill_mem.quantile(0.05))
@@ -9173,7 +9683,7 @@ Min/Max Thresholds:
         return ' '.join(parts)
 
     def _open_theme_editor(self):
-        """Colour theme editor - named themes, user themes, import/export/delete."""
+
         import tkinter.colorchooser as cc
 
         def _lum(h):
@@ -9182,9 +9692,11 @@ Min/Max Thresholds:
 
         t        = self._get_theme()
         bg       = t["bg"]
+        bg2      = t["bg2"]
         bg3      = t["bg3"]
         fg       = t["fg"]
         accent   = t["accent"]
+        modern   = (getattr(self, 'ui_mode', 'modern') == 'modern')
         muted_fg  = "#666666" if _lum(bg) > 128 else "#aaaaaa"
         accent_fg = "#000000" if _lum(accent) > 140 else "#ffffff"
 
@@ -9207,15 +9719,72 @@ Min/Max Thresholds:
 
         swatches = {}
 
+        _dw, _dh = (580, 880) if modern else (560, 820)
         dialog = tk.Toplevel(self.root)
         dialog.title("Theme Editor")
-        dialog.geometry("560x820")
-        dialog.minsize(460, 640)
+        dialog.geometry(f"{_dw}x{_dh}")
+        dialog.minsize(480 if modern else 460, 660 if modern else 640)
         dialog.grab_set()
         dialog.configure(bg=bg)
-        x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - 280
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 410
-        dialog.geometry(f"560x820+{x}+{y}")
+        x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - _dw // 2
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - _dh // 2
+        dialog.geometry(f"{_dw}x{_dh}+{x}+{y}")
+
+        self._theme_editor_dialog = dialog
+        self._theme_editor_state = {
+            "opened_with":  active_name,
+            "mode":         ("modern" if modern else "classic"),
+            "last_applied": None,
+            "apply_count":  0,
+        }
+
+        _REG = {'bg': [], 'bg2': [], 'rule': [], 'hairline': [], 'border': [],
+                'sect': [], 'label': [], 'cardlabel': [], 'accentcard': [],
+                'hex': [], 'ghost': [], 'accent': [], 'danger': []}
+
+        def _reg(w, kind):
+            _REG[kind].append(w)
+            return w
+
+        def _restyle_editor():
+            """r6: retint every editor chrome widget to the active theme."""
+            if not dialog.winfo_exists():
+                return
+            t2 = self._get_theme()
+            bg_, bg2_, bg3_ = t2["bg"], t2["bg2"], t2["bg3"]
+            fg_, acc_ = t2["fg"], t2["accent"]
+            on_acc = "#000000" if _lum(acc_) > 140 else "#ffffff"
+            muted  = "#666666" if _lum(bg_) > 128 else "#aaaaaa"
+            hex_bg = bg2_ if modern else bg_
+
+            def _cfg(ws, **kw):
+                for w in ws:
+                    try: w.configure(**kw)
+                    except Exception: pass
+
+            try: dialog.configure(bg=bg_)
+            except Exception: pass
+            _cfg(_REG['bg'],         bg=bg_)
+            _cfg(_REG['bg2'],        bg=bg2_)
+            _cfg(_REG['rule'],       bg=acc_)
+            _cfg(_REG['hairline'],   bg=bg3_)
+            _cfg(_REG['border'],     highlightbackground=bg3_)
+            _cfg(_REG['sect'],       fg=acc_, bg=bg_)
+            _cfg(_REG['label'],      fg=fg_, bg=bg_)
+            _cfg(_REG['cardlabel'],  fg=fg_, bg=bg2_)
+            _cfg(_REG['accentcard'], fg=acc_, bg=bg2_)
+            _cfg(_REG['hex'],        fg=muted, bg=hex_bg)
+            _cfg(_REG['ghost'],      bg=(bg2_ if modern else bg3_), fg=fg_,
+                                  activebackground=bg3_)
+            _cfg(_REG['accent'],     bg=acc_, fg=on_acc,
+                                  activebackground=_hex_blend(acc_, on_acc, 0.12))
+            if modern:
+                _cfg(_REG['danger'], bg=_hex_blend("#ff4d4d", bg2_, 0.88),
+                                     fg="#ff4d4d",
+                                     activebackground=_hex_blend("#ff4d4d", bg2_, 0.72))
+            else:
+                _cfg(_REG['danger'], bg="#c0392b", fg="#ffffff",
+                                     activebackground="#e74c3c")
 
         def _refresh_swatches():
             for key, (sf, hv) in swatches.items():
@@ -9271,19 +9840,26 @@ Min/Max Thresholds:
                 self._open_theme_editor()
 
         def _name_dialog(title, initial, on_confirm):
+
+            t_ = self._get_theme()
+            n_bg, n_bg2, n_bg3 = t_["bg"], t_["bg2"], t_["bg3"]
+            n_fg, n_acc = t_["fg"], t_["accent"]
             win = tk.Toplevel(dialog)
             win.title(title)
-            win.geometry("340x130")
+            win.geometry("340x140")
             win.grab_set()
-            win.configure(bg=bg)
+            win.configure(bg=n_bg)
             win.resizable(False, False)
-            win.geometry(f"340x130+{dialog.winfo_x()+110}+{dialog.winfo_y()+180}")
-            tk.Label(win, text="Theme name:", bg=bg, fg=fg,
+            win.geometry(f"340x140+{dialog.winfo_x()+110}+{dialog.winfo_y()+180}")
+            tk.Label(win, text="Theme name:", bg=n_bg, fg=n_fg,
                      font=('Segoe UI', 9)).pack(anchor='w', padx=16, pady=(14, 4))
             name_var = tk.StringVar(value=initial)
             entry = tk.Entry(win, textvariable=name_var, font=('Segoe UI', 10),
-                             bg=bg3, fg=fg, insertbackground=fg, relief='flat')
-            entry.pack(fill=tk.X, padx=16)
+                             bg=n_bg2 if modern else n_bg3, fg=n_fg,
+                             insertbackground=n_fg, relief='flat',
+                             highlightthickness=1 if modern else 0,
+                             highlightbackground=n_bg3)
+            entry.pack(fill=tk.X, padx=16, ipady=3 if modern else 0)
             entry.select_range(0, tk.END)
             entry.focus_set()
             def _ok():
@@ -9296,12 +9872,15 @@ Min/Max Thresholds:
                     return
                 win.destroy()
                 on_confirm(name)
-            btn_r = tk.Frame(win, bg=bg)
+            btn_r = tk.Frame(win, bg=n_bg)
             btn_r.pack(fill=tk.X, padx=16, pady=10)
-            tk.Button(btn_r, text="Cancel", bg=bg3, fg=fg, relief='flat',
-                      padx=8, command=win.destroy).pack(side=tk.RIGHT, padx=(6, 0))
-            tk.Button(btn_r, text="OK", bg=accent, fg=accent_fg, relief='flat',
-                      font=('Segoe UI', 9, 'bold'), padx=12, command=_ok).pack(side=tk.RIGHT)
+            tk.Button(btn_r, text="Cancel",
+                      bg=n_bg2 if modern else n_bg3, fg=n_fg, relief='flat',
+                      padx=10, command=win.destroy).pack(side=tk.RIGHT, padx=(6, 0))
+            tk.Button(btn_r, text="OK", bg=n_acc,
+                      fg=("#000000" if _lum(n_acc) > 140 else "#ffffff"),
+                      relief='flat', font=('Segoe UI', 9, 'bold'), padx=14,
+                      command=_ok).pack(side=tk.RIGHT)
             win.bind("<Return>", lambda e: _ok())
 
         def _do_save(name):
@@ -9319,6 +9898,7 @@ Min/Max Thresholds:
             _name_dialog("Save Theme As", initial, _do_save)
 
         def _apply():
+            nonlocal active_name
             name = selected_name[0]
             src = BUILTIN_PRESETS.get(name) or user_themes.get(name, {})
             full = dict(self.custom_theme)
@@ -9329,6 +9909,13 @@ Min/Max Thresholds:
             self.is_dark = src.get("_dark", True)
             self._apply_theme_colors()
             self.update_plot()
+            active_name = name
+            _restyle_editor()
+            try:
+                self._theme_editor_state["last_applied"] = name
+                self._theme_editor_state["apply_count"] += 1
+            except Exception:
+                pass
             self.show_toast(f'Theme "{name}" applied')
 
         def _rename_theme(old_name):
@@ -9404,21 +9991,73 @@ Min/Max Thresholds:
         def _reset():
             nonlocal overrides
             overrides = dict(self._get_theme())
+            selected_name[0] = active_name
             _refresh_swatches()
+            for bname, (btn, _) in all_theme_btns.items():
+                is_sel = (bname == active_name)
+                btn.configure(text=("✓ " if is_sel else "") + bname,
+                              font=('Segoe UI', 8, 'bold' if is_sel else 'normal'))
 
-        header = tk.Frame(dialog, bg=accent, height=4)
-        header.pack(fill=tk.X)
+        cont = 'bg2' if modern else 'bg'
+        cont_label = 'cardlabel' if modern else 'label'
+        if modern:
+            hdr = tk.Frame(dialog, bg=bg2)
+            hdr.pack(fill=tk.X)
+            _reg(hdr, 'bg2')
+            _t1 = tk.Label(hdr, text="Theme ", font=('Segoe UI', 13, 'bold'),
+                           bg=bg2, fg=fg)
+            _t1.pack(side=tk.LEFT, padx=(16, 0), pady=10)
+            _reg(_t1, 'cardlabel')
+            _t2 = tk.Label(hdr, text="Editor", font=('Segoe UI', 13, 'bold'),
+                           bg=bg2, fg=accent)
+            _t2.pack(side=tk.LEFT, pady=10)
+            _reg(_t2, 'accentcard')
+            _hdr_rule = tk.Frame(dialog, height=2, bg=accent,
+                                 highlightthickness=0, bd=0)
+            _hdr_rule.pack(fill=tk.X)
+            _reg(_hdr_rule, 'rule')
+        else:
+            _strip = tk.Frame(dialog, bg=accent, height=4)
+            _strip.pack(fill=tk.X)
+            _reg(_strip, 'rule')
 
-        body = tk.Frame(dialog, bg=bg, padx=18, pady=14)
+        body = tk.Frame(dialog, bg=bg, padx=18, pady=12 if modern else 14)
         body.pack(fill=tk.BOTH, expand=True)
+        _reg(body, 'bg')
 
-        tk.Label(body, text="Theme Editor", font=('Segoe UI', 12, 'bold'),
-                 bg=bg, fg=fg).pack(anchor='w', pady=(0, 10))
+        if not modern:
+            _ttl = tk.Label(body, text="Theme Editor",
+                            font=('Segoe UI', 12, 'bold'), bg=bg, fg=fg)
+            _ttl.pack(anchor='w', pady=(0, 10))
+            _reg(_ttl, 'label')
 
-        tk.Label(body, text="Built-in Themes", font=('Segoe UI', 9, 'bold'),
-                 bg=bg, fg=accent).pack(anchor='w', pady=(0, 4))
+        def _section(base_text, classic_pady=(0, 4)):
+            lbl = tk.Label(body,
+                           text=base_text.upper() if modern else base_text,
+                           font=('Segoe UI', 8, 'bold') if modern
+                                else ('Segoe UI', 9, 'bold'),
+                           bg=bg, fg=accent, anchor='w')
+            lbl.pack(anchor='w', pady=(10, 4) if modern else classic_pady)
+            _reg(lbl, 'sect')
+
+        def _card():
+            """modern: bg2 card with a hairline border; classic: plain frame."""
+            if not modern:
+                f = tk.Frame(body, bg=bg)
+                f.pack(fill=tk.X)
+                _reg(f, 'bg')
+                return f
+            card = tk.Frame(body, bg=bg2, highlightthickness=1,
+                            highlightbackground=bg3, bd=0)
+            card.pack(fill=tk.X, padx=2, pady=(0, 2))
+            _reg(card, 'bg2')
+            _REG['border'].append(card)
+            return card
+
+        _section("Built-in Themes")
         preset_frame = tk.Frame(body, bg=bg)
         preset_frame.pack(fill=tk.X, pady=(0, 10))
+        _reg(preset_frame, 'bg')
         all_theme_btns = {}
 
         for col_i, (pname, pdata) in enumerate(BUILTIN_PRESETS.items()):
@@ -9431,7 +10070,9 @@ Min/Max Thresholds:
             btn = tk.Button(preset_frame, text=("✓ " if is_active else "") + pname,
                             font=('Segoe UI', 8, 'bold' if is_active else 'normal'),
                             relief='flat', bg=btn_accent, fg=btn_fg,
-                            padx=6, pady=4,
+                            activebackground=btn_accent,
+                            padx=6, pady=5 if modern else 4,
+                            cursor='hand2' if modern else 'arrow',
                             command=lambda n=pname: _load_preset(n))
             btn.grid(row=col_i // 5, column=col_i % 5, padx=3, pady=2, sticky='ew')
             all_theme_btns[pname] = (btn, pname)
@@ -9439,13 +10080,16 @@ Min/Max Thresholds:
             preset_frame.columnconfigure(c, weight=1)
 
         if user_themes:
-            tk.Label(body, text="My Themes", font=('Segoe UI', 9, 'bold'),
-                     bg=bg, fg=accent).pack(anchor='w', pady=(4, 4))
-            user_frame = tk.Frame(body, bg=bg)
-            user_frame.pack(fill=tk.X, pady=(0, 10))
+            _section("My Themes", (4, 4))
+            user_card = _card()
+            user_frame = tk.Frame(user_card, bg=user_card.cget("bg"))
+            user_frame.pack(fill=tk.X, padx=10 if modern else 0,
+                            pady=8 if modern else (0, 10))
+            _reg(user_frame, cont)
             for utheme_name, udata in user_themes.items():
-                row = tk.Frame(user_frame, bg=bg)
+                row = tk.Frame(user_frame, bg=user_frame.cget("bg"))
                 row.pack(fill=tk.X, pady=1)
+                _reg(row, cont)
                 u_accent = udata.get("accent", accent)
                 try:
                     r,g,b_=int(u_accent[1:3],16),int(u_accent[3:5],16),int(u_accent[5:7],16)
@@ -9455,76 +10099,142 @@ Min/Max Thresholds:
                 ubtn = tk.Button(row, text=("✓ " if is_active else "") + utheme_name,
                           font=('Segoe UI', 8, 'bold' if is_active else 'normal'),
                           relief='flat', bg=u_accent, fg=u_fg, padx=8, pady=3,
+                          activebackground=u_accent,
                           command=lambda n=utheme_name: _load_preset(n))
                 ubtn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0,4))
                 all_theme_btns[utheme_name] = (ubtn, utheme_name)
-                tk.Button(row, text="✕", font=('Segoe UI', 8), relief='flat',
-                          bg="#c0392b", fg="#fff", padx=6, pady=3,
-                          command=lambda n=utheme_name: _delete_theme(n)).pack(side=tk.RIGHT)
-                tk.Button(row, text="✎", font=('Segoe UI', 8), relief='flat',
-                          bg=bg3, fg=fg, padx=6, pady=3,
-                          command=lambda n=utheme_name: _rename_theme(n)).pack(side=tk.RIGHT, padx=(0, 4))
+                _del_b = tk.Button(row, text="✕", font=('Segoe UI', 8), relief='flat',
+                          padx=6, pady=3,
+                          command=lambda n=utheme_name: _delete_theme(n))
+                _del_b.pack(side=tk.RIGHT)
+                _reg(_del_b, 'danger')
+                _ren_b = tk.Button(row, text="✎", font=('Segoe UI', 8), relief='flat',
+                          padx=6, pady=3,
+                          command=lambda n=utheme_name: _rename_theme(n))
+                _ren_b.pack(side=tk.RIGHT, padx=(0, 4))
+                _reg(_ren_b, 'ghost')
 
-        tk.Label(body, text="Customise", font=('Segoe UI', 9, 'bold'),
-                 bg=bg, fg=accent).pack(anchor='w', pady=(6, 4))
+        _section("Customise", (6, 4))
+        cust_card = _card()
+        cust_inner = tk.Frame(cust_card, bg=cust_card.cget("bg"))
+        cust_inner.pack(fill=tk.X, padx=10 if modern else 0,
+                        pady=8 if modern else 0)
+        _reg(cust_inner, cont)
         for key, label in FIELDS:
-            row_f = tk.Frame(body, bg=bg)
+            row_f = tk.Frame(cust_inner, bg=cust_inner.cget("bg"))
             row_f.pack(fill=tk.X, pady=3)
+            _reg(row_f, cont)
             current_col = overrides.get(key, "#888888")
             hex_var = tk.StringVar(value=current_col)
-            sf = tk.Frame(row_f, bg=current_col, width=28, height=22, relief='flat', bd=1)
+            sf = tk.Frame(row_f, bg=current_col, width=28, height=22,
+                          relief='flat', bd=0 if modern else 1,
+                          highlightthickness=1 if modern else 0,
+                          highlightbackground=bg3)
             sf.pack(side=tk.LEFT, padx=(0, 8))
             sf.pack_propagate(False)
-            tk.Label(row_f, text=label, bg=bg, fg=fg,
-                     font=('Segoe UI', 9), width=24, anchor='w').pack(side=tk.LEFT)
-            tk.Label(row_f, textvariable=hex_var, bg=bg, fg=muted_fg,
-                     font=('Consolas', 8)).pack(side=tk.LEFT, padx=6)
-            tk.Button(row_f, text="Pick", font=('Segoe UI', 8), relief='flat',
-                      bg=accent, fg=accent_fg, padx=8,
-                      command=lambda k=key: _pick(k)).pack(side=tk.RIGHT)
+            _REG['border'].append(sf)
+            _fl = tk.Label(row_f, text=label, bg=cust_inner.cget("bg"), fg=fg,
+                           font=('Segoe UI', 9), width=24, anchor='w')
+            _fl.pack(side=tk.LEFT)
+            _reg(_fl, cont_label)
+            _hx = tk.Label(row_f, textvariable=hex_var,
+                           bg=cust_inner.cget("bg"), fg=muted_fg,
+                           font=('Consolas', 8))
+            _hx.pack(side=tk.LEFT, padx=6)
+            _reg(_hx, 'hex')
+            _pk = tk.Button(row_f, text="Pick", font=('Segoe UI', 8), relief='flat',
+                            bg=accent, fg=accent_fg,
+                            activebackground=_hex_blend(accent, accent_fg, 0.12),
+                            padx=10 if modern else 8,
+                            cursor='hand2' if modern else 'arrow',
+                            command=lambda k=key: _pick(k))
+            _pk.pack(side=tk.RIGHT)
+            _reg(_pk, 'accent')
             swatches[key] = (sf, hex_var)
 
         def _make_color_section(title, fields):
-            tk.Label(body, text=title, font=('Segoe UI', 9, 'bold'),
-                     bg=bg, fg=accent).pack(anchor='w', pady=(10, 4))
-            row_outer = tk.Frame(body, bg=bg)
-            row_outer.pack(fill=tk.X)
+            _section(title, (10, 4))
+            card = _card()
+            row_outer = tk.Frame(card, bg=card.cget("bg"))
+            row_outer.pack(fill=tk.X, padx=10 if modern else 0,
+                           pady=8 if modern else 0)
+            _reg(row_outer, cont)
             for col_i, (key, label) in enumerate(fields):
-                cell = tk.Frame(row_outer, bg=bg)
+                cell = tk.Frame(row_outer, bg=row_outer.cget("bg"))
                 cell.grid(row=0, column=col_i, padx=4, pady=2, sticky='ew')
+                _reg(cell, cont)
                 row_outer.columnconfigure(col_i, weight=1)
                 current_col = overrides.get(key, "#888888")
                 hex_var = tk.StringVar(value=current_col)
-                sf = tk.Frame(cell, bg=current_col, width=28, height=20, relief='flat', bd=1)
+                sf = tk.Frame(cell, bg=current_col, width=28, height=20,
+                              relief='flat', bd=0 if modern else 1,
+                              highlightthickness=1 if modern else 0,
+                              highlightbackground=bg3)
                 sf.pack()
                 sf.pack_propagate(False)
-                tk.Label(cell, text=label, bg=bg, fg=fg,
-                         font=('Segoe UI', 7), anchor='center').pack()
-                tk.Button(cell, text="Pick", font=('Segoe UI', 7), relief='flat',
-                          bg=accent, fg=accent_fg,
-                          command=lambda k=key: _pick(k)).pack(fill=tk.X)
+                _REG['border'].append(sf)
+                _cl = tk.Label(cell, text=label, bg=row_outer.cget("bg"), fg=fg,
+                               font=('Segoe UI', 7), anchor='center')
+                _cl.pack()
+                _reg(_cl, cont_label)
+                _hx = tk.Label(cell, textvariable=hex_var,
+                               bg=row_outer.cget("bg"), fg=muted_fg,
+                               font=('Consolas', 7))
+                _hx.pack()
+                _reg(_hx, 'hex')
+                _pk = tk.Button(cell, text="Pick", font=('Segoe UI', 7), relief='flat',
+                                bg=accent, fg=accent_fg,
+                                activebackground=_hex_blend(accent, accent_fg, 0.12),
+                                cursor='hand2' if modern else 'arrow',
+                                command=lambda k=key: _pick(k))
+                _pk.pack(fill=tk.X)
+                _reg(_pk, 'accent')
                 swatches[key] = (sf, hex_var)
 
         _make_color_section("Plot Line Colors", PLOT_FIELDS)
         _make_color_section("Heatmap Band Colors", HM_FIELDS)
 
-        btn_row = tk.Frame(dialog, bg=bg, padx=18, pady=10)
+        btn_row = tk.Frame(dialog, bg=bg2 if modern else bg, padx=18, pady=10)
         btn_row.pack(fill=tk.X, side=tk.BOTTOM)
-        tk.Button(btn_row, text="Reset",   font=('Segoe UI', 9), relief='flat',
-                  bg=bg3, fg=fg, padx=10, command=_reset).pack(side=tk.LEFT, padx=(0,4))
-        tk.Button(btn_row, text="Export",  font=('Segoe UI', 9), relief='flat',
-                  bg=bg3, fg=fg, padx=10, command=_export_theme).pack(side=tk.LEFT, padx=(0,4))
-        tk.Button(btn_row, text="Import",  font=('Segoe UI', 9), relief='flat',
-                  bg=bg3, fg=fg, padx=10, command=_import_theme).pack(side=tk.LEFT)
-        tk.Button(btn_row, text="Cancel", font=('Segoe UI', 9), relief='flat',
-                  bg=bg3, fg=fg, padx=10,
-                  command=dialog.destroy).pack(side=tk.RIGHT, padx=(6, 0))
-        tk.Button(btn_row, text="Save As...", font=('Segoe UI', 9, 'bold'), relief='flat',
-                  bg=accent, fg=accent_fg, padx=12,
-                  command=_save).pack(side=tk.RIGHT, padx=(4, 0))
-        tk.Button(btn_row, text="Apply", font=('Segoe UI', 9), relief='flat',
-                  bg=bg3, fg=fg, padx=10,
-                  command=_apply).pack(side=tk.RIGHT, padx=(4, 0))
+        _reg(btn_row, 'bg2' if modern else 'bg')
+        if modern:
+            _bar_rule = tk.Frame(dialog, height=1, bg=bg3,
+                                 highlightthickness=0, bd=0)
+            _bar_rule.pack(fill=tk.X, side=tk.BOTTOM)
+            _reg(_bar_rule, 'hairline')
+
+        def _ghost_btn(text, command, side=tk.LEFT, padx=(0, 4)):
+            b = tk.Button(btn_row, text=text, font=('Segoe UI', 9), relief='flat',
+                          bg=bg2 if modern else bg3, fg=fg,
+                          padx=12 if modern else 10, activebackground=bg3,
+                          cursor='hand2' if modern else 'arrow',
+                          command=command)
+            b.pack(side=side, padx=padx)
+            _reg(b, 'ghost')
+            return b
+
+        def _accent_btn(text, command, bold):
+            b = tk.Button(btn_row, text=text,
+                          font=('Segoe UI', 9, 'bold' if bold else 'normal'),
+                          relief='flat', bg=accent, fg=accent_fg,
+                          activebackground=_hex_blend(accent, accent_fg, 0.12),
+                          padx=14 if modern else 12,
+                          cursor='hand2' if modern else 'arrow',
+                          command=command)
+            b.pack(side=tk.RIGHT, padx=(4, 0))
+            _reg(b, 'accent')
+            return b
+
+        _ghost_btn("Reset",  _reset)
+        _ghost_btn("Export", _export_theme)
+        _ghost_btn("Import", _import_theme, padx=(0, 0))
+        _ghost_btn("Cancel", dialog.destroy, side=tk.RIGHT, padx=(6, 0))
+        if modern:
+            _accent_btn("Save As...", _save, bold=False)
+            _accent_btn("Apply", _apply, bold=True)
+        else:
+            _accent_btn("Save As...", _save, bold=True)
+            _ghost_btn("Apply", _apply, side=tk.RIGHT, padx=(4, 0))
     def _open_alias_manager(self):
         """Open the sensor alias manager - view, delete individual aliases, or clear all."""
         is_dark = self.is_dark
@@ -10014,7 +10724,7 @@ Min/Max Thresholds:
         wait_win.transient(self.root)
         wait_win.grab_set()
 
-        outer_w = tk.Frame(wait_win, bg="#1f6aa5", padx=2, pady=2)
+        outer_w = tk.Frame(wait_win, bg=accent, padx=2, pady=2)
         outer_w.pack(fill=tk.BOTH, expand=True)
         inner_w = tk.Frame(outer_w, bg=bg, padx=20, pady=16)
         inner_w.pack(fill=tk.BOTH, expand=True)
@@ -10022,18 +10732,18 @@ Min/Max Thresholds:
         title_row = tk.Frame(inner_w, bg=bg)
         title_row.pack(anchor='w')
         tk.Label(title_row, text="🖥  Scanning Hardware",
-                 font=('Segoe UI', 11, 'bold'), bg=bg, fg="#4f8ef7").pack(side=tk.LEFT)
+                 font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(side=tk.LEFT)
         spin_var = tk.StringVar(value=" ⠋")
         tk.Label(title_row, textvariable=spin_var,
-                 font=('Segoe UI', 11), bg=bg, fg="#1f6aa5").pack(side=tk.LEFT, padx=(6, 0))
+                 font=('Segoe UI', 11), bg=bg, fg=accent).pack(side=tk.LEFT, padx=(6, 0))
         tk.Label(inner_w, text="Parsing hardware labels from CSV…",
-                 font=('Segoe UI', 9), bg=bg, fg="#888").pack(anchor='w', pady=(6, 0))
+                 font=('Segoe UI', 9), bg=bg, fg=_dim_color(_t)).pack(anchor='w', pady=(6, 0))
 
         bar_frame = tk.Frame(inner_w, bg=bg)
         bar_frame.pack(fill=tk.X, pady=(8, 0))
-        bar_bg = tk.Frame(bar_frame, bg="#2a2a2a" if is_dark else "#dee2e6", height=4, bd=0)
+        bar_bg = tk.Frame(bar_frame, bg=_t.get("bg3", "#2a2a2a" if is_dark else "#dee2e6"), height=4, bd=0)
         bar_bg.pack(fill=tk.X)
-        bar_fg = tk.Frame(bar_bg, bg="#1f6aa5", height=4, bd=0)
+        bar_fg = tk.Frame(bar_bg, bg=accent, height=4, bd=0)
         bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
 
         _bar_pos = [0.0]; _bar_dir = [1]
@@ -10190,7 +10900,7 @@ Min/Max Thresholds:
         wait_win.transient(self.root)
         wait_win.grab_set()
 
-        outer = tk.Frame(wait_win, bg="#1f6aa5", padx=2, pady=2)
+        outer = tk.Frame(wait_win, bg=accent, padx=2, pady=2)
         outer.pack(fill=tk.BOTH, expand=True)
         inner = tk.Frame(outer, bg=bg_dark, padx=20, pady=16)
         inner.pack(fill=tk.BOTH, expand=True)
@@ -10198,20 +10908,20 @@ Min/Max Thresholds:
         title_row = tk.Frame(inner, bg=bg_dark)
         title_row.pack(anchor='w')
         tk.Label(title_row, text="\U0001f4c4  Generating HTML Report",
-                 font=('Segoe UI', 11, 'bold'), bg=bg_dark, fg="#4f8ef7").pack(side=tk.LEFT)
+                 font=('Segoe UI', 11, 'bold'), bg=bg_dark, fg=fg).pack(side=tk.LEFT)
         spin_var = tk.StringVar(value=" ⠋")
         tk.Label(title_row, textvariable=spin_var,
-                 font=('Segoe UI', 11), bg=bg_dark, fg="#1f6aa5").pack(side=tk.LEFT, padx=(6, 0))
+                 font=('Segoe UI', 11), bg=bg_dark, fg=accent).pack(side=tk.LEFT, padx=(6, 0))
 
         status_var = tk.StringVar(value="Preparing data\u2026")
         tk.Label(inner, textvariable=status_var,
-                 font=('Segoe UI', 9), bg=bg_dark, fg="#888").pack(anchor='w', pady=(6, 0))
+                 font=('Segoe UI', 9), bg=bg_dark, fg=_dim_color(_t)).pack(anchor='w', pady=(6, 0))
 
         bar_frame = tk.Frame(inner, bg=bg_dark)
         bar_frame.pack(fill=tk.X, pady=(8, 0))
-        bar_bg = tk.Frame(bar_frame, bg="#2a2a2a" if is_dark else "#dee2e6", height=4, bd=0)
+        bar_bg = tk.Frame(bar_frame, bg=_t.get("bg3", "#2a2a2a" if is_dark else "#dee2e6"), height=4, bd=0)
         bar_bg.pack(fill=tk.X)
-        bar_fg = tk.Frame(bar_bg, bg="#1f6aa5", height=4, bd=0)
+        bar_fg = tk.Frame(bar_bg, bg=accent, height=4, bd=0)
         bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
 
         _SPIN_FRAMES = [" ⠋", " ⠙", " ⠹", " ⠸", " ⠼", " ⠴", " ⠦", " ⠧", " ⠇", " ⠏"]
@@ -10261,7 +10971,6 @@ Min/Max Thresholds:
                 cols = list(df.columns)
                 sel  = [c for c, v in self.vars.items() if v.get() and c in df.columns]
                 x_vals, ts, use_time = self._get_x_axis()
-                # Report chart palette - shared with _export_compare_report
                 _RC = REPORT_CHART_PALETTE
 
                 def _fig_to_b64(fig) -> str:
@@ -11434,39 +12143,67 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.left.pack_propagate(False)
         self.paned.add(self.left, weight=1)
 
-        top = ttk.Frame(self.left)
-        top.pack(fill=tk.X, pady=(0, 10))
-        ttk.Label(top, text="DASHBOARD", font=('Segoe UI', 12, 'bold')).pack(side=tk.LEFT)
-        ttk.Button(top, text="ℹ About", command=self._open_about).pack(side=tk.RIGHT)
+        top = ttk.Frame(self.left, style="Header.TFrame")
+        top.pack(fill=tk.X, pady=(0, 6))
+        _hd = ttk.Frame(top, style="Header.TFrame")
+        _hd.pack(fill=tk.X, padx=(10, 10), pady=(10, 6))
+        self._wm_label = ttk.Label(_hd, text="RESYNC", style="Wordmark.TLabel")
+        self._wm_label.pack(side=tk.LEFT)
+        self._wm_acc_label = ttk.Label(_hd, text=".ERR", style="WordmarkAccent.TLabel")
+        self._wm_acc_label.pack(side=tk.LEFT)
+        _vf = f"v{CURRENT_VERSION} · {self.analyzer.path.name}"
+        if len(_vf) > 36:
+            _vf = _vf[:35] + "…"
+        self._ver_text = _vf
+        self._ver_label = ttk.Label(_hd, text=_vf, style="Dim.TLabel")
+        self._ver_label.pack(side=tk.LEFT, padx=(10, 0), pady=(5, 0))
+        ttk.Button(top, text="ℹ About", command=self._open_about).pack(side=tk.RIGHT, padx=(0, 10))
         ttk.Button(top, text="Theme", command=self._open_theme_editor).pack(side=tk.RIGHT, padx=(0, 4))
-        self._tooltip_btn = ttk.Button(top, text="Tooltip: ON" if getattr(self, "_tooltip_enabled", True) else "Tooltip: OFF", width=16,
+        self._tooltip_btn = ttk.Button(top, text="Tooltip: ON" if getattr(self, "_tooltip_enabled", True) else "Tooltip: OFF",
                                        command=self._toggle_tooltip)
         self._tooltip_btn.pack(side=tk.RIGHT, padx=(0, 4))
+        self._ui_mode_btn = ttk.Button(top,
+            text="UI: Modern" if getattr(self, "ui_mode", "modern") == "modern" else "UI: Classic",
+            width=10, command=self._toggle_ui_mode)
+        self._ui_mode_btn.pack(side=tk.RIGHT, padx=(0, 4))
+        self._apply_header_mode()
+        self._header_rule = tk.Frame(self.left, height=2, bg=self._get_theme()["accent"],
+                                     highlightthickness=0, bd=0)
+        self._header_rule.pack(fill=tk.X, pady=(0, 10))
         mode_f = ttk.LabelFrame(self.left, text=" View Settings ", padding=8)
         mode_f.pack(fill=tk.X, pady=5)
         btn_row1 = ttk.Frame(mode_f)
         btn_row1.pack(fill=tk.X, pady=2)
-        self.multi_btn = ttk.Button(btn_row1, text="📊 Multi: ON" if self.multi_mode else "📊 Multi: OFF", command=self._toggle_multi)
-        self.multi_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        self.delta_btn = ttk.Button(btn_row1, text="Δ Delta: ON" if self.delta_mode else "Δ Delta: OFF", command=self._toggle_delta)
-        self.delta_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        btn_row1.columnconfigure(0, weight=1, uniform='uiexp_view')
+        btn_row1.columnconfigure(1, weight=1, uniform='uiexp_view')
+        self.multi_btn = ttk.Button(btn_row1, text="📊 Multi: ON" if self.multi_mode else "📊 Multi: OFF", command=self._toggle_multi,
+                                    style="ToggleOn.TButton" if self.multi_mode else "Toggle.TButton")
+        self.multi_btn.grid(row=0, column=0, sticky='ew', padx=1)
+        self.delta_btn = ttk.Button(btn_row1, text="Δ Delta: ON" if self.delta_mode else "Δ Delta: OFF", command=self._toggle_delta,
+                                    style="ToggleOn.TButton" if self.delta_mode else "Toggle.TButton")
+        self.delta_btn.grid(row=0, column=1, sticky='ew', padx=1)
         btn_row2b = ttk.Frame(mode_f)
         btn_row2b.pack(fill=tk.X, pady=2)
         self.session_cmp_btn = ttk.Button(btn_row2b,
             text="📊 Session Compare: ON" if self.session_compare_active else "📊 Session Compare",
-            command=self._toggle_session_compare)
+            command=self._toggle_session_compare,
+            style="ToggleOn.TButton" if self.session_compare_active else "Toggle.TButton")
         self.session_cmp_btn.pack(fill=tk.X, padx=1)
 
         btn_row3 = ttk.Frame(mode_f)
         btn_row3.pack(fill=tk.X, pady=2)
+        btn_row3.columnconfigure(0, weight=1, uniform='uiexp_view')
+        btn_row3.columnconfigure(1, weight=1, uniform='uiexp_view')
         has_time = bool(self.analyzer.time_col)
         time_label = "🕒 Time: ON" if self.time_mode else "🕒 Time: OFF"
         self.time_btn = ttk.Button(btn_row3, text=time_label, command=self._toggle_time,
-                                   state="normal" if has_time else "disabled")
-        self.time_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+                                   state="normal" if has_time else "disabled",
+                                   style="ToggleOn.TButton" if self.time_mode else "Toggle.TButton")
+        self.time_btn.grid(row=0, column=0, sticky='ew', padx=1)
         self.heatmap_btn = ttk.Button(btn_row3, text="🌡 Heatmap: ON" if self.heatmap_mode else "🌡 Heatmap: OFF",
-                                      command=self._toggle_heatmap)
-        self.heatmap_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+                                      command=self._toggle_heatmap,
+                                      style="ToggleOn.TButton" if self.heatmap_mode else "Toggle.TButton")
+        self.heatmap_btn.grid(row=0, column=1, sticky='ew', padx=1)
         if not has_time:
             ttk.Label(mode_f, text="No time column detected", foreground="gray",
                       font=('Segoe UI', 7)).pack(pady=(0, 2))
@@ -11505,10 +12242,30 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         btn_frame = ttk.Frame(self.left)
         btn_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=(6, 2))
-        ttk.Button(btn_frame, text="New CSV", command=self._import_new_csv).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        ttk.Button(btn_frame, text="Clear", command=self._clear_all).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        ttk.Button(btn_frame, text="Export PNG", command=self._export, style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
-        ttk.Button(btn_frame, text="📄 HTML Report", command=self._export_html_report, style="Action.TButton").pack(side=tk.LEFT, expand=True, fill=tk.X, padx=1)
+        _brow1 = ttk.Frame(btn_frame)
+        _brow1.pack(fill=tk.X)
+        _brow2 = ttk.Frame(btn_frame)
+        _brow2.pack(fill=tk.X)
+
+        for _row in (_brow1, _brow2):
+            _row.columnconfigure(0, weight=1, uniform='uiexp_split')
+            _row.columnconfigure(1, weight=1, uniform='uiexp_split')
+        self._new_csv_btn = ttk.Button(_brow1, text="New CSV",
+                                       command=self._import_new_csv)
+        self._new_csv_btn.grid(row=0, column=0, sticky='ew', padx=1, pady=1)
+        self._clear_btn = ttk.Button(_brow1, text="Clear",
+                                     command=self._clear_all)
+        self._clear_btn.grid(row=0, column=1, sticky='ew', padx=1, pady=1)
+
+        self._left_export_row = _brow2
+        self._left_export_png_btn = ttk.Button(_brow2, text="Export PNG",
+                                               command=self._export)
+        self._left_export_png_btn.grid(row=0, column=0, sticky='ew', padx=1, pady=1)
+        self._left_export_html_btn = ttk.Button(_brow2, text="📄 HTML Report",
+                                                command=self._export_html_report)
+        self._left_export_html_btn.grid(row=0, column=1, sticky='ew', padx=1, pady=1)
+        self._apply_export_button_styles()
+        self._apply_export_layout()
 
         search_f = ttk.LabelFrame(self.left, text=" Sensor Selection ", padding=8)
         search_f.pack(fill=tk.BOTH, expand=True, pady=5)
@@ -11667,10 +12424,39 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         _plot_container.grid_columnconfigure(0, weight=1)
         _plot_container.grid_columnconfigure(1, weight=0)
 
-        self._legend_panel = tk.Frame(_plot_container, width=185, bg=_legend_bg,
+        self._legend_col = tk.Frame(_plot_container, width=185, bg=_legend_bg,
+                                    highlightthickness=0, bd=0)
+        self._legend_col.grid(row=0, column=1, sticky='ns')
+        self._legend_col.pack_propagate(False)
+        self._legend_col_gridded = True
+
+        self._exports_frame = tk.Frame(self._legend_col, bg=_legend_bg,
+                                       highlightthickness=0, bd=0)
+        self._exports_frame.pack(side=tk.BOTTOM, fill=tk.X)
+        self._exports_sep = tk.Frame(self._exports_frame, height=1,
+                                     bg=_t_init.get("bg3", "#2a2a2a"),
+                                     highlightthickness=0, bd=0)
+        self._exports_sep.pack(fill=tk.X, padx=6)
+        self._exports_lbl = tk.Label(self._exports_frame, text="EXPORTS",
+                                     font=('Segoe UI', 8, 'bold'), anchor='w',
+                                     bg=_legend_bg,
+                                     fg=_t_init.get("accent", "#1f6aa5"),
+                                     padx=8, pady=3)
+        self._exports_lbl.pack(fill=tk.X)
+        self._export_png_btn = ttk.Button(self._exports_frame, text="Export PNG",
+                                          command=self._export)
+        self._export_png_btn.pack(fill=tk.X, padx=4, pady=(2, 2))
+        self._export_html_btn = ttk.Button(self._exports_frame, text="📄 HTML Report",
+                                           command=self._export_html_report)
+        self._export_html_btn.pack(fill=tk.X, padx=4, pady=(0, 4))
+
+        self._legend_panel = tk.Frame(self._legend_col, width=185, bg=_legend_bg,
                                       highlightthickness=0, bd=0)
-        self._legend_panel.grid(row=0, column=1, sticky='ns')
         self._legend_panel.pack_propagate(False)
+        self._legend_panel_wanted = True
+        self._legend_panel.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self._apply_export_button_styles()
+        self._apply_export_layout()
 
         self._legend_title = tk.Label(self._legend_panel, text="Legend",
                                       font=('Segoe UI', 8, 'bold'), anchor='w',
@@ -11688,7 +12474,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                 command=self._legend_canvas.yview,
                                 bg=_t_init.get("bg3","#2a2a2a"),
                                 troughcolor=_t_init.get("bg2","#1e1e1e"),
-                                activebackground=_t_init.get("accent","#1f6aa5"))
+                                activebackground=_t_init.get("accent","#1f6aa5"),
+                                width=12 if getattr(self, 'ui_mode', 'modern') == 'modern' else 14)
         self._legend_canvas.configure(yscrollcommand=_leg_vsb.set)
         _leg_vsb.pack(side=tk.RIGHT, fill=tk.Y)
         self._legend_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -12231,7 +13018,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         wait_win.transient(self.root)
         wait_win.grab_set()
 
-        muted_fg = _t.get("bg3", "#888")
+        muted_fg = _dim_color(_t)
+        track_bg = _t.get("bg3", "#888")
         outer = tk.Frame(wait_win, bg=accent, padx=2, pady=2)
         outer.pack(fill=tk.BOTH, expand=True)
         inner = tk.Frame(outer, bg=bg, padx=20, pady=16)
@@ -12251,7 +13039,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         bar_frame = tk.Frame(inner, bg=bg)
         bar_frame.pack(fill=tk.X, pady=(8, 0))
-        bar_bg = tk.Frame(bar_frame, bg=muted_fg, height=4, bd=0)
+        bar_bg = tk.Frame(bar_frame, bg=track_bg, height=4, bd=0)
         bar_bg.pack(fill=tk.X)
         bar_fg = tk.Frame(bar_bg, bg=accent, height=4, bd=0)
         bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
@@ -12296,13 +13084,6 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 analyzer = TelemetryAnalyzer(path)
                 analyzer.load()
                 def _done():
-                                                                             
-                                                                             
-                                                                             
-                                                                         
-                                                                    
-                                                                           
-                                                    
                     try:
                         on_success(analyzer)
                     finally:
@@ -12504,6 +13285,59 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._hide_tk_tooltip()
         self.canvas_widget.draw_idle()
 
+    def _legend_row_colors(self):
+
+        t = self._get_theme()
+        bg2, accent = t["bg2"], t["accent"]
+        if getattr(self, 'ui_mode', 'modern') != 'modern':
+            return {'bg': bg2, 'hover': t["bg3"], 'pinned': bg2}
+        return {'bg': bg2,
+                'hover': _hex_blend(accent, bg2, 0.12),
+                'pinned': _hex_blend(accent, bg2, 0.85)}
+
+    def _retheme_legend_rows(self):
+
+        refs = getattr(self, '_legend_row_refs', None)
+        if not refs:
+            return
+        t = self._get_theme()
+        modern = (getattr(self, 'ui_mode', 'modern') == 'modern')
+        cols = self._legend_row_colors()
+        for ref in refs:
+            try:
+                base = cols['pinned'] if ref.get('pinned') else cols['bg']
+                for w in ref.get('widgets', ()):
+                    try: w.configure(bg=base)
+                    except Exception: pass
+                try: ref['swatch'].configure(bg=base)
+                except Exception: pass
+                name = ref.get('name')
+                if name is not None:
+                    try:
+                        name.configure(fg=(t["accent"]
+                                           if (modern and ref.get('pinned'))
+                                           else t["fg"]))
+                    except Exception: pass
+                stats = ref.get('stats')
+                if stats is not None:
+                    try:
+                        if ref.get('pinned'):
+                            stats.configure(fg=t["accent"],
+                                            font=('Segoe UI', 8, 'bold'))
+                        elif modern:
+                            stats.configure(fg=t["fg"],
+                                            font=('Segoe UI', 8, 'normal'))
+                        else:
+                            stats.configure(fg=t["fg"],
+                                            font=('Segoe UI', 8, 'bold'))
+                    except Exception: pass
+                bar = ref.get('bar')
+                if bar is not None and bar.winfo_exists():
+                    try: bar.configure(bg=t["accent"])
+                    except Exception: pass
+            except Exception:
+                continue
+
     def _update_tk_legend(self, entries):
         """Rebuild the Tkinter legend panel. entries = list of (label, color, col_name, is_header)."""
         if not hasattr(self, '_legend_inner'):
@@ -12514,13 +13348,38 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         bg3    = t["bg3"]
         fg     = t["fg"]
         accent = t["accent"]
+        modern = (getattr(self, 'ui_mode', 'modern') == 'modern')
 
         self._legend_panel.configure(bg=bg2)
-        self._legend_title.configure(bg=bg2, fg=accent)
+        if hasattr(self, '_legend_col'):
+            try:
+                self._legend_col.configure(bg=bg2)
+            except Exception:
+                pass
+        if hasattr(self, '_exports_frame'):
+            try:
+                self._exports_frame.configure(bg=bg2)
+                if hasattr(self, '_exports_lbl') and self._exports_lbl.winfo_exists():
+                    self._exports_lbl.configure(bg=bg2, fg=accent)
+                if hasattr(self, '_exports_sep') and self._exports_sep.winfo_exists():
+                    self._exports_sep.configure(bg=bg3)
+            except Exception:
+                pass
+        self._legend_title.configure(bg=bg2, fg=accent,
+                                     text="LEGEND" if modern else "Legend")
 
         if hasattr(self, '_legend_scroll_frame'):
             try: self._legend_scroll_frame.destroy()
             except Exception: pass
+
+        if not hasattr(self, '_legend_rule') or not self._legend_rule.winfo_exists():
+            self._legend_rule = tk.Frame(self._legend_panel, height=2,
+                                         bg=accent, highlightthickness=0, bd=0)
+        if modern:
+            self._legend_rule.configure(bg=accent)
+            self._legend_rule.pack(fill=tk.X, padx=6, pady=(0, 4))
+        else:
+            self._legend_rule.pack_forget()
 
         scroll_f = tk.Frame(self._legend_panel, bg=bg2)
         scroll_f.pack(fill=tk.BOTH, expand=True)
@@ -12528,7 +13387,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         self._legend_canvas = tk.Canvas(scroll_f, highlightthickness=0, bd=0, bg=bg2)
         vsb = tk.Scrollbar(scroll_f, orient='vertical', command=self._legend_canvas.yview,
-                           bg=bg3, troughcolor=bg2, activebackground=accent)
+                           bg=bg3, troughcolor=bg2, activebackground=accent,
+                           width=12 if modern else 14)
         self._legend_canvas.configure(yscrollcommand=vsb.set)
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
         self._legend_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -12554,29 +13414,59 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         pinned = getattr(self, '_pinned_line', None)
 
+        self._legend_row_refs = []
+
+        _lh = getattr(self, '_legend_empty', None)
+        if _lh is not None:
+            try: _lh.destroy()
+            except Exception: pass
+        self._legend_empty = None
+        if modern and not entries:
+            self._legend_empty = tk.Label(self._legend_inner,
+                                          text="No sensors selected",
+                                          font=('Segoe UI', 8), bg=bg2,
+                                          fg=_dim_color(t), anchor='w',
+                                          padx=8, pady=6)
+            self._legend_empty.pack(fill=tk.X)
+
         for entry in entries:
             label, color, col_name, is_header = entry[0], entry[1], entry[2], entry[3]
             linestyle = entry[4] if len(entry) > 4 else '-'
             if is_header:
-                hl = tk.Label(self._legend_inner, text=label, font=('Segoe UI', 8, 'bold'),
-                              bg=bg2, fg=accent, anchor='w', padx=4)
-                hl.pack(fill=tk.X, pady=(6, 1))
+                hl = tk.Label(self._legend_inner,
+                              text=label.upper() if modern else label,
+                              font=('Segoe UI', 8, 'bold'),
+                              bg=bg2, fg=accent, anchor='w',
+                              padx=8 if modern else 4)
+                hl.pack(fill=tk.X, pady=(8, 2) if modern else (6, 1))
                 hl.bind('<MouseWheel>', lambda e: self._legend_canvas.yview_scroll(
                     int(-1*(e.delta/120)), 'units'))
-                tk.Frame(self._legend_inner, bg=bg3, height=1).pack(fill=tk.X, padx=4)
+                tk.Frame(self._legend_inner, bg=bg3, height=1).pack(
+                    fill=tk.X, padx=8 if modern else 4)
                 continue
 
             is_pinned = (pinned == col_name)
 
-            cell = tk.Frame(self._legend_inner, bg=bg2, cursor='hand2')
+            cell_bg = (self._legend_row_colors()['pinned']
+                       if is_pinned else bg2)
+            cell = tk.Frame(self._legend_inner, bg=cell_bg, cursor='hand2')
             cell.pack(fill=tk.X, padx=2, pady=1)
 
-            row = tk.Frame(cell, bg=bg2)
+            pin_bar = None
+            content = cell
+            if modern and is_pinned:
+                pin_bar = tk.Frame(cell, bg=accent, width=2,
+                                   highlightthickness=0, bd=0)
+                pin_bar.pack(side=tk.LEFT, fill=tk.Y)
+                content = tk.Frame(cell, bg=cell_bg)
+                content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+            row = tk.Frame(content, bg=cell_bg)
             row.pack(fill=tk.X)
 
             SWATCH_W, SWATCH_H = 28, 12
             swatch = tk.Canvas(row, width=SWATCH_W, height=SWATCH_H,
-                               bg=bg2, highlightthickness=0, bd=0)
+                               bg=cell_bg, highlightthickness=0, bd=0)
             swatch.pack(side=tk.LEFT, padx=(4, 4), pady=3)
 
             _dash_map = {
@@ -12613,37 +13503,51 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             lbl_text = ('📌 ' if is_pinned else '') + name_line
             lbl = tk.Label(row, text=lbl_text,
                            font=('Segoe UI', 8, 'bold' if is_pinned else 'normal'),
-                           bg=bg2, fg=fg, anchor='w', wraplength=120, justify='left')
+                           bg=cell_bg,
+                           fg=(accent if (modern and is_pinned) else fg),
+                           anchor='w', wraplength=120, justify='left')
             lbl.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
             if stats_parts:
-                stats_lbl = tk.Label(cell, text=stats_parts[0].strip(),
-                                     font=('Segoe UI', 8, 'bold'), bg=bg2,
-                                     fg=accent if is_pinned else fg,
+                stats_lbl = tk.Label(content, text=stats_parts[0].strip(),
+                                     font=('Segoe UI', 8,
+                                           'bold' if (is_pinned or not modern)
+                                           else 'normal'),
+                                     bg=cell_bg,
+                                     fg=(accent if is_pinned else fg),
                                      anchor='w', padx=20, wraplength=135, justify='left')
                 stats_lbl.pack(fill=tk.X)
 
-            hover_widgets = [cell, row, lbl] + ([stats_lbl] if stats_parts else [])
+            hover_widgets = ([cell, content, row, lbl]
+                             if content is not cell else [cell, row, lbl])
+            if stats_parts:
+                hover_widgets = hover_widgets + [stats_lbl]
 
             _inside = [0]
 
-            def _on_enter(e, ws=hover_widgets, counter=_inside, sw=swatch):
+            def _on_enter(e, ws=hover_widgets, counter=_inside, sw=swatch,
+                          is_pin=is_pinned):
                 counter[0] += 1
+                cols = self._legend_row_colors()
+                target = cols['pinned'] if is_pin else cols['hover']
                 for w in ws:
-                    try: w.configure(bg=bg3)
+                    try: w.configure(bg=target)
                     except Exception: pass
-                try: sw.configure(bg=bg3)
+                try: sw.configure(bg=target)
                 except Exception: pass
 
-            def _on_leave(e, ws=hover_widgets, counter=_inside, c=cell, sw=swatch):
+            def _on_leave(e, ws=hover_widgets, counter=_inside, c=cell, sw=swatch,
+                          is_pin=is_pinned):
                 counter[0] -= 1
                 def _maybe_reset():
                     if counter[0] <= 0:
                         counter[0] = 0
+                        cols = self._legend_row_colors()
+                        base = cols['pinned'] if is_pin else cols['bg']
                         for w in ws:
-                            try: w.configure(bg=bg2)
+                            try: w.configure(bg=base)
                             except Exception: pass
-                        try: sw.configure(bg=bg2)
+                        try: sw.configure(bg=base)
                         except Exception: pass
                 c.after(20, _maybe_reset)
 
@@ -12660,12 +13564,23 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             def _on_scroll(e, lc=self._legend_canvas):
                 lc.yview_scroll(int(-1 * (e.delta / 120)), 'units')
 
-            bind_widgets = [cell, row, swatch, lbl] + ([stats_lbl] if stats_parts else [])
+            bind_widgets = ([cell, content, row, swatch, lbl]
+                            if content is not cell
+                            else [cell, row, swatch, lbl])
+            if stats_parts:
+                bind_widgets = bind_widgets + [stats_lbl]
             for w in bind_widgets:
                 w.bind('<Enter>',      _on_enter)
                 w.bind('<Leave>',      _on_leave)
                 w.bind('<Button-1>',   _on_click)
                 w.bind('<MouseWheel>', _on_scroll)
+
+            self._legend_row_refs.append({
+                'col': col_name, 'cell': cell, 'swatch': swatch,
+                'name': lbl, 'stats': (stats_lbl if stats_parts else None),
+                'bar': pin_bar, 'pinned': is_pinned,
+                'widgets': list(hover_widgets),
+            })
 
         _legend_canvas_ref   = self._legend_canvas
         _legend_inner_id_ref = self._legend_inner_id
@@ -13596,13 +14511,11 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._hover_cursor_color = 'white' if self.is_dark else 'gray'
 
         if self.heatmap_mode:
-            if hasattr(self, '_legend_panel'):
-                self._legend_panel.grid_remove()
+            self._set_legend_visible(False)
             self._draw_heatmap(sel)
             return
 
-        if hasattr(self, '_legend_panel'):
-            self._legend_panel.grid(row=0, column=1, sticky='ns')
+        self._set_legend_visible(True)
         x_vals, ts, use_time = self._get_x_axis()
 
         if len(x_vals) != len(self.df):
@@ -14015,7 +14928,7 @@ if __name__ == "__main__":
         )
     except Exception:
         pass
-                                 
+                                    
     try:
         import ctypes
         try:
@@ -14071,13 +14984,14 @@ if __name__ == "__main__":
         splash.title("RESYNC.ERR")
         splash.resizable(False, False)
         splash.protocol("WM_DELETE_WINDOW", lambda: None)
-        _st = load_theme(); _sa = _st.get("active","Dark (Default)"); _su = _st.get("user_themes",{}); _sc = _su.get(_sa, _DEFAULT_DARK_THEME if "Light" not in _sa else _DEFAULT_LIGHT_THEME)
+        _sc = _resolve_active_theme(load_theme())
         _sbg = _sc.get("bg","#121212"); _sfg = _sc.get("fg","#e0e0e0"); _sacc = _sc.get("accent","#1f6aa5")
+        _spal = _splash_palette(_sc)
         splash.configure(bg=_sbg)
         splash.geometry("340x120")
         splash.grab_set()
 
-        outer = tk.Frame(splash, bg="#1f6aa5", padx=2, pady=2)
+        outer = tk.Frame(splash, bg=_spal['border'], padx=2, pady=2)
         outer.pack(fill=tk.BOTH, expand=True)
         inner = tk.Frame(outer, bg=_sbg, padx=20, pady=16)
         inner.pack(fill=tk.BOTH, expand=True)
@@ -14096,9 +15010,9 @@ if __name__ == "__main__":
 
         bar_frame = tk.Frame(inner, bg=_sbg)
         bar_frame.pack(fill=tk.X, pady=(8, 0))
-        bar_bg = tk.Frame(bar_frame, bg="#2a2a2a", height=4, bd=0)
+        bar_bg = tk.Frame(bar_frame, bg=_spal['track'], height=4, bd=0)
         bar_bg.pack(fill=tk.X)
-        bar_fg = tk.Frame(bar_bg, bg="#1f6aa5", height=4, bd=0)
+        bar_fg = tk.Frame(bar_bg, bg=_spal['accent'], height=4, bd=0)
         bar_fg.place(x=0, y=0, relheight=1.0, relwidth=0.0)
 
         _bar_pos = [0.0]
