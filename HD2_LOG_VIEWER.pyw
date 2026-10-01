@@ -572,7 +572,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.8"
+CURRENT_VERSION = "1.7.8.1"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -959,6 +959,51 @@ class TelemetryAnalyzer:
         df = df.ffill().reset_index(drop=True)
         self.df = df
 
+    def _resolve_schema(self, sep=None) -> Optional[List[str]]:
+        try:
+            kwargs = {'delimiter': sep} if sep else {}
+            with open(self.path, 'r', encoding='latin-1', errors='ignore') as f:
+                rdr = csv.reader(f, **kwargs)
+                first = next(rdr, None)
+                if not first:
+                    return None
+                first_key = str(first[0]).strip().lower()
+                if not first_key:
+                    return None
+                widest = [str(c) for c in first]
+                grew = False
+                max_fields = len(first)
+                for row in rdr:
+                    if not row:
+                        continue
+                    key = str(row[0]).strip().lower() if row[0] else ''
+                    if key == first_key and len(row) > len(widest):
+                        widest = [str(c) for c in row]
+                        grew = True
+                    elif len(row) > max_fields:
+                        max_fields = len(row)
+                if not grew and max_fields <= len(first):
+                    return None
+                while len(widest) < max_fields:
+                    widest.append(f'Extra Sensor {len(widest) - len(first) + 1} []')
+                widest = self._mangle_duplicates(widest)
+                return widest
+        except Exception:
+            return None
+
+    @staticmethod
+    def _mangle_duplicates(names: List[str]) -> List[str]:
+        seen: Dict[str, int] = {}
+        out: List[str] = []
+        for n in names:
+            if n in seen:
+                seen[n] += 1
+                out.append(f'{n}.{seen[n]}')
+            else:
+                seen[n] = 0
+                out.append(n)
+        return out
+
     def load(self) -> None:
 
         if self._is_mangohud_file():
@@ -974,10 +1019,17 @@ class TelemetryAnalyzer:
         except (OSError, csv.Error):
             sep = None
 
+        wide_names = self._resolve_schema(sep)
+
         for enc in ['utf-8-sig', 'latin-1', 'cp1252']:
             try:
-                df = pd.read_csv(self.path, encoding=enc, sep=sep, on_bad_lines='skip',
-                                 engine='python')
+                if wide_names:
+                    df = pd.read_csv(self.path, encoding=enc, sep=sep,
+                                     on_bad_lines='skip', engine='python',
+                                     names=wide_names, header=None, skiprows=1)
+                else:
+                    df = pd.read_csv(self.path, encoding=enc, sep=sep, on_bad_lines='skip',
+                                     engine='python')
                 if len(df.columns) > 0:
                     self.df = df
                     success = True
@@ -1002,6 +1054,10 @@ class TelemetryAnalyzer:
                 self.df[col] = pd.to_numeric(cleaned, errors='coerce')
             except Exception:
                 continue
+
+        keep = self.df.isna().sum(axis=1) < (len(self.df.columns) - 1)
+        if not keep.all():
+            self.df = self.df[keep].copy()
 
         while len(self.df) > 1:
             last_row = self.df.iloc[-1]
@@ -12076,7 +12132,11 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
              "Bug Testing  \u2022  Suggestions  \u2022  Program Icon"),
              ("ShadyWizard",
               "ShadyWizard | 418th LinuxAdviser",
-              "Github Contributions")
+              "Github Contributions"),
+              ("Kirito",
+               "Kiri | Comptroller of the People",
+              ("Bug Testing \u2022 Suggestions")
+               )
         ]:
             tk.Label(body, text=name,
                      font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(6, 0))
@@ -14928,7 +14988,7 @@ if __name__ == "__main__":
         )
     except Exception:
         pass
-                                    
+
     try:
         import ctypes
         try:
