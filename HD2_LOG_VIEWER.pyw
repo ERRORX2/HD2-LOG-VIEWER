@@ -572,7 +572,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.8.1"
+CURRENT_VERSION = "1.7.9"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -650,7 +650,7 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
                 ignored_version: str = "", updates_disabled: bool = False, time_mode: bool = False,
                 thresholds: Dict = None, heatmap_mode: bool = False, disabled_sigs: list = None,
                 sig_timeline_enabled: bool = True, tooltip_enabled: bool = True,
-                ui_mode: str = "modern"):
+                ui_mode: str = "modern", csv_gap_check_enabled: bool = True):
     config = {
         "groups": groups_dict,
         "settings": {
@@ -666,6 +666,7 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
             "sig_timeline_enabled": sig_timeline_enabled,
             "tooltip_enabled": tooltip_enabled,
             "ui_mode": ui_mode,
+            "csv_gap_check_enabled": csv_gap_check_enabled,
         }
     }
     try:
@@ -674,9 +675,9 @@ def save_config(groups_dict: Dict, is_dark: bool, multi_mode: bool = False, delt
     except Exception:
         pass
 
-def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, list, bool, bool, str]:
+def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, list, bool, bool, str, bool]:
     if not Path(GROUPS_FILE).exists():
-        return {}, False, False, False, "", False, False, {}, False, [], True, True, "modern"
+        return {}, False, False, False, "", False, False, {}, False, [], True, True, "modern", True
     try:
         with open(GROUPS_FILE, 'r') as f:
             data = json.load(f)
@@ -694,10 +695,11 @@ def load_config() -> Tuple[Dict, bool, bool, bool, str, bool, bool, Dict, bool, 
                         sets.get("disabled_sigs", []),
                         sets.get("sig_timeline_enabled", True),
                         sets.get("tooltip_enabled", True),
-                        sets.get("ui_mode", "modern"))
-            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False, [], True, True, "modern"
+                        sets.get("ui_mode", "modern"),
+                        sets.get("csv_gap_check_enabled", True))
+            return data if isinstance(data, dict) else {}, False, False, False, "", False, False, {}, False, [], True, True, "modern", True
     except Exception:
-        return {}, False, False, False, "", False, False, {}, False, [], False, True, "modern"
+        return {}, False, False, False, "", False, False, {}, False, [], False, True, "modern", True
 
 def _post_ui(root, fn):
     try:
@@ -804,6 +806,24 @@ def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: 
 
     threading.Thread(target=_check, daemon=True).start()
 
+
+def _fmt_gap_secs(t):
+
+    try:
+        t = float(t)
+    except (TypeError, ValueError):
+        return str(t)
+    if t < 0:
+        t = 0.0
+    if t < 60:
+        return f"{t:.1f} s" if t < 10 else f"{t:.0f} s"
+    if t < 3600:
+        m, s = divmod(int(round(t)), 60)
+        return f"{m} min {s:02d} s"
+    h, m = divmod(int(round(t / 60.0)), 60)
+    return f"{h} h {m:02d} min"
+
+
 class TelemetryAnalyzer:
     TIME_COLUMN_CANDIDATES = ['time', 'date', 'timestamp', 'elapsed', 'clock', '#']
     TIME_FORMATS = ['%H:%M:%S', '%H:%M:%S.%f', '%Y-%m-%d %H:%M:%S',
@@ -841,6 +861,7 @@ class TelemetryAnalyzer:
         self.df: pd.DataFrame = pd.DataFrame()
         self.time_col: str = ""
         self.time_series = None
+        self._gap_cache = None
         self.aliases: dict = {}
         self.is_mangohud: bool = False
         self.mangohud_sysinfo: dict = {}
@@ -1103,16 +1124,38 @@ class TelemetryAnalyzer:
                 'total_gap_time': float - total gap duration in seconds
                 'gap_count': int - number of gaps
                 'data_usable': bool - True if data is reasonably usable
+                'total_time_span': float - total session duration in seconds
+                    (0.0 when unknown)
+                'gap_percentage': float - ACTUAL share of the session that is
+                    missing, (total_gap_time / total_time_span) * 100,
+                    rounded to 2 decimals (0.0 when unknown)
+                'max_gap_seconds': float - duration of the largest single gap
+                'estimated_missing_rows': int - approximate number of missing
+                    samples, total_gap_time / median logging cadence
+                'usability_reasons': list[str] - one precise sentence per
+                    tripped quality criterion, each carrying the measured
+                    number (only present when data_usable is False)
         """
+        _cached = self._gap_cache
+        if (_cached is not None
+                and _cached[0] is self.time_series
+                and _cached[1] == gap_threshold_seconds):
+            return _cached[2]
+
         result = {
             'has_gaps': False,
             'gaps': [],
             'total_gap_time': 0.0,
             'gap_count': 0,
             'data_usable': True,
+            'total_time_span': 0.0,
+            'gap_percentage': 0.0,
+            'max_gap_seconds': 0.0,
+            'estimated_missing_rows': 0,
         }
         
         if self.time_series is None or len(self.time_series) < 2:
+            self._gap_cache = (self.time_series, gap_threshold_seconds, result)
             return result
         
         try:
@@ -1143,21 +1186,55 @@ class TelemetryAnalyzer:
 
             if result['gap_count'] > 0:
                 total_time_span = float(elapsed_seconds.max() - elapsed_seconds.min())
+                result['total_time_span'] = total_time_span
+                result['max_gap_seconds'] = max(
+                    g['duration_seconds'] for g in result['gaps'])
+
+                try:
+                    _cadence = float(deltas.dropna().median())
+                    if _cadence > 0:
+                        result['estimated_missing_rows'] = int(round(
+                            result['total_gap_time'] / _cadence))
+                except Exception:
+                    pass
+
+                _pct_limit_hit = False
                 if total_time_span > 0:
                     gap_percentage = (result['total_gap_time'] / total_time_span) * 100
+                    result['gap_percentage'] = round(gap_percentage, 2)
                     if gap_percentage > 10.0:
                         result['data_usable'] = False
-                
-                if result['gap_count'] > 5:
+                        _pct_limit_hit = True
+
+                _count_limit_hit = result['gap_count'] > 5
+                if _count_limit_hit:
                     result['data_usable'] = False
-                
-                max_gap = max(g['duration_seconds'] for g in result['gaps'])
-                if max_gap > 300:  # 5 minutes
+
+                _max_gap = result['max_gap_seconds']
+                _gap_limit_hit = _max_gap > 300
+                if _gap_limit_hit:
                     result['data_usable'] = False
+
+                if not result['data_usable']:
+                    result['usability_reasons'] = []
+                    if _pct_limit_hit:
+                        result['usability_reasons'].append(
+                            f"{result['gap_percentage']:.1f}% of the session is missing "
+                            f"({_fmt_gap_secs(result['total_gap_time'])} of gaps in a "
+                            f"{_fmt_gap_secs(total_time_span)} session) - above the 10% limit")
+                    if _count_limit_hit:
+                        result['usability_reasons'].append(
+                            f"{result['gap_count']} separate gaps found "
+                            f"- above the 5-gap limit")
+                    if _gap_limit_hit:
+                        result['usability_reasons'].append(
+                            f"largest single gap is {_fmt_gap_secs(_max_gap)} "
+                            f"- above the 5-minute limit")
         
         except Exception as e:
             result['detection_error'] = str(e)
         
+        self._gap_cache = (self.time_series, gap_threshold_seconds, result)
         return result
 
     def extract_hardware_names(self) -> dict:
@@ -1408,8 +1485,9 @@ class TelemetryApp:
         (self.custom_groups, self.is_dark, self.multi_mode, self.delta_mode,
          self.ignored_version, self.updates_disabled, self.time_mode,
          saved_thresholds, self.heatmap_mode, disabled_sigs_list, sig_tl_enabled, tooltip_en,
-         ui_mode_saved) = load_config()
+         ui_mode_saved, csv_gap_chk_enabled) = load_config()
         self.sig_timeline_enabled = sig_tl_enabled
+        self.csv_gap_check_enabled = csv_gap_chk_enabled
         self.disabled_sigs = set(disabled_sigs_list)
         self.custom_theme  = load_theme()
 
@@ -1561,7 +1639,6 @@ class TelemetryApp:
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
-        self.root.after(350, self._notify_csv_gaps)
         self.root.after(300, self._prompt_sensor_aliases)
 
         check_for_updates(
@@ -3151,6 +3228,19 @@ Min/Max Thresholds:
                        selectcolor="#1f6aa5" if is_dark else "#ffffff",
                        fg=fg, font=('Segoe UI', 9)).pack(side=tk.LEFT)
 
+        section("CSV Gap Detection")
+        tk.Label(body, text="Check the loaded log for missing samples (logging gaps) "
+                            "in Diagnose Hardware Signatures, on the graph and in the debug dump.",
+                 bg=bg, fg="#888", font=('Segoe UI', 8), wraplength=480,
+                 justify='left').pack(anchor='w', padx=8, pady=(2, 4))
+        gap_frame = tk.Frame(body, bg=bg)
+        gap_frame.pack(fill=tk.X, padx=8, pady=(0, 4))
+        gap_enabled_var = tk.BooleanVar(value=getattr(self, 'csv_gap_check_enabled', True))
+        tk.Checkbutton(gap_frame, text="Enable CSV gap detection",
+                       variable=gap_enabled_var, bg=bg, activebackground=bg,
+                       selectcolor="#1f6aa5" if is_dark else "#ffffff",
+                       fg=fg, font=('Segoe UI', 9)).pack(side=tk.LEFT)
+
         section("Signature Enable / Disable")
         tk.Label(body, text="Uncheck a signature to exclude it from detection and reports.",
                  bg=bg, fg="#888", font=('Segoe UI', 8), wraplength=480,
@@ -3270,6 +3360,7 @@ Min/Max Thresholds:
 
                 self.disabled_sigs = {name for name, var in sig_vars.items() if not var.get()}
                 self.sig_timeline_enabled = tl_enabled_var.get()
+                self.csv_gap_check_enabled = gap_enabled_var.get()
 
                 self._save_config()
                 self._build_checklist()
@@ -3348,7 +3439,9 @@ Min/Max Thresholds:
                 self.sig_v33_hi              = misc['sig_v33_hi']
                 self.disabled_sigs           = set()
                 self.sig_timeline_enabled    = True
+                self.csv_gap_check_enabled   = True
                 tl_enabled_var.set(True)
+                gap_enabled_var.set(True)
                 for name, var in sig_vars.items():
                     var.set(True)
                 self._save_config()
@@ -3437,7 +3530,8 @@ Min/Max Thresholds:
                     self.heatmap_mode, list(self.disabled_sigs),
                     getattr(self, 'sig_timeline_enabled', True),
                     getattr(self, '_tooltip_enabled', True),
-                    getattr(self, 'ui_mode', 'modern'))
+                    getattr(self, 'ui_mode', 'modern'),
+                    getattr(self, 'csv_gap_check_enabled', True))
 
     def show_toast(self, message: str, duration: int = 2000):
         toast = tk.Toplevel(self.root)
@@ -3532,7 +3626,7 @@ Min/Max Thresholds:
             self._update_tk_legend([])
             ax = self.fig.add_subplot(111)
             ax.set_facecolor(bg2_color)
-            ax.text(0.5, 0.5, "No Sensors Selected", ha='center', va='center', color='gray')
+            self._draw_no_sensor_notice(ax)
             self.canvas_widget.draw_idle()
             return
 
@@ -6362,11 +6456,17 @@ Min/Max Thresholds:
         wl(f"  Disabled  : {sorted(self.disabled_sigs) or 'none'}", 'header')
         wl(f"  Format    : {'MangoHud' if self.analyzer.is_mangohud else 'HWiNFO64 / Generic CSV'}", 'header')
         wl(f"  UI mode   : {getattr(self, 'ui_mode', 'modern')}  (UI: classic / modern)", 'header')
+        wl(f"  Gap check : {'on' if getattr(self, 'csv_gap_check_enabled', True) else 'off (disabled in Settings)'}", 'header')
         wl('=' * 72, 'header')
 
         section("CSV GAP DETECTION")
-        _gap_result = self.analyzer.detect_csv_gaps(gap_threshold_seconds=2.5)
-        if _gap_result.get('detection_error'):
+        if not getattr(self, 'csv_gap_check_enabled', True):
+            _gap_result = {'detection_disabled': True}
+        else:
+            _gap_result = self.analyzer.detect_csv_gaps(gap_threshold_seconds=2.5)
+        if _gap_result.get('detection_disabled'):
+            wl("  ✗ Disabled in Settings - gap analysis skipped.", 'muted')
+        elif _gap_result.get('detection_error'):
             wl(f"  ⚠ Error detecting gaps: {_gap_result['detection_error']}", 'warn')
         else:
             if not _gap_result['has_gaps']:
@@ -6378,7 +6478,13 @@ Min/Max Thresholds:
                 wl(f"  {_usable_text}", _usable_tag)
                 wl()
                 wl(f"  Found {_gap_result['gap_count']} gap(s) >2.5 seconds:", 'warn' if not _gap_result['data_usable'] else 'info')
-                wl(f"  Total gap time: {_gap_result['total_gap_time']:.2f} seconds", 'val')
+                _dbg_pct  = _gap_result.get('gap_percentage') or 0.0
+                _dbg_span = _gap_result.get('total_time_span') or 0.0
+                _dbg_rows = _gap_result.get('estimated_missing_rows') or 0
+                wl(f"  Total gap time: {_gap_result['total_gap_time']:.2f} seconds"
+                   + (f" ({_dbg_pct:.2f}% of the {_fmt_gap_secs(_dbg_span)} session"
+                      + (f", ~{_dbg_rows:,} missing samples" if _dbg_rows else "")
+                      + ")" if _dbg_span > 0 else ""), 'val')
                 wl()
                 
                 for i, gap in enumerate(_gap_result['gaps'], 1):
@@ -6391,10 +6497,11 @@ Min/Max Thresholds:
                 wl()
                 if not _gap_result['data_usable']:
                     wl("  ⚠ WARNING: This CSV may not be suitable for detailed analysis due to:", 'crit')
-                    reasons = []
-                    if _gap_result['gap_count'] > 5:
+                    _measured = _gap_result.get('usability_reasons') or []
+                    reasons = list(_measured)
+                    if not _measured and _gap_result['gap_count'] > 5:
                         reasons.append(f"    • More than 5 separate gaps ({_gap_result['gap_count']} found)")
-                    if max((g['duration_seconds'] for g in _gap_result['gaps']), default=0) > 300:
+                    if not _measured and max((g['duration_seconds'] for g in _gap_result['gaps']), default=0) > 300:
                         reasons.append(f"    • At least one gap >5 minutes")
                     
                     total_span = (pd.to_timedelta(self.analyzer.time_series).max() - 
@@ -6406,7 +6513,7 @@ Min/Max Thresholds:
                             total_gap_time = total_gap_time.total_seconds()
 
                         gap_pct = (total_gap_time / total_span) * 100
-                        if gap_pct > 10:
+                        if not _measured and gap_pct > 10:
                             reasons.append(f"    • Gap time >10% of total ({gap_pct:.1f}% missing)")
                     for r in reasons:
                         wl(r, 'crit')
@@ -11409,9 +11516,28 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                        bg=bg3, troughcolor=bg, activebackground=accent)
             body = tk.Frame(canvas, bg=bg)
 
+            _wrap_targets = []
+
+            def _wrap_dynamic(widget, inset=32):
+                """Register a Label so its wraplength tracks the dialog width."""
+                _wrap_targets.append((widget, inset))
+                return widget
+
+            def _rewrap(width=None):
+                w = width if width else canvas.winfo_width()
+                if w <= 60:
+                    return
+                for _lbl, _inset in _wrap_targets:
+                    try:
+                        _wl = max(140, w - _inset)
+                        if _lbl.winfo_exists() and int(_lbl.cget('wraplength')) != _wl:
+                            _lbl.configure(wraplength=_wl, justify='left')
+                    except tk.TclError:
+                        pass
+
             wid = canvas.create_window((0, 0), window=body, anchor="nw")
             body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-            canvas.bind("<Configure>", lambda e: canvas.itemconfig(wid, width=e.width))
+            canvas.bind("<Configure>", lambda e: (canvas.itemconfig(wid, width=e.width), _rewrap(e.width)))
             canvas.configure(yscrollcommand=sb.set)
 
             canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -11420,6 +11546,98 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>",
                 lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units")))
             canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
+
+            if not getattr(self, 'csv_gap_check_enabled', True):
+                _gap_result = {'detection_disabled': True}
+            else:
+                try:
+                    _gap_result = self.analyzer.detect_csv_gaps(gap_threshold_seconds=2.5)
+                except Exception as exc:
+                    _gap_result = {'detection_error': str(exc)}
+
+            if _gap_result.get('detection_disabled'):
+                _gap_badge    = "OFF"
+                _gap_badge_bg = "#7f8c8d"
+                _gap_card_bg  = "#252525" if is_dark else "#f2f2f2"
+                _gap_desc     = ("CSV gap detection is turned off. Re-enable it under "
+                                 "⚙ Settings ▸ CSV Gap Detection to check this log "
+                                 "for missing samples.")
+                _gap_details  = []
+            elif _gap_result.get('detection_error'):
+                _gap_badge    = "ERROR"
+                _gap_badge_bg = "#f39c12"
+                _gap_card_bg  = "#3a2a0a" if is_dark else "#fef6e7"
+                _gap_desc     = f"Gap detection failed: {_gap_result['detection_error']}"
+                _gap_details  = []
+            elif not _gap_result.get('has_gaps'):
+                _gap_badge    = "OK"
+                _gap_badge_bg = "#2ecc71"
+                _gap_card_bg  = "#1a2a1a" if is_dark else "#eafaf1"
+                _gap_desc     = ("No significant gaps detected (threshold: >2.5 seconds). "
+                                 "CSV appears to have continuous logging.")
+                _gap_details  = []
+            else:
+                _usable       = _gap_result.get('data_usable', True)
+                _gap_badge    = "WARNING" if _usable else "CRITICAL"
+                _gap_badge_bg = "#f39c12" if _usable else "#e74c3c"
+                _gap_card_bg  = ("#3a2a0a" if _usable else "#2a0a0a") if is_dark \
+                                else ("#fef6e7" if _usable else "#fdecea")
+                _gap_pct  = _gap_result.get('gap_percentage') or 0.0
+                _gap_span = _gap_result.get('total_time_span') or 0.0
+                _gap_rows = _gap_result.get('estimated_missing_rows') or 0
+                _gap_desc = (f"Found {_gap_result['gap_count']} logging gap(s) longer than 2.5 seconds. "
+                             f"Total missing time: {_gap_result['total_gap_time']:.1f} seconds"
+                             + (f" - that is {_gap_pct:.1f}% of the {_fmt_gap_secs(_gap_span)} session"
+                                if _gap_span > 0 else "")
+                             + (f", roughly {_gap_rows:,} missing samples"
+                                if _gap_rows > 0 else "")
+                             + "."
+                             + ("" if _usable else "  Data quality may be affected."))
+                _gap_details  = []
+                for _g in _gap_result.get('gaps', [])[:5]:
+                    _gap_details.append(
+                        f"Rows {_g['start_row']:,}–{_g['end_row']:,}: "
+                        f"{_g['duration_seconds']:.1f} s  ({_g['start_time']} → {_g['end_time']})"
+                    )
+                if _gap_result['gap_count'] > 5:
+                    _gap_details.append(f"…and {_gap_result['gap_count'] - 5} more")
+                if not _usable:
+                    _measured = _gap_result.get('usability_reasons') or []
+                    if _measured:
+                        _gap_details.append("Data quality concerns (measured on this log):")
+                        for _r in _measured:
+                            _gap_details.append(_r)
+                    else:
+                        _gap_details.append("Data quality concerns: gap time >10% of the session, "
+                                            "more than 5 separate gaps, or a single gap >5 minutes.")
+                    _gap_details.append("Consider removing gap sections for more accurate analysis, or "
+                                        "check whether HWiNFO64 was paused during logging.")
+
+            gap_card = tk.Frame(body, bg=_gap_card_bg, padx=12, pady=10)
+            gap_card.pack(fill=tk.X, pady=(0, 10), padx=2)
+
+            gap_hdr = tk.Frame(gap_card, bg=_gap_card_bg)
+            gap_hdr.pack(fill=tk.X)
+
+            tk.Label(gap_hdr, text=_gap_badge,
+                     font=('Segoe UI', 8, 'bold'),
+                     bg=_gap_badge_bg, fg="white",
+                     padx=6, pady=2).pack(side=tk.LEFT)
+            tk.Label(gap_hdr, text="  CSV Gap Detection",
+                     font=('Segoe UI', 10, 'bold'),
+                     bg=_gap_card_bg, fg=fg).pack(side=tk.LEFT)
+
+            _wrap_dynamic(tk.Label(gap_card, text=_gap_desc,
+                          bg=_gap_card_bg, fg=fg,
+                          font=('Segoe UI', 9),
+                          wraplength=580,
+                          justify='left')).pack(anchor='w', pady=(6, 4))
+
+            for _gline in _gap_details:
+                _wrap_dynamic(tk.Label(gap_card, text=f"  • {_gline}",
+                              bg=_gap_card_bg,
+                              fg="#aaaaaa" if is_dark else "#555555",
+                              font=('Segoe UI', 8))).pack(anchor='w')
 
             if not results:
                 tk.Label(body,
@@ -11842,12 +12060,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                          text="Session Summary",
                          font=('Segoe UI', 9, 'bold'),
                          bg=narr_bg, fg=narr_fg).pack(anchor='w')
-                tk.Label(narr_frame,
-                         text=narrative_text,
-                         font=('Segoe UI', 9),
-                         bg=narr_bg, fg=fg,
-                         wraplength=620,
-                         justify='left').pack(anchor='w', pady=(4, 0))
+                _wrap_dynamic(tk.Label(narr_frame,
+                              text=narrative_text,
+                              font=('Segoe UI', 9),
+                              bg=narr_bg, fg=fg,
+                              wraplength=620,
+                              justify='left'), inset=36).pack(anchor='w', pady=(4, 0))
 
                 # Separate built-in and custom signatures
                 custom_sigs = load_custom_signatures()
@@ -11884,28 +12102,28 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                             padx=6,
                             pady=2).pack(side=tk.LEFT)
 
-                    tk.Label(hdr,
-                            text=f"  {r['name']}",
-                            font=('Segoe UI', 10, 'bold'),
-                            bg=card_bg,
-                            fg=fg).pack(side=tk.LEFT)
+                    _wrap_dynamic(tk.Label(hdr,
+                                  text=f"  {r['name']}",
+                                  font=('Segoe UI', 10, 'bold'),
+                                  bg=card_bg,
+                                  fg=fg), inset=120).pack(side=tk.LEFT)
 
-                    tk.Label(card,
-                            text=r['description'],
-                            bg=card_bg,
-                            fg=fg,
-                            font=('Segoe UI', 9),
-                            wraplength=580,
-                            justify='left').pack(anchor='w', pady=(6, 4))
+                    _wrap_dynamic(tk.Label(card,
+                                  text=r['description'],
+                                  bg=card_bg,
+                                  fg=fg,
+                                  font=('Segoe UI', 9),
+                                  wraplength=580,
+                                  justify='left')).pack(anchor='w', pady=(6, 4))
 
                     if r.get('evidence'):
                         for ev in r['evidence']:
                             if ev:
-                                tk.Label(card,
-                                        text=f"  • {ev}",
-                                        bg=card_bg,
-                                        fg="#aaaaaa" if is_dark else "#555555",
-                                        font=('Segoe UI', 8)).pack(anchor='w')
+                                _wrap_dynamic(tk.Label(card,
+                                              text=f"  • {ev}",
+                                              bg=card_bg,
+                                              fg="#aaaaaa" if is_dark else "#555555",
+                                              font=('Segoe UI', 8))).pack(anchor='w')
 
                     def _make_select(sig_name):
                         def _select():
@@ -11971,28 +12189,28 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                 padx=6,
                                 pady=2).pack(side=tk.LEFT)
 
-                        tk.Label(hdr,
-                                text=f"  {r['name']}",
-                                font=('Segoe UI', 10, 'bold'),
-                                bg=card_bg,
-                                fg=fg).pack(side=tk.LEFT)
+                        _wrap_dynamic(tk.Label(hdr,
+                                      text=f"  {r['name']}",
+                                      font=('Segoe UI', 10, 'bold'),
+                                      bg=card_bg,
+                                      fg=fg), inset=120).pack(side=tk.LEFT)
 
-                        tk.Label(card,
-                                text=r['description'],
-                                bg=card_bg,
-                                fg=fg,
-                                font=('Segoe UI', 9),
-                                wraplength=580,
-                                justify='left').pack(anchor='w', pady=(6, 4))
+                        _wrap_dynamic(tk.Label(card,
+                                      text=r['description'],
+                                      bg=card_bg,
+                                      fg=fg,
+                                      font=('Segoe UI', 9),
+                                      wraplength=580,
+                                      justify='left')).pack(anchor='w', pady=(6, 4))
 
                         if r.get('evidence'):
                             for ev in r['evidence']:
                                 if ev:
-                                    tk.Label(card,
-                                            text=f"  • {ev}",
-                                            bg=card_bg,
-                                            fg="#aaaaaa" if is_dark else "#555555",
-                                            font=('Segoe UI', 8)).pack(anchor='w')
+                                    _wrap_dynamic(tk.Label(card,
+                                                  text=f"  • {ev}",
+                                                  bg=card_bg,
+                                                  fg="#aaaaaa" if is_dark else "#555555",
+                                                  font=('Segoe UI', 8))).pack(anchor='w')
 
                         def _make_select_custom(sig_name):
                             def _select():
@@ -12089,14 +12307,19 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         dialog.protocol("WM_DELETE_WINDOW",
                         lambda: (setattr(self, '_about_window', None), dialog.destroy()))
 
-        self.root.update_idletasks()
-        pw, ph = 540, 540
-        x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
-        dialog.geometry(f"{pw}x{ph}+{x}+{y}")
+        dialog.withdraw()
 
 
         tk.Frame(dialog, bg=accent, height=4).pack(fill=tk.X)
+
+        btn_row = tk.Frame(dialog, bg=bg)
+        btn_row.pack(side=tk.BOTTOM, fill=tk.X, padx=30, pady=(0, 16))
+        ttk.Button(btn_row, text="⟳ Check for Updates",
+                   command=lambda: self._manual_update_check()
+                   ).pack(side=tk.LEFT)
+        ttk.Button(btn_row, text="Close",
+                   command=lambda: (setattr(self, '_about_window', None), dialog.destroy())
+                   ).pack(side=tk.RIGHT)
 
         body = tk.Frame(dialog, bg=bg, padx=30, pady=22)
         body.pack(fill=tk.BOTH, expand=True)
@@ -12128,15 +12351,14 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                  font=('Segoe UI', 8, 'bold'), bg=bg, fg="#888").pack(anchor='w')
 
         for name, discord, roles in [
-            ("Birby | 418th Technical Goose",None,
+            ("Birby | 418th Technical Goose", None,
              "Bug Testing  \u2022  Suggestions  \u2022  Program Icon"),
-             ("ShadyWizard",
-              "ShadyWizard | 418th LinuxAdviser",
-              "Github Contributions"),
-              ("Kirito",
-               "Kiri | Comptroller of the People",
-              ("Bug Testing \u2022 Suggestions")
-               )
+            ("ShadyWizard",
+             "ShadyWizard | 418th LinuxAdviser",
+             "Github Contributions"),
+            ("Kirito",
+             "Kiri | Comptroller of the People",
+             "Bug Testing \u2022 Suggestions"),
         ]:
             tk.Label(body, text=name,
                      font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(6, 0))
@@ -12151,14 +12373,15 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         tk.Label(body, text="Built for the Helldivers 2 community \U0001f985",
                  font=('Segoe UI', 9, 'italic'), bg=bg, fg="#888").pack(anchor='w')
 
-        btn_row = tk.Frame(dialog, bg=bg)
-        btn_row.pack(fill=tk.X, padx=30, pady=(0, 16))
-        ttk.Button(btn_row, text="⟳ Check for Updates",
-                   command=lambda: self._manual_update_check()
-                   ).pack(side=tk.LEFT)
-        ttk.Button(btn_row, text="Close",
-                   command=lambda: (setattr(self, '_about_window', None), dialog.destroy())
-                   ).pack(side=tk.RIGHT)
+        self.root.update_idletasks()
+        dialog.update_idletasks()
+        pw = max(540, dialog.winfo_reqwidth())
+        ph = max(540, dialog.winfo_reqheight())
+        ph = min(ph, max(480, dialog.winfo_vrootheight() - 120))
+        x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - pw // 2
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - ph // 2
+        dialog.geometry(f"{pw}x{ph}+{x}+{y}")
+        dialog.deiconify()
 
     def _setup_ui(self):
         flag = " [DEBUG]" if self.debug_mode else ""
@@ -13023,39 +13246,9 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._setup_ui()
         self._apply_theme_colors()
         self.update_plot()
-        self.root.after(350, self._notify_csv_gaps)
         self.root.after(300, self._prompt_sensor_aliases)
         if self.debug_mode:
             self._open_debug_window()
-
-    def _notify_csv_gaps(self):
-        try:
-            result = self.analyzer.detect_csv_gaps(gap_threshold_seconds=2.5)
-        except Exception as exc:
-            self.show_toast(f"Gap detection failed: {exc}")
-            return
-
-        if not result.get('has_gaps'):
-            return
-
-        gaps = result.get('gaps', [])
-        details = []
-        for gap in gaps[:5]:
-            details.append(
-                f"Rows {gap['start_row']:,}–{gap['end_row']:,}: "
-                f"{gap['duration_seconds']:.1f} seconds"
-            )
-        if len(gaps) > 5:
-            details.append(f"…and {len(gaps) - 5} more")
-
-        quality = "Data quality may be affected." if not result.get('data_usable', True) else ""
-        messagebox.showwarning(
-            "CSV Gaps Detected",
-            f"Found {result['gap_count']} logging gap(s) longer than 2.5 seconds.\n\n"
-            f"Total missing time: {result['total_gap_time']:.1f} seconds\n"
-            f"{quality}\n\n" + "\n".join(details),
-            parent=self.root,
-        )
 
     def _load_csv_threaded(self, path: str, on_success, on_error=None):
         """Show a spinner dialog, load the CSV in a background thread,
@@ -14542,6 +14735,91 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         _redraw()
         _tick()
 
+    def _draw_no_sensor_notice(self, ax):
+
+        if not getattr(self, 'csv_gap_check_enabled', True):
+            _gap = None
+        else:
+            try:
+                _gap = self.analyzer.detect_csv_gaps(gap_threshold_seconds=2.5)
+            except Exception:
+                _gap = None
+        if _gap and _gap.get('has_gaps'):
+            _usable = _gap.get('data_usable', True)
+            _color  = '#f39c12' if _usable else '#e74c3c'
+            _pct    = _gap.get('gap_percentage') or 0.0
+            ax.text(0.5, 0.66, "No Sensors Selected",
+                    ha='center', va='center', color='gray', fontsize=10)
+            ax.text(0.5, 0.53, "\u26a0  CSV Gaps Detected",
+                    ha='center', va='center', color=_color, fontsize=15, fontweight='bold')
+            ax.text(0.5, 0.44,
+                    f"{_gap['gap_count']} gap(s) > 2.5 s  \u2022  "
+                    f"{_gap['total_gap_time']:.1f} s missing"
+                    + (f"  \u2022  {_pct:.1f}% of session" if _pct > 0 else "")
+                    + ("" if _usable else "  \u2022  data quality at risk"),
+                    ha='center', va='center', color=_color, fontsize=10)
+            ax.text(0.5, 0.36, "For more details check Diagnose Hardware Signatures",
+                    ha='center', va='center', color='gray', fontsize=9)
+        else:
+            ax.text(0.5, 0.5, "No Sensors Selected",
+                    ha='center', va='center', color='gray')
+
+    def _draw_gap_overlay(self, ax, x_vals, add_label=True):
+
+        if not getattr(self, 'csv_gap_check_enabled', True):
+            return
+        try:
+            _gap = self.analyzer.detect_csv_gaps(gap_threshold_seconds=2.5)
+        except Exception:
+            return
+        if not _gap or not _gap.get('has_gaps'):
+            return
+        _ts = getattr(self.analyzer, 'time_series', None)
+        if _ts is None or len(_ts) != len(x_vals):
+            return
+        try:
+            _x_lo = float(np.nanmin(x_vals))
+            _x_hi = float(np.nanmax(x_vals))
+        except Exception:
+            return
+        _x_range = _x_hi - _x_lo
+        if not np.isfinite(_x_range) or _x_range <= 0:
+            return
+        _min_w  = _x_range * 0.005
+        _usable = _gap.get('data_usable', True)
+        _color  = '#f39c12' if _usable else '#e74c3c'
+        _alpha  = 0.18 if _usable else 0.15
+        _spans  = []
+        for _g in _gap.get('gaps', []):
+            try:
+                _i0 = int(_g['start_row'])
+                _i1 = int(_g['end_row'])
+            except Exception:
+                continue
+            if not (0 <= _i0 < len(x_vals) and 0 <= _i1 < len(x_vals)):
+                continue
+            _x0 = float(x_vals[_i0])
+            _x1 = float(x_vals[_i1])
+            if not (np.isfinite(_x0) and np.isfinite(_x1)):
+                continue
+            if _x1 < _x0:
+                _x0, _x1 = _x1, _x0
+            if _x1 - _x0 < _min_w:
+                _mid = (_x0 + _x1) / 2.0
+                _x0, _x1 = _mid - _min_w / 2.0, _mid + _min_w / 2.0
+            ax.axvspan(_x0, _x1, facecolor=_color, alpha=_alpha,
+                       edgecolor='none', zorder=1, label='_csv_gap')
+            _spans.append((_x0, _x1))
+        if _spans and add_label:
+            _b0, _b1 = max(_spans, key=lambda _s: _s[1] - _s[0])
+            _lx = (_b0 + _b1) / 2.0
+            # keep the pointer readable when the widest gap hugs a plot edge
+            _lx = min(max(_lx, _x_lo + _x_range * 0.08), _x_hi - _x_range * 0.08)
+            ax.text(_lx, 0.96, 'logging gap',
+                    transform=ax.get_xaxis_transform(), ha='center', va='top',
+                    fontsize=8, style='italic', color=_color, alpha=0.9,
+                    zorder=2, clip_on=True)
+
     def update_plot(self):
         if self.session_compare_active:
             self._draw_session_compare()
@@ -14631,10 +14909,14 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     self._timeline_cid     = self.canvas_widget.mpl_connect('button_press_event', self._on_timeline_click)
                     self._timeline_mov_cid = self.canvas_widget.mpl_connect('motion_notify_event', self._on_timeline_motion)
                 self._timeline_tooltip = None
+                if self._main_plot_gs is not None:
+                    _empty_ax = self.fig.add_subplot(self._main_plot_gs)
+                    _empty_ax.set_facecolor(bg2_color)
+                    self._draw_no_sensor_notice(_empty_ax)
             else:
                 ax = self.fig.add_subplot(111)
                 ax.set_facecolor(bg2_color)
-                ax.text(0.5, 0.5, "No Sensors Selected", ha='center', va='center', color='gray')
+                self._draw_no_sensor_notice(ax)
             self.canvas_widget.draw_idle()
             return
 
@@ -14780,6 +15062,9 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             for ax in axes[:-1]:
                 for _lbl in ax.get_xticklabels(): _lbl.set_visible(False)
 
+            for _gi, _gax in enumerate(axes):
+                self._draw_gap_overlay(_gax, x_vals, add_label=(_gi == 0))
+
             _tk_legend_entries = []
             _line_color_map = {}
             for ax, cat_name in zip(axes, active_cats):
@@ -14859,6 +15144,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
             ax.tick_params(colors=text_color, labelsize=8)
             _fmt_xticks(ax)
+            self._draw_gap_overlay(ax, x_vals)
 
             _tk_delta = []
             for line in ax.get_lines():
@@ -14899,6 +15185,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
             ax.tick_params(colors=text_color, labelsize=8)
             _fmt_xticks(ax)
+            self._draw_gap_overlay(ax, x_vals)
 
             _tk_single_entries = []
             for line in ax.get_lines():
