@@ -27,9 +27,15 @@ import urllib.request
 import urllib.error
 import webbrowser
 import re
+import math
+import logging
+import warnings
+from dataclasses import dataclass, field
 
 import threading as _threading
 import tkinter as _tk_module
+
+log = logging.getLogger("HD2_LOG_VIEWER")
 
 class LineNumbers(tk.Canvas):
     def __init__(self, parent, text_widget, **kwargs):
@@ -149,6 +155,47 @@ def resolve_psu_rail_column(df, rail, alias=None):
         if best_dist is None or dist < best_dist:
             best, best_dist = c, dist
     return best
+
+_GPU_POWER_SUBRAIL_EXCL = (
+    'LIMIT', 'MAXIMUM', 'MINIMUM', 'NVVDD', 'VDDCR', 'RAIL',
+    'INPUT', 'OUTPUT', 'MISC', '12VHPWR', 'PCIE', 'FBVDD',
+    'MSVDD', 'SOC', 'CROSSBAR', 'PERFORMANCE', '%',
+)
+
+
+def _df_col_excl(df, keywords, excl=()):
+
+    kw = [k.upper() for k in keywords]
+    skip = [e.upper() for e in excl]
+    for c in df.columns:
+        u = str(c).upper()
+        if all(k in u for k in kw) and not any(e in u for e in skip):
+            return c
+    return None
+
+
+def resolve_gpu_power_column(df, alias=None):
+
+    if df is None:
+        return None
+    if alias and alias in df.columns:
+        return alias
+    for kw, excl in (
+        (('GPU', 'POWER'), _GPU_POWER_SUBRAIL_EXCL),
+        (('TOTAL', 'GPU', 'POWER'), ()),
+        (('GPU', 'CHIP', 'POWER'), ()),
+        (('BOARD', 'POWER'), ()),
+        (('TOTAL', 'BOARD'), ()),
+        (('TGP',), ()),
+        (('TBP',), ()),
+        (('ASIC', 'POWER'), ()),
+        (('LEISTUNG',), ()),
+        (('EINGANGSLEISTUNG',), ()),
+    ):
+        c = _df_col_excl(df, kw, excl)
+        if c:
+            return c
+    return None
 
 _VRAM_PCT_GROUPS = (
 
@@ -295,6 +342,519 @@ def resolve_chipset_temp_column(df, alias_entry=None):
         if len(s) and 0.0 < float(s.median()) < 120.0:
             return c
     return None
+
+STRETCH_MAJOR_RATIO = 0.60
+STRETCH_MINOR_RATIO = 0.80
+STRETCH_MAJOR_USAGE_GATE = 80
+STRETCH_MINOR_USAGE_GATE = 90
+
+_INTEL_PCORE_SEPS = ('P-Core ', 'P-core ', 'P-CORE ')
+_INTEL_ECORE_SEPS = ('E-Core ', 'E-core ', 'E-CORE ')
+
+
+def intel_pcore_core_num(req_col, fallback=None):
+    for sep in _INTEL_PCORE_SEPS:
+        if sep in req_col:
+            return req_col.split(sep)[-1].split(' ')[0]
+    return fallback
+
+
+def intel_ecore_core_num(req_col, fallback=None):
+
+    for sep in _INTEL_ECORE_SEPS:
+        if sep in req_col:
+            return req_col.split(sep)[-1].split(' ')[0]
+    return fallback
+
+
+def intel_core_eff_cols_for(eff_cols, core_num, kind='P-CORE'):
+
+    pat = re.compile(rf'{kind}\s*{re.escape(str(core_num))}(?![0-9])', re.I)
+    return [c for c in eff_cols if pat.search(c)]
+
+
+def intel_pcore_eff_cols_for(eff_cols, core_num):
+    return intel_core_eff_cols_for(eff_cols, core_num, kind='P-CORE')
+
+
+def intel_ecore_eff_cols_for(eff_cols, core_num):
+    return intel_core_eff_cols_for(eff_cols, core_num, kind='E-CORE')
+
+
+def intel_core_use_cols_for(df, core_num, eff_cols_for_core, kind='P-CORE'):
+
+    pat = re.compile(rf'{kind}\s*{re.escape(str(core_num))}(?![0-9])', re.I)
+    thread_use, core_level = {}, None
+    for c in df.columns:
+        if not pat.search(c) or 'USAGE' not in c.upper():
+            continue
+        m = re.search(r'\b(T\d+)\b', c, re.I)
+        if m:
+            thread_use[m.group(1).upper()] = c
+        elif core_level is None:
+            core_level = c
+    cols = []
+    for eff_col in eff_cols_for_core:
+        m = re.search(r'\b(T\d+)\b', eff_col, re.I)
+        if m and m.group(1).upper() in thread_use:
+            cols.append(thread_use[m.group(1).upper()])
+        elif core_level is not None:
+            cols.append(core_level)
+        elif thread_use:
+            cols.append(sorted(thread_use.values()))
+        else:
+            cols.append(None)
+
+    assert len(cols) == len(eff_cols_for_core), \
+        "usage/effective column pairing length mismatch"
+    return cols
+
+
+def intel_pcore_use_cols_for(df, core_num, eff_cols_for_core):
+    return intel_core_use_cols_for(df, core_num, eff_cols_for_core, kind='P-CORE')
+
+
+def intel_ecore_use_cols_for(df, core_num, eff_cols_for_core):
+    return intel_core_use_cols_for(df, core_num, eff_cols_for_core, kind='E-CORE')
+
+
+def _usage_series(df, use_col):
+
+    if use_col is None:
+        return None
+    cols = [use_col] if isinstance(use_col, str) else [c for c in use_col if c in df.columns]
+    cols = [c for c in cols if c in df.columns]
+    if not cols:
+        return None
+    u = df[cols].apply(pd.to_numeric, errors='coerce')
+    s = u.max(axis=1) if len(cols) > 1 else u.iloc[:, 0]
+    return s if s.notna().sum() >= 5 else None
+
+
+def stretch_thread_signals(df, req_col, eff_col):
+
+    req = pd.to_numeric(df[req_col], errors='coerce').replace(0, np.nan)
+    eff = pd.to_numeric(df[eff_col], errors='coerce')
+    valid_req = req > 300
+    raw = (eff / req).clip(0, 1.5)
+    return raw, req, eff, valid_req
+
+
+def _thread_active(valid_req, req, eff, use_s, usage_gate):
+    if use_s is not None:
+        return valid_req & (use_s >= usage_gate) & (eff > 50)
+    return valid_req & (eff > (0.35 * req + 100))
+
+
+def stretch_thread_ratio(df, req_col, eff_col, use_col, usage_gate):
+
+    raw, req, eff, valid_req = stretch_thread_signals(df, req_col, eff_col)
+    use_s = _usage_series(df, use_col)
+    active = _thread_active(valid_req, req, eff, use_s, usage_gate)
+    return raw.where(active), active, use_s is not None
+
+
+def stretch_core_ratios(df, req_col, eff_cols, use_cols, usage_gates, label):
+
+    per_gate = [{'ratios': [], 'active': None} for _ in usage_gates]
+    has_use = False
+    for eff_col, use_col in zip(eff_cols, use_cols):
+        if eff_col not in df.columns:
+            continue
+        raw, req, eff, valid_req = stretch_thread_signals(df, req_col, eff_col)
+        use_s = _usage_series(df, use_col)
+        has_use = has_use or (use_s is not None)
+        for g, gate in enumerate(usage_gates):
+            active = _thread_active(valid_req, req, eff, use_s, gate)
+            per_gate[g]['ratios'].append(raw.where(active))
+            per_gate[g]['active'] = (active if per_gate[g]['active'] is None
+                                     else (per_gate[g]['active'] | active))
+    out = []
+    for g in range(len(usage_gates)):
+        if not per_gate[g]['ratios']:
+            out.append((None, None, False))
+            continue
+        core_ratio = pd.concat(per_gate[g]['ratios'], axis=1).median(axis=1)
+        stable_active = per_gate[g]['active'].rolling(5, min_periods=3).sum() >= 3
+        core_ratio = core_ratio.where(stable_active)
+        core_ratio.name = str(label)
+        out.append((core_ratio, per_gate[g]['active'], has_use))
+    return out
+
+
+def stretch_core_ratio(df, req_col, eff_cols, use_cols, usage_gate, label):
+
+    return stretch_core_ratios(df, req_col, eff_cols, use_cols,
+                               [usage_gate], label)[0]
+
+NOT_ASSESSED_NAME = "CPU Clock Stretching - Not Assessed"
+
+
+@dataclass(frozen=True)
+class StretchConfig:
+    major_usage_gate: float = 80.0
+    minor_usage_gate: float = 90.0
+    major_ratio: float = 0.60
+    minor_ratio: float = 0.80
+    window: int = 8
+    major_persist: float = 0.55
+    minor_persist: float = 0.50
+    smooth_window: int = 5
+    pressure_transition_std: float = 0.25
+    sysload_transition_std: float = 15.0
+    min_sysload_no_core_sensors: float = 40.0
+    sysload_rescue_gate: float = 80.0
+    min_active_frac: float = 0.20
+    min_active_floor: int = 2
+    small_cluster_max: int = 5
+    normalised_downgrade: float = 0.90
+
+
+def discover_ecore_columns(df):
+
+    def ok(c):
+        u = c.upper()
+        return 'E-CORE' in u and 'LP E-CORE' not in u and 'LPE-CORE' not in u
+    req = sorted(c for c in df.columns
+                 if ok(c) and 'CLOCK [MHZ]' in c.upper()
+                 and 'EFFECTIVE' not in c.upper() and 'OC RATIO' not in c.upper())
+    eff = sorted(c for c in df.columns if ok(c) and 'EFFECTIVE CLOCK' in c.upper())
+    return req, eff
+
+
+def build_amd_specs(req_cols):
+
+    specs = []
+    for i, req_col in enumerate(req_cols):
+        try:
+            n = req_col.split('Core ')[1].split(' ')[0].lstrip('#')
+        except Exception:
+            n = str(i)
+        specs.append((f"Core {n}", req_col,
+                      [f"Core {n} T0 Effective Clock [MHz]",
+                       f"Core {n} T1 Effective Clock [MHz]"],
+                      [f"Core {n} T0 Usage [%]", f"Core {n} T1 Usage [%]"]))
+    return specs
+
+
+def build_intel_specs(df, req_cols, eff_cols, label, core_num_fn, eff_for_fn, use_for_fn):
+
+    specs = []
+    for i, req_col in enumerate(req_cols):
+        num = core_num_fn(req_col, fallback=str(i))
+        eff = eff_for_fn(eff_cols, num)
+        specs.append((f"{label} {num}", req_col, eff, use_for_fn(df, num, eff)))
+    return specs
+
+
+def _system_load(df):
+    if 'Total CPU Usage [%]' not in df.columns:
+        return None
+    s = pd.to_numeric(df['Total CPU Usage [%]'], errors='coerce')
+    return s.fillna(0) if s.notna().sum() >= 5 else None
+
+
+def _ev_mask(bad, event, window):
+
+    fwd = event[::-1].rolling(window, min_periods=1).max()[::-1].astype(bool)
+    m = bad & fwd
+    if event.any() and not m.any():
+        log.warning("clock-stretch: flagged run has no bad samples; "
+                    "falling back to the plain event mask")
+        return event
+    return m
+
+
+def _load_normalised(df, specs, usage_fn, cfg):
+
+    parts = []
+    for _label, req_col, eff_cols, use_cols in specs:
+        req = pd.to_numeric(df[req_col], errors='coerce').replace(0, np.nan)
+
+        if len(use_cols) < len(eff_cols):
+            log.warning("clock-stretch: usage/effective pairing mismatch on %s",
+                        req_col)
+            use_cols = list(use_cols) + [None] * (len(eff_cols) - len(use_cols))
+        for eff_col, use_col in zip(eff_cols, use_cols):
+            if eff_col not in df.columns:
+                continue
+            use = usage_fn(df, use_col)
+            if use is None:
+                continue
+            eff = pd.to_numeric(df[eff_col], errors='coerce')
+            m = (req > 300) & (use >= cfg.minor_usage_gate) & (eff > 50)
+            parts.append((eff / (req * use / 100.0)).clip(0, 2).where(m))
+    return pd.concat(parts, axis=1).median(axis=1) if parts else None
+
+
+def _cause_hints(df, ev, col_lookup, temp_limits):
+    hints = []
+    temp_col = col_lookup('CPU', 'TEMP') or col_lookup('TDIE') or col_lookup('TCTL')
+    if temp_col:
+        peak = pd.to_numeric(df[temp_col], errors='coerce')[ev].max()
+        limit = temp_limits.get('TDIE', temp_limits.get('CORE', 95.0))
+        if pd.notna(peak) and peak >= limit * 0.92:
+            hints.append(f"CPU temp {peak:.1f}°C near limit - likely thermal throttle")
+    ppt = col_lookup('CPU', 'PPT') or col_lookup('CPU', 'POWER')
+    lim = col_lookup('CPU', 'PPT', 'LIMIT') or col_lookup('CPU', 'POWER', 'LIMIT')
+    if ppt and lim:
+        p = pd.to_numeric(df[ppt], errors='coerce')[ev]
+        l = pd.to_numeric(df[lim], errors='coerce')[ev]
+        ratio = p / l.replace(0, np.nan)
+        if l.mean() > 0 and ratio.mean() >= 0.95:
+            hints.append("CPU PPT at limit during event - power throttling")
+    if not hints:
+        hints.append("No obvious thermal/power cause found - check for OS "
+                     "scheduler issues or BIOS power limits")
+    return hints
+
+
+@dataclass
+class _Result:
+    cluster: str
+    tier: str                    # 'major' | 'minor'
+    severity: str
+    avg_ratio: float
+    weak: bool
+    evidence: list = field(default_factory=list)
+    ev_cols: list = field(default_factory=list)
+
+def _assess_cluster(df, cluster, specs, cfg, ratio_fn, usage_fn, col_lookup, temp_limits):
+
+    per_major, per_minor, per_active, per_use, used = [], [], [], [], []
+    for spec in specs:
+        label, req_col, eff_cols, use_cols = spec
+        (r_maj, a_act, has_use), (r_min, _, _) = ratio_fn(
+            df, req_col, eff_cols, use_cols,
+            (cfg.major_usage_gate, cfg.minor_usage_gate), label)
+        if r_maj is None:
+            continue
+        per_major.append(r_maj)
+        if r_min is not None:
+            per_minor.append(r_min)
+        per_active.append(a_act.astype(int))
+        per_use.append(bool(has_use))
+        used.append(spec)
+    n = len(used)
+    if n == 0:
+        return None, dict(cluster=cluster, reason='eff', n_attempted=len(specs)), False
+    k = sum(per_use)
+    sys_load = _system_load(df)
+    has_sys = sys_load is not None
+
+    if k == 0 and not has_sys:
+        return None, dict(cluster=cluster, reason='load', n=n, k=k), False
+
+    full = k == n
+    inst = [i for i, u in enumerate(per_use) if u]
+    everyone = list(range(n))
+    if full or k == 0:
+        major_idx = everyone
+    elif k * 2 >= n:
+        major_idx = inst
+    else:
+        major_idx = everyone
+    dropped = n - len(major_idx)
+    weak = (not full) and dropped == 0
+    act_idx = inst if k > 0 else everyone
+
+    all_major = pd.concat([per_major[i] for i in major_idx], axis=1)
+    mean_major = all_major.mean(axis=1).replace([np.inf, -np.inf], np.nan)
+    if full and per_minor:
+        mean_minor = (pd.concat(per_minor, axis=1).mean(axis=1)
+                      .replace([np.inf, -np.inf], np.nan))
+    else:
+        mean_minor = pd.Series(np.nan, index=df.index)
+
+    act = pd.concat([per_active[i] for i in act_idx], axis=1)
+    n_act = act.shape[1]
+    active_count = act.sum(axis=1)
+    raw_pressure = active_count / n_act
+
+    if n_act > cfg.small_cluster_max:
+        min_active = min(n_act, max(cfg.min_active_floor,
+                                    math.ceil(cfg.min_active_frac * n_act)))
+    else:
+        min_active = min(n_act, max(1, math.ceil(n_act / 3.0)))
+    enough = active_count.rolling(cfg.smooth_window, min_periods=3).mean() >= min_active
+
+    valid_load = enough
+    if k == 0:
+        valid_load = enough & (sys_load >= cfg.min_sysload_no_core_sensors)
+    elif has_sys:
+        valid_load = enough | (sys_load >= cfg.sysload_rescue_gate)
+
+    in_transition = (raw_pressure.rolling(5, min_periods=3).std().fillna(0)
+                     > cfg.pressure_transition_std)
+    if has_sys:
+        in_transition = in_transition | (
+            sys_load.rolling(5, min_periods=3).std().fillna(0)
+            > cfg.sysload_transition_std)
+
+    major = (mean_major < cfg.major_ratio) & valid_load & ~in_transition
+    minor = (mean_minor < cfg.minor_ratio) & valid_load & ~in_transition
+    if not full:
+        minor = pd.Series(False, index=df.index)
+
+    w = cfg.window
+    major_event = major.rolling(w, min_periods=w).mean() > cfg.major_persist
+    minor_event = minor.rolling(w, min_periods=w).mean() > cfg.minor_persist
+    if not major_event.any() and not minor_event.any():
+        return None, None, True
+
+    head = [f"Cluster: {cluster} ({n} cores evaluated)"]
+    notes = []
+    if not has_sys:
+        notes.append("Note: Total CPU Usage sensor not found - load gate used "
+                     "per-core activity only")
+    if dropped:
+        notes.append(f"Note: {dropped} core(s) without usage sensors excluded "
+                     "from the ratio mean")
+
+    if major_event.any():
+        ev = _ev_mask(major, major_event, w)
+        avg_r, worst_r = mean_major[ev].mean(), mean_major[ev].min()
+        ev_lines = [f"Average eff/req ratio under load: {avg_r:.2f} (target >0.90)",
+                    f"Worst ratio recorded: {worst_r:.2f}",
+                    f"Affected samples: {int(ev.sum())}"]
+        if has_sys:
+            ev_lines.append(f"Peak system load during event: {sys_load[ev].max():.1f}%")
+        peak = raw_pressure[ev].max()
+        if pd.notna(peak):
+            ev_lines.append(f"Peak fraction of cores active: {peak:.2f}")
+        norm = _load_normalised(df, used, usage_fn, cfg)
+        if norm is not None and norm[ev].notna().any():
+            ev_lines.append(f"Load-normalised ratio: {norm[ev].mean():.2f} "
+                            "(1.0 = normal for the load)")
+        label_to_req = {s[0]: s[1] for s in used}
+        worst_cores = [(c, v) for c, v in all_major.mean().nsmallest(3).items()
+                       if pd.notna(v)]
+        ev_lines += [f"{c}: avg ratio {v:.2f}" for c, v in worst_cores]
+        ev_cols = ([label_to_req[c] for c, _v in worst_cores if c in label_to_req]
+                   or [s[1] for s in used[:4]])
+        ev_lines += _cause_hints(df, ev, col_lookup, temp_limits)
+        if not full:
+            notes.append(f"Note: per-core usage sensors on {k} of {n} cores - "
+                         "mild (minor) tier not assessed")
+        if weak:
+            notes.append(f"Note: severity capped at WARNING - only {k} of {n} "
+                         "cores have usage sensors")
+        return _Result(cluster, 'major', "WARNING" if weak else "CRITICAL",
+                       float(avg_r), weak, head + ev_lines + notes, ev_cols), None, True
+
+    ev = _ev_mask(minor, minor_event, w)
+    avg_r = mean_minor[ev].mean()
+    ev_lines = [f"Average eff/req ratio under load: {avg_r:.2f} (target >0.90)",
+                f"Affected samples: {int(ev.sum())}"]
+    if has_sys:
+        ev_lines.append(f"Peak system load during event: {sys_load[ev].max():.1f}%")
+    norm = _load_normalised(df, used, usage_fn, cfg)
+    nv = float(norm[ev].mean()) if norm is not None and norm[ev].notna().any() else None
+    sev = "WARNING"
+    if nv is not None:
+        if nv >= cfg.normalised_downgrade:
+            sev = "INFO"
+            ev_lines.append(f"Load-normalised ratio: {nv:.2f} (>= "
+                            f"{cfg.normalised_downgrade:.2f}) - dip consistent "
+                            "with partial load, severity downgraded")
+        else:
+            ev_lines.append(f"Load-normalised ratio: {nv:.2f} (1.0 = normal for the load)")
+    return _Result(cluster, 'minor', sev, float(avg_r), False,
+                   head + ev_lines + notes, [s[1] for s in used[:4]]), None, True
+
+def detect_clock_stretching(df, clusters, *, names, describe, add, ratio_fn,
+                            usage_fn, col_lookup, temp_limits, cfg=None):
+    cfg = cfg or StretchConfig()
+    results, skipped, evaluated = [], [], 0
+    for cname, specs in clusters.items():
+        if not specs:
+            continue
+        res, skip, ok = _assess_cluster(df, cname, specs, cfg, ratio_fn,
+                                        usage_fn, col_lookup, temp_limits)
+        evaluated += int(ok)
+        if res is not None:
+            results.append(res)
+        if skip is not None:
+            skipped.append((skip, specs))
+
+    if not results:
+        if skipped and evaluated == 0:
+            first_specs = skipped[0][1]
+            no_eff_only = all(s.get('reason') == 'eff' for s, _ in skipped)
+            lines = []
+            for s, _ in skipped:
+                if s.get('reason') == 'eff':
+                    lines.append(f"{s['cluster']}: {s['n_attempted']} requested-"
+                                 "clock column(s), no effective clock columns")
+                else:
+                    lines.append(f"{s['cluster']}: {s['n']} cores, usage "
+                                 f"sensors on {s['k']}, Total CPU Usage not found")
+            if no_eff_only:
+                desc = ("Clock stretching could not be checked: this log has "
+                        "per-core requested clocks but no per-core effective "
+                        "clock sensors, so the delivered performance cannot be "
+                        "compared against the request. ADVICE: log the "
+                        "'Core N T0/T1 Effective Clock' (or 'P-core/E-core "
+                        "Effective Clock') sensors in HWiNFO to enable this check.")
+            else:
+                desc = ("Clock stretching could not be checked: this log has no CPU "
+                        "load sensors (no per-core usage and no Total CPU Usage), so "
+                        "a low effective clock cannot be told apart "
+                        "from normal power management. ADVICE: log the per-core usage "
+                        "sensors or 'Total CPU Usage' in HWiNFO to enable this check.")
+            add(NOT_ASSESSED_NAME, "INFO", desc, lines,
+                cols=[sp[1] for sp in first_specs][:4])
+        return
+
+    majors = [r for r in results if r.tier == 'major']
+    pool = majors or results
+    worst = min(pool, key=lambda r: r.avg_ratio)
+    evidence = list(worst.evidence)
+    for r in results:
+        if r is not worst:
+            evidence.append(f"Also affected - {r.cluster}: {r.tier} stretching, "
+                            f"avg ratio {r.avg_ratio:.2f} ({r.severity})")
+
+    for s, _ in skipped:
+        evidence.append(f"Not assessed - {s['cluster']}: "
+                        + ("no effective clock columns"
+                           if s.get('reason') == 'eff' else "no load sensors"))
+
+    desc = describe(worst.cluster, worst.tier)
+    if worst.tier == 'major':
+        if worst.weak:
+            desc = ("Possible clock stretching (low-confidence: few usage "
+                    "sensors). " + desc)
+        add(names[0], worst.severity, description=desc,
+            evidence=evidence, cols=worst.ev_cols)
+    else:
+        add(names[1], worst.severity, description=desc,
+            evidence=evidence, cols=worst.ev_cols)
+
+INTEL_DESC = {
+    'major': ("Intel {c} are running far below their requested frequency while "
+              "genuinely loaded. Severe thermal or power throttling is causing "
+              "clock stretching - stutters even when FPS looks normal. "
+              "ADVICE: Check CPU temperatures, PL1/PL2 limits and VRM temps."),
+    'minor': ("Intel {c} are running moderately below their requested frequency "
+              "while heavily loaded. Mild clock stretching - may cause "
+              "occasional micro-stutters. ADVICE: Check CPU temperatures and "
+              "BIOS power limits."),
+}
+AMD_DESC = {
+    'major': ("The CPU is consistently running well below its requested frequency "
+              "under load. This means the CPU is not delivering the performance "
+              "it should be. Causes include thermal throttling, power limit "
+              "throttling, or a BIOS/OS scheduling misconfiguration. "
+              "ADVICE: Check CPU temperatures, power limits in BIOS, and whether "
+              "Windows power plan is set to Balanced instead of High Performance."),
+    'minor': ("The CPU is running moderately below its requested frequency while "
+              "heavily loaded. This is often a sign of a soft power or thermal "
+              "limit being reached. Performance impact is mild but consistent. "
+              "ADVICE: Monitor CPU temperatures and check BIOS power limits. "
+              "If on a laptop, try a cooling pad or update the BIOS."),
+}
+
 
 GROUPS_FILE         = "groups.json"
 SENSOR_ALIASES_FILE = "sensor_aliases.json"
@@ -553,6 +1113,1040 @@ def save_theme(theme: dict):
     except Exception:
         pass
 
+CUSTOM_SIG_FORMAT = 2
+
+_RATE_OPS = ('rate_rise', 'rate_fall', 'rate_change')
+
+
+def resolve_sensor_token(df, token):
+
+    token = str(token or '').strip()
+    if token in df.columns:
+        return token, 'exact', [token]
+    if len(token) < 2:
+        return None, 'missing', []
+    kt = _fix_mojibake(token).upper()
+    exact_hits = [str(c) for c in df.columns
+                  if _fix_mojibake(c).upper() == kt]
+    if len(exact_hits) == 1:
+        return exact_hits[0], 'exact', exact_hits
+    if len(exact_hits) > 1:
+        return None, 'ambiguous', exact_hits[:12]
+    hits = [str(c) for c in df.columns if kt in _fix_mojibake(c).upper()]
+    if len(hits) == 1:
+        return hits[0], 'unique', hits
+    if hits:
+        return None, 'ambiguous', hits[:12]
+    return None, 'missing', []
+
+
+def estimate_poll_seconds(df, hints=()):
+
+    for h in hints:
+        if isinstance(h, (int, float)) and not isinstance(h, bool) \
+                and 0.05 <= float(h) <= 3600.0:
+            return float(h)
+    tc = next((c for c in ('Time', 'time') if c in df.columns), None)
+    if tc is None:
+        tc = next((c for c in df.columns if str(c).lower() == 'time'), None)
+    if tc is not None and len(df) > 1:
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', UserWarning)
+                t = pd.to_datetime(df[tc], errors='coerce')
+            d = t.diff().dt.total_seconds().median()
+            if pd.notna(d) and 0.05 <= float(d) <= 3600.0:
+                return float(d)
+        except Exception:
+            pass
+    return 1.0
+
+
+def _clamp_int(val, lo, hi, default):
+    try:
+        v = int(float(val))
+    except (TypeError, ValueError):
+        return default
+    return max(lo, min(hi, v))
+
+
+def _cond_series(df, cond, dt_sec):
+
+    s = pd.to_numeric(df[cond['_col']], errors='coerce')
+    mode = cond.get('mode', 'instant')
+    window = _clamp_int(cond.get('window'), 1, 5000, 1)
+    if mode == 'avg' and window > 1:
+        return s.rolling(window, min_periods=max(1, window // 2)).mean()
+    if mode == 'rate':
+        raw = s.diff() / max(dt_sec, 1e-6)
+        if window > 1:
+            return raw.rolling(window, min_periods=max(1, window // 2)).mean()
+        return raw
+    return s
+
+
+def _cond_violation_mask(df, cond, dt_sec):
+
+    s = _cond_series(df, cond, dt_sec)
+    op = cond.get('op', 'above')
+    mode = cond.get('mode', 'instant')
+    if mode == 'rate' and op in ('above', 'below'):
+        op = 'rate_rise' if op == 'above' else 'rate_fall'   # defensive
+    try:
+        val = float(cond.get('value', 0.0))
+    except (TypeError, ValueError):
+        val = 0.0
+    if op == 'below':
+        return s < val
+    if op == 'rate_fall':
+        return s < -abs(val)
+    if op == 'rate_change':
+        return s.abs() > abs(val)
+    if op == 'rate_rise':
+        return s > abs(val)
+    return s > val
+
+
+def _spans_from_mask(mask):
+
+    spans, start = [], None
+    vals = mask.values if hasattr(mask, 'values') else mask
+    for i, v in enumerate(vals):
+        if v and start is None:
+            start = i
+        elif not v and start is not None:
+            spans.append((start, i - 1))
+            start = None
+    if start is not None:
+        spans.append((start, len(vals) - 1))
+    return spans
+
+
+def describe_condition(cond):
+
+    mode = cond.get('mode', 'instant')
+    op = cond.get('op', 'above')
+    try:
+        val = float(cond.get('value', 0.0))
+        val_s = f'{val:g}'
+    except (TypeError, ValueError):
+        val_s = str(cond.get('value', '?'))
+    if mode == 'rate':
+        words = {'rate_rise': 'rises faster than',
+                 'rate_fall': 'falls faster than',
+                 'rate_change': 'changes faster than'}
+        head = (f"{cond.get('sensor', '?')} "
+                f"{words.get(op, 'changes faster than')} {val_s} per second")
+        win = _clamp_int(cond.get('window'), 1, 5000, 1)
+        if win > 1:
+            head += f" (smoothed over {win})"
+    elif mode == 'avg':
+        head = (f"{cond.get('sensor', '?')} "
+                f"{_clamp_int(cond.get('window'), 1, 5000, 10)}-reading average is "
+                f"{'below' if op == 'below' else 'above'} {val_s}")
+    else:
+        head = (f"{cond.get('sensor', '?')} is "
+                f"{'below' if op == 'below' else 'above'} {val_s}")
+    sus = _clamp_int(cond.get('sustain'), 1, 5000, 1)
+    if sus > 1:
+        head += f", {sus} readings in a row"
+    return head
+
+
+def describe_signature(sig):
+
+    conds = sig.get('conditions') or []
+    joins = 'ALL' if sig.get('logic', 'all') == 'all' else 'ANY'
+    parts = [describe_condition(c) for c in conds]
+    body = f"{joins} of: " + "; ".join(parts) if parts else "(no conditions)"
+    gates = sig.get('gates') or []
+    if gates:
+        body += (" - only when " +
+                 " and ".join(
+                     f"{g.get('sensor', '?')} is "
+                     f"{'below' if g.get('op') == 'below' else 'above'} "
+                     f"{g.get('value', '?')}" for g in gates))
+    return body
+
+
+def evaluate_custom_signature(df, sig, hints=()):
+
+    out = {'fired': False,
+           'severity': str(sig.get('severity', 'WARNING')),
+           'evidence': [], 'mask': None, 'cols': [], 'notes': [],
+           'spans': [], 'n_event': 0, 'per_condition': []}
+    conds = sig.get('conditions') or []
+    if sig.get('advanced') or not conds:
+        out['notes'].append('advanced or empty signature - not evaluated here')
+        return out
+    if df is None or len(df) == 0:
+        out['notes'].append('no log loaded')
+        return out
+
+    dt_sec = estimate_poll_seconds(df, hints)
+    time_col = next((c for c in ('Time', 'time') if c in df.columns), None)
+
+    def t_of(i):
+        if time_col is not None:
+            try:
+                v = str(df[time_col].iloc[i]).split('.')[0]
+                if v:
+                    return v
+            except Exception:
+                pass
+        return f"#{i}"
+
+    gate_mask = pd.Series(True, index=df.index)
+    for g in sig.get('gates') or []:
+        col, status, cands = resolve_sensor_token(df, g.get('sensor'))
+        if col is None:
+            if status == 'ambiguous':
+                out['notes'].append(
+                    f"gate sensor '{g.get('sensor')}' is ambiguous "
+                    f"({len(cands)} columns match)")
+            else:
+                out['notes'].append(
+                    f"gate sensor '{g.get('sensor')}' not found in this log")
+            return out
+        try:
+            gs = pd.to_numeric(df[col], errors='coerce')
+            gval = float(g.get('value', 0.0))
+        except (TypeError, ValueError):
+            out['notes'].append(f"gate '{g.get('sensor')}': bad value")
+            return out
+        gm = (gs < gval) if g.get('op') == 'below' else (gs > gval)
+        gate_mask = gate_mask & gm.fillna(False)
+
+    per, event_masks = [], []
+    for c in conds:
+        col, status, cands = resolve_sensor_token(df, c.get('sensor'))
+        entry = {'label': describe_condition(c), 'sensor': c.get('sensor'),
+                 'status': status, 'col': col, 'n_bad': 0, 'longest': 0}
+        per.append(entry)
+        if col is None:
+            if status == 'ambiguous':
+                out['notes'].append(
+                    f"'{c.get('sensor')}' matches {len(cands)} columns "
+                    f"({', '.join(cands[:3])}, ...) - pick an exact name")
+            else:
+                out['notes'].append(f"'{c.get('sensor')}' not in this log")
+            event_masks.append(None)
+            continue
+        try:
+            cval = float(c.get('value'))
+        except (TypeError, ValueError):
+            out['notes'].append(f"'{c.get('sensor')}': needs a numeric value")
+            event_masks.append(None)
+            continue
+        cc = dict(c)
+        cc['_col'] = col
+        cc['value'] = cval
+        try:
+            viol = _cond_violation_mask(df, cc, dt_sec).fillna(False) & gate_mask
+        except Exception as e:
+            out['notes'].append(f"'{col}': {type(e).__name__}")
+            event_masks.append(None)
+            continue
+        sus = _clamp_int(c.get('sustain'), 1, 5000, 1)
+        if sus > 1:
+            event = pd.Series(False, index=viol.index)
+            for s0, e0 in _spans_from_mask(viol):
+                if e0 - s0 + 1 >= sus:
+                    event.iloc[s0:e0 + 1] = True
+        else:
+            event = viol
+        entry['n_bad'] = int(viol.sum())
+        entry['longest'] = max((e - s + 1 for s, e in _spans_from_mask(viol)),
+                               default=0)
+        event_masks.append(event)
+        out['cols'].append(col)
+
+    out['per_condition'] = per
+    resolved = [m for m in event_masks if m is not None]
+    n_all = len(event_masks)
+    logic = 'any' if sig.get('logic') == 'any' else 'all'
+
+    if logic == 'all':
+
+        if len(resolved) != n_all or not resolved:
+            return out
+        combined = resolved[0]
+        for m in resolved[1:]:
+            combined = combined & m
+        out['fired'] = bool(combined.any())
+    else:
+        if not resolved:
+            return out
+        combined = resolved[0]
+        for m in resolved[1:]:
+            combined = combined | m
+        out['fired'] = bool(combined.any())
+
+    if out['fired']:
+        out['mask'] = combined
+        out['spans'] = _spans_from_mask(combined)
+        out['n_event'] = int(combined.sum())
+        first_s, first_e = out['spans'][0]
+        last_s, last_e = out['spans'][-1]
+        span_txt = f"first {t_of(first_s)} -> {t_of(first_e)}"
+        if len(out['spans']) > 1:
+            span_txt += (f" ({len(out['spans'])} events, "
+                         f"last {t_of(last_s)} -> {t_of(last_e)})")
+        out['evidence'].append(
+            f"Sustained event: {out['n_event']} readings, {span_txt}")
+        for entry in per:
+            if entry['col'] is None:
+                continue
+            out['evidence'].append(
+                f"{entry['col']}: {entry['n_bad']} violating readings, "
+                f"longest run {entry['longest']}")
+        if sig.get('gates'):
+            try:
+                g_frac = float(gate_mask.mean())
+                out['evidence'].append(
+                    f"Gate condition active on {g_frac:.0%} of the log")
+            except Exception:
+                pass
+    return out
+
+def _fix_mojibake(s):
+
+    try:
+        return str(s).encode('latin-1').decode('utf-8')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return str(s)
+
+
+def advanced_error_line(e):
+
+    if isinstance(e, SyntaxError):
+        return f"line {e.lineno}" if e.lineno else ''
+    tb = getattr(e, '__traceback__', None)
+    line = None
+    while tb is not None:
+        if tb.tb_frame.f_code.co_filename == '<string>':
+            line = tb.tb_lineno
+        tb = tb.tb_next
+    return f"line {line}" if line else ''
+
+
+def build_advanced_env(df, add_func, hints=()):
+
+    dt_sec = estimate_poll_seconds(df, hints) if df is not None else 1.0
+    time_col = None
+    if df is not None:
+        time_col = next((c for c in ('Time', 'time') if c in df.columns),
+                        None)
+
+    def find_col(token):
+        col, status, cands = resolve_sensor_token(df, token)
+        if status == 'ambiguous':
+            raise ValueError(
+                f"{token!r} matches {len(cands)} sensors: "
+                + ', '.join(repr(c) for c in cands[:6])
+                + " - use the full name (Insert sensor helps)")
+        return col
+
+    def find_first(*tokens):
+        for t in tokens:
+            try:
+                col, status, _c = resolve_sensor_token(df, t)
+            except Exception:
+                continue
+            if col is not None and status in ('exact', 'unique'):
+                return col
+        return None
+
+    def find_cols(*keywords, excl=()):
+        kws = [_fix_mojibake(k).upper() for k in keywords
+               if str(k).strip()]
+        skip = [_fix_mojibake(e).upper() for e in excl]
+        out = []
+        if not kws or df is None:
+            return out
+        for c in df.columns:
+            cu = _fix_mojibake(c).upper()
+            if all(k in cu for k in kws) and not any(e in cu for e in skip):
+                out.append(str(c))
+        return out
+
+    def num(col_or_token):
+        name = col_or_token
+        if df is None or name not in df.columns:
+            name = find_col(col_or_token)
+        if name is None:
+            raise KeyError(f"no sensor matches {col_or_token!r} - use "
+                           "Insert sensor to pick the exact name")
+        return pd.to_numeric(df[name], errors='coerce')
+
+    def persist(mask, n=3):
+        m = mask if hasattr(mask, 'fillna') else pd.Series(mask)
+        m = m.fillna(False).astype(float)
+        n = max(1, int(n))
+        return m.rolling(n, min_periods=n).sum() >= n
+
+    def events(mask):
+        m = mask if hasattr(mask, 'fillna') else pd.Series(mask)
+        vals = list(m.fillna(False).astype(bool))
+        out, start = [], None
+        for i, v in enumerate(vals):
+            if v and start is None:
+                start = i
+            elif not v and start is not None:
+                out.append((start, i - 1))
+                start = None
+        if start is not None:
+            out.append((start, len(vals) - 1))
+        return out
+
+    def time_str(i):
+        if time_col is not None:
+            try:
+                v = str(df[time_col].iloc[int(i)]).split('.')[0]
+                if v:
+                    return v
+            except Exception:
+                pass
+        return f"#{i}"
+
+    def clean(name):
+        return _fix_mojibake(name)
+
+    return {'df': df, 'pd': pd, 'np': np, 'add': add_func,
+            'find_col': find_col, 'find_first': find_first,
+            'find_cols': find_cols, 'num': num, 'persist': persist,
+            'events': events, 'poll_seconds': dt_sec,
+            'time_str': time_str, 'clean': clean}
+
+
+import textwrap as _tw
+
+
+def _rc(text):
+    """Dedent a recipe code block (recipes are authored indented)."""
+    return _tw.dedent(text).strip('\n')
+
+ADV_STARTER = _rc('''
+    # Runs on the loaded log. Available: df, pd, np, add(...) plus the
+    # helpers find_col / find_first / find_cols / num / persist /
+    # events / poll_seconds / time_str / clean - see the Reference.
+
+    col = find_first("CPU [°C]", "CPU Package [°C]",
+                     "CPU (Tctl/Tdie) [°C]")   # AMD / Intel names
+    if col is not None:          # sensor missing in this log -> silent
+        temp = num(col)          # always num() - raw columns can hold text
+        hot = persist(temp > 90, 8)   # 8 readings in a row above 90
+        if hot.any():
+            evs = events(hot)
+            add(name="My Signature", severity="WARNING",
+                description="CPU temperature stayed above 90 for a "
+                            "sustained period.",
+                evidence=[f"Peak: {temp.max():.1f} on {clean(col)}",
+                          f"{int(hot.sum())} readings in {len(evs)} event(s)",
+                          f"First event at {time_str(evs[0][0])}"],
+                advice="Check cooler mount, fan curve and airflow.",
+                mask=hot, cols=[col])
+''')
+
+ADV_RECIPES = [
+    {
+        'id': 'cpu_thermal', 'title': 'CPU thermal throttling (sustained)',
+        'builder': True,
+        'loads': "AMD ('CPU [°C]'), Intel ('CPU Package [°C]') logs",
+        'blurb': "Temperature held above the limit long enough to be a "
+                 "real throttle, not a 1-sample spike.",
+        'simple': {
+            'name': 'CPU Thermal Throttle', 'severity': 'CRITICAL',
+            'logic': 'all',
+            'conditions': [{'sensor': 'CPU [°C]', 'op': 'above',
+                            'value': 90, 'mode': 'avg', 'window': 5,
+                            'sustain': 8}],
+            'gates': [],
+            'description': 'CPU temperature stayed above the limit for '
+                           'a sustained period.',
+            'advice': 'Check cooler mount, fan curve and case airflow.'},
+        'code': _rc('''
+            # CPU thermal throttling - hot enough, long enough to be real.
+            col = find_first("CPU [°C]", "CPU Package [°C]",
+                             "CPU (Tctl/Tdie) [°C]", "CPU (PECI) [°C]")
+            if col is not None:
+                temp = num(col)
+                LIMIT = 90                       # °C - tune for your CPU
+                hot = persist(temp > LIMIT, 8)   # 8 readings in a row
+                if hot.any():
+                    evs = events(hot)
+                    add(name="CPU Thermal Throttle (custom)",
+                        severity="CRITICAL",
+                        description="CPU temperature stayed above "
+                                    f"{LIMIT} °C for a sustained period.",
+                        evidence=[f"Peak: {temp.max():.1f} °C on "
+                                  f"{clean(col)}",
+                                  f"{int(hot.sum())} readings in "
+                                  f"{len(evs)} event(s)",
+                                  f"First event at {time_str(evs[0][0])}"],
+                        advice="Check cooler mount, fan curve and "
+                               "case airflow.",
+                        mask=hot, cols=[col])
+        '''),
+    },
+    {
+        'id': 'fan_stall', 'title': 'CPU fan stall while hot',
+        'builder': True,
+        'loads': "logs with a CPU fan RPM sensor",
+        'blurb': "Fan reads near zero while the CPU is hot - fan "
+                 "failure, not a quiet fan curve.",
+        'simple': {
+            'name': 'Fan Stall While Hot', 'severity': 'CRITICAL',
+            'logic': 'all',
+            'conditions': [{'sensor': 'CPU Fan [RPM]', 'op': 'below',
+                            'value': 400, 'mode': 'instant', 'window': 1,
+                            'sustain': 4}],
+            'gates': [{'sensor': 'CPU [°C]', 'op': 'above',
+                       'value': 75}],
+            'description': 'CPU fan reads near zero while the CPU is '
+                           'hot.',
+            'advice': 'Stop stressing the CPU; check fan cable and '
+                      'header.'},
+        'code': _rc('''
+            # Fan stall while hot - near-zero RPM while the CPU is hot.
+            fan_col = find_first("CPU Fan [RPM]", "CPUFANIN0 [RPM]",
+                                 "CPU [RPM]")
+            temp_col = find_first("CPU [°C]", "CPU Package [°C]",
+                                  "CPU (Tctl/Tdie) [°C]")
+            if fan_col is not None and temp_col is not None:
+                fan, temp = num(fan_col), num(temp_col)
+                stalled = persist(fan < 400, 4)
+                both = stalled & (temp > 75)
+                if both.any():
+                    add(name="Fan Stall While Hot (custom)",
+                        severity="CRITICAL",
+                        description="CPU fan reads near zero while the "
+                                    "CPU is hot - fan failure or a stuck "
+                                    "cable.",
+                        evidence=[f"{clean(fan_col)}: min {fan.min():.0f} "
+                                  f"RPM while {clean(temp_col)} > 75 °C",
+                                  f"{int(both.sum())} affected readings"],
+                        advice="Stop stressing the CPU; check the fan "
+                               "cable and header.",
+                        mask=both, cols=[fan_col, temp_col])
+        '''),
+    },
+    {
+        'id': 'ppt_clamp', 'title': 'Power-limit clamp (PPT / PL)',
+        'builder': True,
+        'loads': "AMD PPT logs, Intel Package Power logs",
+        'blurb': "CPU power pinned at its ceiling for a long stretch - "
+                 "performance capped by the power budget.",
+        'simple': {
+            'name': 'Power Limit Clamp', 'severity': 'WARNING',
+            'logic': 'all',
+            'conditions': [{'sensor': 'CPU PPT [W]', 'op': 'above',
+                            'value': 75, 'mode': 'instant', 'window': 1,
+                            'sustain': 15}],
+            'gates': [],
+            'description': 'CPU power sat at its limit - performance is '
+                           'capped by the power budget.',
+            'advice': 'Expected at stock under all-core load; raise the '
+                      'limit only with adequate cooling.'},
+        'code': _rc('''
+            # Power-limit clamp - CPU sits at its power ceiling.
+            col = find_first("CPU PPT [W]", "CPU Package Power [W]")
+            if col is not None:
+                LIMIT = 76.0   # W - set to YOUR limit (7800X3D: 77...)
+                pwr = num(col)
+                pinned = persist(pwr >= 0.98 * LIMIT, 15)
+                if pinned.any():
+                    add(name="Power Limit Clamp (custom)",
+                        severity="WARNING",
+                        description="CPU power sat at its limit - "
+                                    "performance is capped by the power "
+                                    "budget, not by temperature.",
+                        evidence=[f"{clean(col)}: {pwr.max():.1f} W peak "
+                                  f"(limit {LIMIT:.0f} W)",
+                                  f"at >=98% of the limit for "
+                                  f"{int(pinned.sum())} readings"],
+                        advice="Expected at stock under heavy all-core "
+                               "load. Raise the limit only with adequate "
+                               "cooling.",
+                        mask=pinned, cols=[col])
+        '''),
+    },
+    {
+        'id': 'vrm_hot', 'title': 'VRM / MOSFET overheating',
+        'builder': True,
+        'loads': "boards exposing a VRM temperature sensor",
+        'blurb': "The power delivery chips around the socket get too "
+                 "hot - VRM throttling and instability follow.",
+        'simple': {
+            'name': 'VRM Overheating', 'severity': 'WARNING',
+            'logic': 'all',
+            'conditions': [{'sensor': 'VRM [°C]', 'op': 'above',
+                            'value': 100, 'mode': 'instant', 'window': 1,
+                            'sustain': 6}],
+            'gates': [],
+            'description': 'Motherboard VRM temperature exceeded the '
+                           'limit.',
+            'advice': 'Improve airflow over the VRM heatsink.'},
+        'code': _rc('''
+            # VRM (power delivery) overheating.
+            col = find_first("CPU VDDCR_VDD VRM (SVI3 TFN) [°C]",
+                             "VRM [°C]", "MOSFET [°C]", "VRM")
+            if col is not None:
+                vrm = num(col)
+                hot = persist(vrm > 100, 6)       # °C
+                if hot.any():
+                    add(name="VRM Overheating (custom)", severity="WARNING",
+                        description="Motherboard VRM (power delivery) "
+                                    "temperature exceeded 100 °C.",
+                        evidence=[f"{clean(col)}: peak {vrm.max():.1f} °C",
+                                  f"{int(hot.sum())} readings above the "
+                                  f"limit"],
+                        advice="Improve airflow over the VRM heatsink; "
+                               "check cooler orientation and chassis "
+                               "fans.",
+                        mask=hot, cols=[col])
+        '''),
+    },
+    {
+        'id': 'gpu_delta', 'title': 'GPU hotspot delta (paste / mounting)',
+        'builder': False,
+        'loads': "NVIDIA/AMD logs with hotspot temperature",
+        'blurb': "A growing gap between hotspot and edge temperature "
+                 "means dried-out paste or poor die contact.",
+        'simple': None,
+        'code': _rc('''
+            # GPU hotspot delta - gap between hottest spot and edge.
+            edge = find_first("GPU Temperature [°C]", "GPU [°C]")
+            hot_col = find_first("GPU Hot Spot Temperature [°C]",
+                                 "GPU Hot Spot [°C]")
+            if edge is not None and hot_col is not None:
+                delta = num(hot_col) - num(edge)
+                bad = persist(delta > 25, 6)      # gap above 25 °C
+                if bad.any():
+                    add(name="GPU Hotspot Delta (custom)",
+                        severity="WARNING",
+                        description="GPU hotspot runs far above the edge "
+                                    "temperature - typical of dried-out "
+                                    "paste or poor cooler contact.",
+                        evidence=[f"Max gap: {delta.max():.1f} °C "
+                                  f"(hotspot {num(hot_col).max():.1f}, "
+                                  f"edge {num(edge).max():.1f})",
+                                  f"{int(bad.sum())} readings above a "
+                                  f"25 °C gap"],
+                        advice="If the gap keeps growing over the months, "
+                               "repaste the GPU.",
+                        mask=bad, cols=[edge, hot_col])
+        '''),
+    },
+    {
+        'id': 'v12_droop', 'title': '+12V droop under GPU load',
+        'builder': False,
+        'loads': "mainboard +12V monitoring + GPU load sensor",
+        'blurb': "The 12V rail sags while the GPU draws hard - PSU or "
+                 "cabling problem (crashes under load).",
+        'simple': None,
+        'code': _rc('''
+            # +12V droop under GPU load.
+            rail = find_col("+12V [V]")
+            load_col = find_first("GPU Core Load [%]", "GPU D3D Usage [%]",
+                                  "GPU Usage [%]")
+            if rail is not None and load_col is not None:
+                v, load = num(rail), num(load_col)
+                sag = persist((v < 11.4) & (load > 70), 5)
+                if sag.any():
+                    evs = events(sag)
+                    add(name="12V Droop Under GPU Load (custom)",
+                        severity="WARNING",
+                        description="+12V rail sags while the GPU is "
+                                    "working hard.",
+                        evidence=[f"{clean(rail)}: min {v.min():.2f} V "
+                                  f"(threshold 11.40 V)",
+                                  f"{int(sag.sum())} readings, first at "
+                                  f"{time_str(evs[0][0])}"],
+                        advice="Use one dedicated PCIe cable per "
+                               "connector; if it persists, test with "
+                               "another PSU.",
+                        mask=sag, cols=[rail])
+        '''),
+    },
+    {
+        'id': 'temp_rate', 'title': 'Sudden temperature rise (pump failure)',
+        'builder': False,
+        'loads': "any temperature sensor (CPU tried first)",
+        'blurb': "Several °C per SECOND means heat stopped being moved: "
+                 "pump failure or fan stop - shut down territory.",
+        'simple': None,
+        'code': _rc('''
+            # Sudden temperature rise - degrees per SECOND.
+            col = find_first("CPU [°C]", "CPU Package [°C]",
+                             "CPU (Tctl/Tdie) [°C]")
+            if col is not None:
+                temp = num(col)
+                rate = temp.diff() / poll_seconds   # °C per second
+                bad = persist(rate > 3, 3)
+                if bad.any():
+                    evs = events(bad)
+                    add(name="Sudden Temperature Rise (custom)",
+                        severity="CRITICAL",
+                        description="Temperature climbed several degrees "
+                                    "per second - heat is no longer "
+                                    "being moved away.",
+                        evidence=[f"{clean(col)} rose {rate.max():.1f} "
+                                  f"°C/s at worst",
+                                  f"{len(evs)} rise event(s), first at "
+                                  f"{time_str(evs[0][0])}"],
+                        advice="Check pump RPM / fan spin immediately; "
+                               "shut down if temperatures keep climbing.",
+                        mask=bad, cols=[col])
+        '''),
+    },
+    {
+        'id': 'core_imbalance', 'title': 'One core much hotter than siblings',
+        'builder': False,
+        'loads': "logs with per-core temperatures",
+        'blurb': "One core far above the median core - uneven cooler "
+                 "mounting pressure, dust, or paste pump-out.",
+        'simple': None,
+        'code': _rc('''
+            # Core temperature imbalance - one core vs the median core.
+            cores = find_cols("Core", "°C",
+                              excl=("avg", "Max", "Distance", "Package",
+                                    "Hotspot", "SOC", "IOD", "L3", "GPU",
+                                    "Drive", "VRM", "PECI", "Tctl",
+                                    "Tdie", "APU", "Socket", "Auxiliary",
+                                    "CPU Core"))
+            if len(cores) >= 4:
+                frame = pd.DataFrame({c: num(c) for c in cores})
+                spread = frame.max(axis=1) - frame.median(axis=1)
+                bad = persist(spread > 15, 10)     # °C above the median
+                if bad.any():
+                    hottest = frame[bad].idxmax(axis=1).mode().iloc[0]
+                    add(name="Core Temperature Imbalance (custom)",
+                        severity="WARNING",
+                        description="One CPU core runs far hotter than "
+                                    "the rest.",
+                        evidence=[f"{clean(hottest)}: up to "
+                                  f"{spread.max():.1f} °C above the "
+                                  f"core median",
+                                  f"{int(bad.sum())} affected readings"],
+                        advice="Re-mount the cooler (uneven pressure) "
+                               "and check for dust build-up.",
+                        mask=bad, cols=[hottest])
+        '''),
+    },
+    {
+        'id': 'ssd_hot', 'title': 'SSD thermal throttle while busy',
+        'builder': False,
+        'loads': "logs with drive temperature + drive activity",
+        'blurb': "SSD overheats while heavily active - it throttles and "
+                 "games hitch on asset loads.",
+        'simple': None,
+        'code': _rc('''
+            # SSD thermal throttling while the drive is busy.
+            temp_col = find_first("Drive Temperature [°C]")
+            busy_col = find_first("Drive Activity [%]",
+                                  "Total Disk Activity [%]",
+                                  "Disk Activity [%]")
+            if temp_col is not None and busy_col is not None:
+                hot = num(temp_col) > 70
+                bad = persist(hot & (num(busy_col) > 80), 6)
+                if bad.any():
+                    add(name="SSD Thermal Throttle (custom)",
+                        severity="WARNING",
+                        description="SSD overheats while heavily active - "
+                                    "it will throttle and cause loading "
+                                    "hitches.",
+                        evidence=[f"{clean(temp_col)}: peak "
+                                  f"{num(temp_col).max():.1f} °C",
+                                  f"{int(bad.sum())} readings hot AND "
+                                  f"busy"],
+                        advice="Add a motherboard M.2 heatsink; keep the "
+                               "drive away from GPU exhaust.",
+                        mask=bad, cols=[temp_col])
+        '''),
+    },
+    {
+        'id': 'gpu_fan_stop', 'title': 'GPU fan stopped under load',
+        'builder': False,
+        'loads': "GPU fan RPM + GPU load sensors",
+        'blurb': "Zero-RPM is fine when idle - not fine while the GPU "
+                 "is at 60%+ load.",
+        'simple': None,
+        'code': _rc('''
+            # GPU fan stopped under load (zero-RPM mode is for idle).
+            fan = find_first("GPU Fan1 [RPM]")
+            load_col = find_first("GPU Core Load [%]", "GPU D3D Usage [%]")
+            if fan is not None and load_col is not None:
+                bad = persist((num(fan) < 200) & (num(load_col) > 60), 6)
+                if bad.any():
+                    add(name="GPU Fan Stopped Under Load (custom)",
+                        severity="CRITICAL",
+                        description="GPU fan reads near zero while the "
+                                    "GPU is working hard.",
+                        evidence=[f"{clean(fan)}: min {num(fan).min():.0f} "
+                                  f"RPM under load",
+                                  f"{int(bad.sum())} affected readings"],
+                        advice="Check for a stuck fan blade or a cable "
+                               "blocking the fan; clean dust.",
+                        mask=bad, cols=[fan])
+        '''),
+    },
+]
+
+PY_KW = frozenset((
+    'and', 'as', 'assert', 'async', 'await', 'break', 'class',
+    'continue', 'def', 'del', 'elif', 'else', 'except', 'finally',
+    'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda',
+    'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with',
+    'yield', 'True', 'False', 'None',
+))
+
+PY_CONTRACT = frozenset((
+    'df', 'pd', 'np', 'add', 'find_col', 'find_first', 'find_cols',
+    'num', 'persist', 'events', 'poll_seconds', 'time_str', 'clean',
+))
+
+_PY_TOKEN_RE = re.compile(
+    r'(?P<comment>#[^\n]*)'
+    r'|(?P<tstr>"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\')'
+    r'|(?P<str>"[^"\n]*"|\'[^\'\n]*\')'
+    r'|(?P<num>\b\d+(?:\.\d+)?\b)'
+    r'|(?P<word>[A-Za-z_]\w*)')
+
+_PY_TAG_COLORS = {
+    'pycom': '#7d8590',
+    'pystr': '#a5d6a7',
+    'pynum': '#f0a45d',
+    'pykw': '#ff7b93',
+    'pycon': '#7fd1ff',
+    'pyfn': '#e8ecf4',
+}
+
+
+def py_configure_tags(text_widget):
+
+    for tag, color in _PY_TAG_COLORS.items():
+        text_widget.tag_configure(tag, foreground=color)
+
+
+def py_highlight(text_widget):
+
+    for t in _PY_TAG_COLORS:
+        text_widget.tag_remove(t, '1.0', tk.END)
+    src = text_widget.get('1.0', 'end-1c')
+    pos_of = {}
+    for m in _PY_TOKEN_RE.finditer(src):
+        kind = m.lastgroup
+        start = m.start()
+        if start not in pos_of:
+            nl = src.rfind('\n', 0, start)
+            pos_of[start] = (src.count('\n', 0, start) + 1,
+                             start - (nl + 1))
+        line, col = pos_of[start]
+        a = f'{line}.{col}'
+        n = m.end() - start
+        if kind == 'word':
+            w = m.group('word')
+            if w in PY_KW:
+                text_widget.tag_add('pykw', a, f'{a}+{n}c')
+            elif w in PY_CONTRACT:
+                text_widget.tag_add('pycon', a, f'{a}+{n}c')
+            else:
+                nxt = src[m.end():m.end() + 3].lstrip()
+                if nxt.startswith('('):
+                    text_widget.tag_add('pyfn', a, f'{a}+{n}c')
+        elif kind == 'comment':
+            text_widget.tag_add('pycom', a, f'{a}+{n}c')
+        elif kind in ('tstr', 'str'):
+            text_widget.tag_add('pystr', a, f'{a}+{n}c')
+        elif kind == 'num':
+            text_widget.tag_add('pynum', a, f'{a}+{n}c')
+
+
+def strip_marked_text(text):
+
+    out = []
+    for line in text.split('\n'):
+        if line.startswith('@H '):
+            out.append(line[3:])
+        elif line[:3] in ('@C ', '@B ', '@W ', '@N '):
+            out.append('  ' + line[3:])
+        else:
+            out.append(line)
+    return '\n'.join(out)
+
+
+def build_cookbook_topics():
+    topics = [
+        {'section': 'START HERE'},
+        {'id': 'quick', 'title': 'Quick start', 'text': """@H Quick start
+An advanced signature is a small Python program that runs every time a log is (re)analyzed, with the loaded log available as df.
+
+@H What your code gets
+@B df - the loaded log: one row per reading, one column per HWiNFO sensor
+@B pd / np - pandas and numpy
+@B add(...) - report a finding, exactly like the built-in signatures
+@B find_col / find_first / find_cols - safe sensor lookup that never guesses
+@B num - numeric readings for a sensor (handles text like '1,234')
+@B persist / events - require problems to SUSTAIN, then measure them
+@B poll_seconds / time_str / clean - rate math, timestamps, display names
+
+@H The three golden rules
+@W 1. Look sensors up with find_first(...) - never a df["name I typed from memory"]. A missing sensor returns None and the signature stays silent; an ambiguous name raises with the candidate list instead of silently watching the wrong column.
+@W 2. Always read values with num(col) - raw columns can hold text ('1,234', 'Yes'), and text in a comparison silently poisons the whole mask.
+@W 3. Wrap conditions in persist(mask, n) - one weird reading is a glitch; n in a row is a problem.
+
+@H A complete signature
+@C col = find_first("CPU [°C]", "CPU Package [°C]")
+@C if col is not None:
+@C     temp = num(col)
+@C     hot = persist(temp > 90, 8)
+@C     if hot.any():
+@C         add(name="CPU hot", severity="WARNING",
+@C             description="CPU stayed above 90 °C for a while.",
+@C             evidence=[f"peak {temp.max():.0f} °C",
+@C                       f"{int(hot.sum())} readings affected"],
+@C             advice="Check cooler mount and fan curve.",
+@C             mask=hot, cols=[col])
+
+@N Press Test (Ctrl+T) to run this against the loaded log before saving."""},
+        {'id': 'addref', 'title': 'add() - reporting findings', 'text': """@H add(...) - reporting a finding
+add() is the same function the built-in signatures report through. Call it once per finding, with:
+
+@B name - shown in the findings list. Make it unique and descriptive ("12V droop under GPU load").
+@B severity - "CRITICAL" (damage / crash risk now), "WARNING" (needs attention), "INFO" (observation).
+@B description - one or two plain sentences shown under the name.
+@B evidence - list of short bullet lines with the numbers that matter: peak, count, first occurrence.
+@B advice - optional one-liner explaining what to DO about it.
+@B mask - optional True/False Series with one value per reading: True marks the affected region on the timeline chart. Hand it the same mask you tested with.
+@B cols - optional list of sensor names to highlight on the graph.
+
+@W mask must be one True/False per reading (same length as df); anything else is ignored.
+
+@C add(name="GPU fan stopped", severity="CRITICAL",
+@C     description="GPU fan read near zero under load.",
+@C     evidence=[f"min {fan.min():.0f} RPM at {load.max():.0f}% load"],
+@C     advice="Check for a stuck fan blade.",
+@C     mask=bad, cols=[fan_col])"""},
+        {'id': 'helpers', 'title': 'Helper functions', 'text': """@H Helper functions
+All helpers are bound to the loaded log - call them directly, no imports needed.
+
+@H find_col(token)
+Exact column name, or the only column containing token. Returns None when missing; raises ValueError with the candidate list when several match - never silently picks one.
+@C col = find_col("CPU PPT [W]")
+
+@H find_first(*tokens)
+First token that resolves uniquely - skips missing AND ambiguous candidates and keeps going. The one-liner for AMD vs Intel naming:
+@C col = find_first("CPU [°C]", "CPU Package [°C]")
+
+@H find_cols(*keywords, excl=())
+Every column containing ALL keywords (case-insensitive), minus any containing an exclusion. The safe base for per-core / per-drive loops:
+@C cores = find_cols("Core", "°C", excl=("avg", "Max", "Package"))
+
+@H num(sensor)
+The numeric readings. ALWAYS use it instead of df[...] arithmetic:
+@C temp = num("CPU [°C]")    # or num(col) with a resolved name
+
+@H persist(mask, n)
+True only after n consecutive True readings - the difference between a glitch and a problem:
+@C hot = persist(temp > 90, 8)
+
+@H events(mask)
+[(first, last), ...] row indexes of each separate True run:
+@C evs = events(hot); time_str(evs[0][0])
+
+@H poll_seconds
+Median seconds between readings - divide a diff() by it to get per-second rates.
+
+@H time_str(i)
+Timestamp of row i as text ('#i' when the log has no Time column).
+
+@H clean(name)
+Sensor name with encoding damage repaired - use it in evidence text, never in lookups."""},
+        {'section': 'PATTERNS'},
+        {'id': 'p_lookup', 'title': 'Pattern: safe sensor lookup', 'text': """@H Pattern: safe sensor lookup
+The number-one way custom signatures go wrong is silently watching the WRONG column. The old wizard bound "Core 1" to "Core 1 Usage [%]" and nobody noticed.
+
+@W Never write df["something typed from memory"]. Use the helpers - and when unsure, "Insert sensor" in the editor lists every column in the log with its observed min / median / max.
+
+@H The fallback chain
+Vendors name things differently. Try them in order and stay silent when nothing matches:
+@C temp_col = find_first("CPU [°C]",          # AMD
+@C                      "CPU Package [°C]",   # Intel
+@C                      "CPU (Tctl/Tdie) [°C]")
+@C if temp_col is None:
+@C     ...   # sensor missing in this log -> do nothing
+
+@H Missing vs ambiguous
+@B missing (None) - this log has no such sensor. Stay silent: the signature is for other hardware.
+@B ambiguous (ValueError from find_col) - several sensors match. The error lists them all; pick the exact name ("Insert sensor") or let find_first skip ahead.
+
+@H Degree signs and other symbols
+HWiNFO logs are UTF-8 but some are read with a different code page, so '°' can appear as 'Â°'. Lookups are tolerant: typing 'CPU [°C]' matches both spellings. Use clean(col) when printing a name in evidence."""},
+        {'id': 'p_persist', 'title': 'Pattern: persistence & events', 'text': """@H Pattern: persistence and events
+A single hot reading can be a sensor hiccup. Require several in a row before firing:
+@C bad = persist(temp > 90, 8)     # 8 consecutive readings
+
+@H Why not just .any()?
+.any() fires on one glitch; gamers get false alarms and stop trusting the report. persist() asks "was this bad for a while?"
+
+@H Measuring what fired
+@C evs = events(bad)                     # [(first, last), ...]
+@C f"{len(evs)} event(s), first at {time_str(evs[0][0])}"
+@C f"longest: {max(b - a + 1 for a, b in evs)} readings"
+@C f"{int(bad.sum())} of {len(bad)} readings affected"
+
+@H Combining conditions
+Combine with & (and) / | (or) - parentheses matter:
+@C bad = persist((fan < 400) & (temp > 75), 4)"""},
+        {'id': 'p_rate', 'title': 'Pattern: rate of change', 'text': """@H Pattern: rate of change
+How FAST something changes is often more telling than the value itself. A pump failure shows +3 °C per second long before any absolute limit is hit.
+@C temp = num(col)
+@C rate = temp.diff() / poll_seconds   # change per SECOND
+@C bad = persist(rate > 3, 3)          # sustained fast rise
+
+@B diff() gives per-READING change; dividing by poll_seconds makes it per-second regardless of how often the log polls.
+@B Works both ways: rate < -5 (sudden drops) can catch power cuts or sensor dropouts."""},
+        {'section': 'RECIPES'},
+    ]
+    for r in ADV_RECIPES:
+        lines = ['@H ' + r['title'], r['blurb'], '']
+        lines.append('@N Loads on: ' + r['loads'])
+        if r.get('builder'):
+            lines.append('@N This recipe also has a visual-builder '
+                         'equivalent - "Load into builder" fills the '
+                         'form for you.')
+        else:
+            lines.append('@N Python-only recipe - the visual builder '
+                         'cannot express cross-sensor logic like this.')
+        lines.append('')
+        lines.extend('@C ' + l for l in r['code'].split('\n'))
+        topics.append({'id': 'recipe_' + r['id'], 'title': r['title'],
+                       'text': '\n'.join(lines), 'recipe': r})
+    topics.extend([
+        {'section': 'MORE'},
+        {'id': 'which', 'title': 'Builder or Python?', 'text': """@H Builder or Python?
+The visual builder (Custom Signatures screen) covers one-sensor rules with only-when gates: "CPU above 90 for 8 readings, only while the fan spins". Use it first - you cannot make mistakes there, and it live-tests as you edit.
+
+Graduate to Python when you need:
+@B arithmetic between sensors (hotspot minus edge, deltas, ratios)
+@B loops over many sensors (every core, every drive)
+@B custom statistics (which core is hottest, how often)
+@B anything the builder's condition rows cannot express
+
+@N Both kinds live in the same signature list, both report the same way, and both can be enabled / disabled in Settings."""},
+        {'id': 'gotchas', 'title': 'Gotchas', 'text': """@H Gotchas
+@W Text in columns: logs can contain '1,234' or 'Yes'. Comparing raw columns silently produces garbage - always num().
+@W Don't print(): nobody sees stdout. Put the numbers into evidence lines.
+@W Keep loops bounded: iterate over find_cols(...) results, never over every column hoping for the best.
+@W One add() per finding: three calls make three findings. Build one good evidence list instead.
+@W NaN is your friend: comparisons with NaN are False (which is what you want), and persist() treats NaN as not-True.
+@W Test before saving: Test (Ctrl+T) runs the exact same code path the report runs, on the loaded log.
+@W Severity discipline: CRITICAL = damage or crash risk now. WARNING = needs attention soon. INFO = worth knowing."""},
+    ])
+    return topics
+
+
 def load_custom_signatures() -> dict:
     """Load custom signatures from custom_sig.json file.
     Returns dict mapping signature names to signature definitions."""
@@ -572,7 +2166,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.7.9"
+CURRENT_VERSION = "1.8.0"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -597,8 +2191,9 @@ SIGNATURE_REGISTRY = [
     ("CPU Power Limit Reached",                        "WARNING",          "Power & Voltage"),
     ("GPU Power Limit Saturated",                      "INFO",             "Power & Voltage"),
     ("GPU Power Limit Oscillation",                    "WARNING",          "Power & Voltage"),
-    ("CPU Clock Stretching (Major)",                   "CRITICAL",         "Power & Voltage"),
-    ("CPU Clock Stretching (Minor)",                   "WARNING",          "Power & Voltage"),
+    ("CPU Clock Stretching (Major)",                   "CRITICAL/WARNING", "Power & Voltage"),
+    ("CPU Clock Stretching (Minor)",                   "WARNING/INFO",     "Power & Voltage"),
+    ("CPU Clock Stretching - Not Assessed",           "INFO",              "Power & Voltage"),
     # -- Memory & Fabric -----------------------------------------------------
     ("System RAM Exhaustion",                          "CRITICAL",         "Memory & Fabric"),
     ("Virtual Memory Limit",                           "CRITICAL",         "Memory & Fabric"),
@@ -1657,1399 +3252,1387 @@ class TelemetryApp:
         os._exit(0)
 
     def _open_custom_sig_editor(self):
-        """Open a guided wizard to create and manage custom signatures."""
-        is_dark = self.is_dark
-        _t = self._get_theme(); bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]; fg = _t["fg"]; accent = _t["accent"]
-        
+
+        _t = self._get_theme()
+        bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]
+        fg = _t["fg"]; accent = _t["accent"]
+
         dialog = tk.Toplevel(self.root)
-        dialog.title("Custom Signature Wizard")
-        dialog.geometry("800x700")
-        dialog.minsize(750, 650)
+        dialog.title("Custom Signatures")
+        dialog.geometry("1120x790")
+        dialog.minsize(1000, 700)
         dialog.grab_set()
         dialog.configure(bg=bg)
         self.root.update_idletasks()
-        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 400
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 350
-        dialog.geometry(f"800x700+{x}+{y}")
-        
-        custom_sigs = load_custom_signatures()
-        
-        def get_available_sensors():
-            try:
-                if hasattr(self, 'vars') and self.vars:
-                    return sorted(list(self.vars.keys()))
-            except Exception as e:
-                pass
-            return []
-        
-        state = {
-            'step': 1,
-            'mode': 'create',
-            'edit_sig': None,
-            'signatures': custom_sigs.copy(),
-            'advanced_mode': False,
-            'current_sig': {
-                'name': '',
-                'default_severity': 'WARNING',
-                'trigger_mode': 'always',
-                'tracked_sensors': [],
-                'excluded_sensors': [],
-                'sensor_mins': {},
-                'sensor_maxs': {},
-                'info_count': 5,
-                'warn_count': 10,
-                'crit_count': 15,
-                'description': '',
-                'advice': ''
-            }
-        }
-        
-        main_frame = tk.Frame(dialog, bg=bg)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-        
-        def update_progress():
-            progress_text = f"Step {state['step']} of 7"
-            progress_label.config(text=progress_text)
-            
-            for i in range(1, 8):
-                step_btn = step_buttons.get(i)
-                if step_btn:
-                    if i == state['step']:
-                        step_btn.config(bg=accent, fg='white')
-                    elif i < state['step']:
-                        step_btn.config(bg='#4caf50', fg='white')
-                    else:
-                        step_btn.config(bg=bg3, fg='#888')
-        
-        header = tk.Frame(main_frame, bg=bg)
-        header.pack(fill=tk.X, pady=(0, 15))
-        
-        tk.Label(header, text="Signature Wizard", font=('Segoe UI', 14, 'bold'),
-                bg=bg, fg=accent).pack(anchor='w')
-        
-        progress_label = tk.Label(header, text="", font=('Segoe UI', 9),
-                                 bg=bg, fg='#888')
-        progress_label.pack(anchor='w', pady=(5, 0))
-        
-        step_frame = tk.Frame(header, bg=bg)
-        step_frame.pack(fill=tk.X, pady=(8, 0))
-        
-        step_buttons = {}
-        step_labels = ['Select', 'Name', 'Severity', 'Mode', 'Sensors', 'Thresholds', 'Review']
-        for i, label in enumerate(step_labels, 1):
-            btn_frame = tk.Frame(step_frame, bg=bg)
-            btn_frame.pack(side=tk.LEFT, padx=2)
-            
-            step_btn = tk.Label(btn_frame, text=str(i), font=('Segoe UI', 9, 'bold'),
-                               bg=bg3, fg='#888', width=3, height=1, relief='raised')
-            step_btn.pack()
-            step_buttons[i] = step_btn
-            
-            tk.Label(step_frame, text=label, font=('Segoe UI', 8),
-                    bg=bg, fg='#666').pack(side=tk.LEFT, padx=(2, 8))
-        
-        content_frame = tk.Frame(main_frame, bg=bg)
-        content_frame.pack(fill=tk.BOTH, expand=True)
-        
-        btn_row = tk.Frame(main_frame, bg=bg)
-        btn_row.pack(fill=tk.X, pady=(15, 0))
-        
-        def clear_content():
-            for w in content_frame.winfo_children():
-                w.destroy()
-        
-        def show_edit_menu(sig_name):
-            """Show menu to choose what to edit"""
-            clear_content()
-            
-            tk.Label(content_frame, text=f"Edit: {sig_name}",
-                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 15))
-            
-            tk.Label(content_frame, text="What would you like to change?",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 10))
-            
-            button_data = [
-                ("📛 Name", 2),
-                ("⭐ Severity", 3),
-                ("⚙️  Trigger Mode", 4),
-                ("📊 Sensors", 5),
-                ("📈 Thresholds", 6),
-                ("✓ Review & Save", 7)
-            ]
-            
-            for btn_text, step in button_data:
-                def make_callback(s):
-                    def callback():
-                        state['step'] = s
-                        if s == 2:
-                            show_step_2()
-                        elif s == 3:
-                            show_step_3()
-                        elif s == 4:
-                            show_step_4()
-                        elif s == 5:
-                            show_step_5()
-                        elif s == 6:
-                            show_step_6()
-                        elif s == 7:
-                            show_step_7()
-                        update_progress()
-                    return callback
-                
-                tk.Button(content_frame, text=btn_text, font=('Segoe UI', 10),
-                         bg=bg3, fg=fg, relief='flat', padx=10, pady=8,
-                         command=make_callback(step)).pack(fill=tk.X, pady=3)
-            
-            tk.Button(content_frame, text="← Back", font=('Segoe UI', 9),
-                     bg=bg3, fg=fg, relief='flat', pady=5,
-                     command=lambda: (state.update({'mode': 'create', 'edit_sig': None}), show_step_1(), update_progress())).pack(anchor='w', pady=(15, 0))
-        
-        def show_advanced_editor_edit(sig_name):
-            """Advanced signature code editor for editing"""
-            adv_dialog = tk.Toplevel(dialog)
-            adv_dialog.title(f"Edit Advanced Signature: {sig_name}")
-            adv_dialog.geometry("900x700")
-            adv_dialog.minsize(850, 600)
-            adv_dialog.configure(bg=bg)
-            self.root.update_idletasks()
-            x = dialog.winfo_x() + (dialog.winfo_width() // 2) - 450
-            y = dialog.winfo_y() + (dialog.winfo_height() // 2) - 350
-            adv_dialog.geometry(f"900x700+{x}+{y}")
-            
-            main = tk.Frame(adv_dialog, bg=bg)
-            main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-            
-            header = tk.Frame(main, bg=bg)
-            header.pack(fill=tk.X, pady=(0, 10))
-            
-            tk.Label(header, text=f"Edit Advanced Signature: {sig_name}",
-                    font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w')
-            tk.Label(header, text="Modify the signature code below",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(4, 0))
-            
-            sep = tk.Frame(main, bg=bg3, height=1)
-            sep.pack(fill=tk.X, pady=(0, 10))
-            
-            editor_frame = tk.Frame(main, bg=bg)
-            editor_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-            
-            tk.Label(editor_frame, text="Signature Code:", font=('Segoe UI', 9, 'bold'),
-                    bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            code_frame = tk.Frame(editor_frame, bg=bg)
-            code_frame.pack(fill=tk.BOTH, expand=True)
-            
-            code_area = tk.Text(code_frame, bg=bg2, fg='#00ff00', insertbackground='#00ff00',
-                               font=('Courier', 10), relief='flat', wrap=tk.WORD)
-            code_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-            
-            line_numbers = LineNumbers(code_frame, code_area, bg=bg2, highlightthickness=0)
-            line_numbers.pack(side=tk.LEFT, fill=tk.Y)
-            
-            syntax_label = tk.Label(editor_frame, text="✓ Syntax OK", font=('Segoe UI', 9),
-                                   bg='#1a5f1a', fg='#00ff00', relief='flat', anchor='w', padx=8, pady=3)
-            syntax_label.pack(fill=tk.X, side=tk.BOTTOM)
-            
-            def check_syntax(event=None):
-                code = code_area.get('1.0', tk.END).strip()
-                if not code:
-                    syntax_label.config(text="✓ Ready", bg='#1a3a1a', fg='#888888')
-                    return
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 560
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 395
+        dialog.geometry(f"1120x790+{max(x, 0)}+{max(y, 0)}")
+
+        state = {'signatures': load_custom_signatures(),
+                 'sel': None, 'job': None, 'last_result': None}
+
+        MODE_LABELS = {'instant': 'instant reading',
+                       'avg': 'rolling average',
+                       'rate': 'rate of change'}
+        LABEL_MODES = {v: k for k, v in MODE_LABELS.items()}
+        OP_LABELS = {'above': 'is above', 'below': 'is below',
+                     'rate_rise': 'rises faster than',
+                     'rate_fall': 'falls faster than',
+                     'rate_change': 'changes faster than'}
+        LABEL_OPS = {v: k for k, v in OP_LABELS.items()}
+        _SEV_COLORS = {'CRITICAL': '#ff4d4d', 'WARNING': '#f59e0b',
+                       'INFO': '#38bdf8'}
+
+
+        top = tk.Frame(dialog, bg=bg)
+        top.pack(fill=tk.BOTH, expand=True, padx=12, pady=(12, 6))
+
+        left = tk.Frame(top, bg=bg, width=250)
+        left.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
+        left.pack_propagate(False)
+        tk.Label(left, text="YOUR SIGNATURES", font=('Segoe UI', 9, 'bold'),
+                 bg=bg, fg=accent, anchor='w').pack(fill=tk.X)
+        list_wrap = tk.Frame(left, bg=bg2, highlightthickness=1,
+                             highlightbackground=bg3)
+        list_wrap.pack(fill=tk.BOTH, expand=True, pady=(4, 6))
+        list_canvas = tk.Canvas(list_wrap, bg=bg2, highlightthickness=0)
+        list_scroll = tk.Scrollbar(list_wrap, orient='vertical',
+                                   command=list_canvas.yview)
+        list_body = tk.Frame(list_canvas, bg=bg2)
+        _lw = list_canvas.create_window((0, 0), window=list_body, anchor='nw')
+        list_body.bind('<Configure>', lambda e:
+                       list_canvas.configure(scrollregion=list_canvas.bbox('all')))
+        list_canvas.bind('<Configure>',
+                         lambda e: list_canvas.itemconfig(_lw, width=e.width))
+        list_canvas.configure(yscrollcommand=list_scroll.set)
+        list_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        list_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        right = tk.Frame(top, bg=bg)
+        right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        head = tk.Frame(right, bg=bg)
+        head.pack(fill=tk.X)
+        tk.Label(head, text="Name", font=('Segoe UI', 9), bg=bg,
+                 fg=fg).pack(side=tk.LEFT, padx=(0, 5))
+        name_var = tk.StringVar(value='')
+        name_entry = tk.Entry(head, textvariable=name_var, font=('Segoe UI', 11, 'bold'),
+                              bg=bg2, fg=fg, insertbackground=fg, relief='flat',
+                              highlightthickness=1, highlightbackground=bg3)
+        name_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=3)
+        tk.Label(head, text="Severity", font=('Segoe UI', 9), bg=bg,
+                 fg=fg).pack(side=tk.LEFT, padx=(14, 5))
+        sev_var = tk.StringVar(value='WARNING')
+        sev_box = ttk.Combobox(head, textvariable=sev_var, width=9,
+                               values=('CRITICAL', 'WARNING', 'INFO'),
+                               state='readonly')
+        sev_box.pack(side=tk.LEFT)
+
+        cond_head = tk.Frame(right, bg=bg)
+        cond_head.pack(fill=tk.X, pady=(12, 3))
+        tk.Label(cond_head, text="Fire when", font=('Segoe UI', 9, 'bold'),
+                 bg=bg, fg=fg).pack(side=tk.LEFT)
+        logic_var = tk.StringVar(value='ALL')
+        logic_box = ttk.Combobox(cond_head, textvariable=logic_var, width=5,
+                                 values=('ALL', 'ANY'), state='readonly')
+        logic_box.pack(side=tk.LEFT, padx=(5, 5))
+        tk.Label(cond_head, text="of these are met:", font=('Segoe UI', 9, 'bold'),
+                 bg=bg, fg=fg).pack(side=tk.LEFT)
+
+        cond_wrap = tk.Frame(right, bg=bg2, highlightthickness=1,
+                             highlightbackground=bg3)
+        cond_wrap.pack(fill=tk.X)
+        cond_canvas = tk.Canvas(cond_wrap, bg=bg2, highlightthickness=0, height=150)
+        cond_scroll = tk.Scrollbar(cond_wrap, orient='vertical',
+                                   command=cond_canvas.yview)
+        cond_body = tk.Frame(cond_canvas, bg=bg2)
+        _cw = cond_canvas.create_window((0, 0), window=cond_body, anchor='nw')
+        cond_body.bind('<Configure>', lambda e:
+                       cond_canvas.configure(scrollregion=cond_canvas.bbox('all')))
+        cond_canvas.bind('<Configure>',
+                         lambda e: cond_canvas.itemconfig(_cw, width=e.width))
+        cond_canvas.configure(yscrollcommand=cond_scroll.set)
+        cond_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        cond_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        cond_canvas.bind('<Enter>',
+                         lambda e: cond_canvas.bind_all('<MouseWheel>',
+                         lambda ev: cond_canvas.yview_scroll(-ev.delta // 120, 'units')))
+        cond_canvas.bind('<Leave>', lambda e: cond_canvas.unbind_all('<MouseWheel>'))
+
+        cond_rows = []
+
+        gate_head = tk.Frame(right, bg=bg)
+        gate_head.pack(fill=tk.X, pady=(10, 3))
+        tk.Label(gate_head, text="Only check when (optional):",
+                 font=('Segoe UI', 9, 'bold'), bg=bg, fg=fg).pack(side=tk.LEFT)
+        gate_wrap = tk.Frame(right, bg=bg2, highlightthickness=1,
+                             highlightbackground=bg3)
+        gate_wrap.pack(fill=tk.X)
+        gate_rows = []
+
+        desc_frame = tk.Frame(right, bg=bg)
+        desc_frame.pack(fill=tk.X, pady=(8, 0))
+        tk.Label(desc_frame, text="Description (shown in the report)",
+                 font=('Segoe UI', 8), bg=bg, fg='#888', anchor='w').pack(fill=tk.X)
+        desc_var = tk.StringVar(value='')
+        tk.Entry(desc_frame, textvariable=desc_var, font=('Segoe UI', 9), bg=bg2,
+                 fg=fg, insertbackground=fg, relief='flat', highlightthickness=1,
+                 highlightbackground=bg3).pack(fill=tk.X, ipady=2)
+        adv_frame = tk.Frame(right, bg=bg)
+        adv_frame.pack(fill=tk.X, pady=(6, 0))
+        tk.Label(adv_frame, text="Advice (optional fix suggestion)",
+                 font=('Segoe UI', 8), bg=bg, fg='#888', anchor='w').pack(fill=tk.X)
+        adv_var = tk.StringVar(value='')
+        tk.Entry(adv_frame, textvariable=adv_var, font=('Segoe UI', 9), bg=bg2,
+                 fg=fg, insertbackground=fg, relief='flat', highlightthickness=1,
+                 highlightbackground=bg3).pack(fill=tk.X, ipady=2)
+
+        test_frame = tk.Frame(dialog, bg=bg2, highlightthickness=1,
+                              highlightbackground=bg3)
+        test_frame.pack(fill=tk.X, padx=12, pady=(6, 4))
+        test_head = tk.Frame(test_frame, bg=bg2)
+        test_head.pack(fill=tk.X)
+        tk.Label(test_head, text="LIVE TEST", font=('Segoe UI', 9, 'bold'),
+                 bg=bg2, fg=accent).pack(side=tk.LEFT, padx=8, pady=(6, 0))
+        _log_name = os.path.basename(
+            str(getattr(getattr(self, 'analyzer', None), 'path', '') or ''))
+        has_df = hasattr(self, 'df') and self.df is not None and len(self.df) > 0
+        tk.Label(test_head, text=(f"on: {_log_name}" if has_df
+                                  else "no log loaded - open a CSV to test"),
+                 font=('Segoe UI', 8), bg=bg2, fg='#888').pack(
+            side=tk.LEFT, padx=8, pady=(6, 0))
+        test_status = tk.Label(test_head, text='', font=('Segoe UI', 11, 'bold'),
+                               bg=bg2, fg='#888')
+        test_status.pack(side=tk.LEFT, padx=16, pady=(6, 0))
+
+        test_body = tk.Frame(test_frame, bg=bg2)
+        test_body.pack(fill=tk.X, padx=8, pady=(2, 8))
+        test_ev = tk.Text(test_body, bg=bg2, fg=fg, relief='flat', height=5,
+                          font=('Segoe UI', 8), wrap='word', width=54)
+        test_ev.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        spark = tk.Canvas(test_body, bg=bg2, highlightthickness=0,
+                          height=96, width=330)
+        spark.pack(side=tk.LEFT, padx=(10, 0), fill=tk.Y)
+
+        def schedule_test():
+            if state['job'] is not None:
                 try:
-                    compile(code, '<string>', 'exec')
-                    syntax_label.config(text="✓ Syntax OK", bg='#1a5f1a', fg='#00ff00')
-                except SyntaxError as e:
-                    msg = f"✗ Line {e.lineno}: {e.msg}" if e.lineno else f"✗ Syntax Error: {e.msg}"
-                    syntax_label.config(text=msg, bg='#5f1a1a', fg='#ff6666')
-            
-            code_area.bind('<KeyRelease>', check_syntax)
-            
-            sig_data = state['signatures'][sig_name]
-            code_area.insert('1.0', sig_data.get('code', ''))
-            check_syntax()
-            
-            def show_reference():
-                ref_dialog = tk.Toplevel(adv_dialog)
-                ref_dialog.title("Advanced Signature Reference")
-                ref_dialog.geometry("850x700")
-                ref_dialog.minsize(750, 600)
-                ref_dialog.configure(bg=bg)
-                
-                ref_main = tk.Frame(ref_dialog, bg=bg)
-                ref_main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-                
-                tk.Label(ref_main, text="Available Variables & Functions",
-                        font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w', pady=(0, 10))
-                
-                ref_canvas = tk.Canvas(ref_main, bg=bg2, highlightthickness=1, highlightbackground=bg3)
-                ref_scrollbar = tk.Scrollbar(ref_main, orient="vertical", command=ref_canvas.yview)
-                ref_frame = tk.Frame(ref_canvas, bg=bg2)
-                
-                ref_wid = ref_canvas.create_window((0, 0), window=ref_frame, anchor="nw")
-                ref_frame.bind("<Configure>", lambda e: ref_canvas.configure(scrollregion=ref_canvas.bbox("all")))
-                ref_canvas.bind("<Configure>", lambda e: ref_canvas.itemconfig(ref_wid, width=e.width))
-                ref_canvas.configure(yscrollcommand=ref_scrollbar.set)
-                
-                ref_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-                ref_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-                
-                ref_items = [
-                    ("DISCOVER SENSORS", ""),
-                    ("Find all columns", "cols=list(df.columns)\nadd('Cols','INFO',f'Total:{len(cols)}',[str(cols[:15])])"),
-                    ("Find by keyword", "cpu=[c for c in df.columns if 'CPU' in c.upper()]\nadd('CPUcols','INFO',f'Found:{len(cpu)}',[str(cpu)])"),
-                    ("Find temps", "temps=[c for c in df.columns if 'TEMP' in c.upper()]\nadd('Temps','INFO',f'Found:{len(temps)}',[str(temps[:10])])"),
-                    ("Find GPU temps", "gpus=[c for c in df.columns if 'GPU' in c.upper() and 'TEMP' in c.upper()]\nadd('GPUtemps','INFO',f'Found:{len(gpus)}',[str(gpus)])"),
-                    ("", ""),
-                    ("QUICK EXAMPLES", ""),
-                    ("CPU Temp", "col='CPU Die (average) [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>85:\n        add('CPUHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
-                    ("GPU Temp", "col='GPU Hot Spot Temperature [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>90:\n        add('GPUHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
-                    ("CPU Usage", "col='Total CPU Usage [%]'\nif col in df.columns:\n    u=pd.to_numeric(df[col],errors='coerce')\n    if (u>95).any():\n        add('CPUMax','INFO','Maxed',[f'Peak:{u.max():.0f}%'])"),
-                    ("VRAM Temp", "col='GPU Memory Junction Temperature [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>80:\n        add('VRAMHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
-                    ("", ""),
-                    ("YOUR COLUMNS", ""),
-                    ("'CPU Die (average) [C]'", "CPU die temp"),
-                    ("'CPU [Tdie] [C]'", "CPU Tdie"),
-                    ("'Total CPU Usage [%]'", "CPU usage"),
-                    ("'GPU Hot Spot Temperature [C]'", "GPU hotspot"),
-                    ("'GPU Temperature [C]'", "GPU temp"),
-                    ("'GPU Memory Junction Temperature [C]'", "VRAM temp"),
-                    ("", ""),
-                    ("PATTERNS", ""),
-                    ("Max check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    if d.max()>T:\n        add(...)"),
-                    ("Count check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    v=(d>T).sum()\n    if v>0:\n        add(...)"),
-                    ("Average check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    if d.mean()>T:\n        add(...)"),
-                    ("", ""),
-                    ("SEVERITY", ""),
-                    ("'INFO'", "Info message"),
-                    ("'WARNING'", "Warning"),
-                    ("'CRITICAL'", "Critical"),
-                ]
-                
-                for item, desc in ref_items:
-                    if item == "":
-                        continue
-                    if item.isupper() or (len(item) > 0 and item[0] == "'"):
-                        item_frame = tk.Frame(ref_frame, bg=bg2)
-                    else:
-                        item_frame = tk.Frame(ref_frame, bg=bg2, relief='flat')
-                    item_frame.pack(fill=tk.X, padx=8, pady=(6 if item.isupper() else 4), anchor='w')
-                    
-                    if item.isupper():
-                        tk.Label(item_frame, text=item, font=('Segoe UI', 10, 'bold'),
-                                bg=bg2, fg=accent).pack(anchor='w')
-                    else:
-                        tk.Label(item_frame, text=item, font=('Segoe UI', 9, 'bold'),
-                                bg=bg2, fg='#88ccff').pack(anchor='w', side=tk.LEFT, padx=(10, 8))
-                        if desc:
-                            tk.Label(item_frame, text=desc, font=('Segoe UI', 9),
-                                    bg=bg2, fg=fg, justify=tk.LEFT, wraplength=650).pack(anchor='w', side=tk.LEFT)
-                
-                tk.Button(ref_frame, text="Close", font=('Segoe UI', 9),
-                         bg=bg3, fg=fg, relief='flat', command=ref_dialog.destroy).pack(pady=10)
-            
-            btn_frame = tk.Frame(main, bg=bg)
-            btn_frame.pack(fill=tk.X)
-            
-            def save_advanced():
-                code = code_area.get('1.0', tk.END).strip()
-                if not code:
-                    messagebox.showerror("Error", "Please enter signature code", parent=adv_dialog)
-                    code_area.focus()
-                    return
-                
+                    dialog.after_cancel(state['job'])
+                except Exception:
+                    pass
+            state['job'] = dialog.after(350, run_test)
+
+        def op_labels_for_mode(mode):
+            if mode == 'rate':
+                return [OP_LABELS['rate_rise'], OP_LABELS['rate_fall'],
+                        OP_LABELS['rate_change']]
+            return [OP_LABELS['above'], OP_LABELS['below']]
+
+        def add_condition_row(cond=None):
+            cond = cond or {}
+            row = tk.Frame(cond_body, bg=bg3)
+            row.pack(fill=tk.X, padx=3, pady=3)
+            info = {'frame': row}
+
+            def pick_callback(col):
+                info['sensor'].config(text=col or '🔍  pick sensor…',
+                                      fg=(fg if col else '#888'))
+                info['sensor_token'] = col or ''
+                schedule_test()
+
+            info['sensor_token'] = cond.get('sensor', '')
+            info['sensor'] = tk.Button(
+                row, text=(cond.get('sensor') or '🔍  pick sensor…'),
+                font=('Segoe UI', 9), bg=bg2, fg=(fg if cond.get('sensor') else '#888'),
+                relief='flat', anchor='w', width=30,
+                command=lambda: self._pick_sensor(dialog, pick_callback,
+                                                  info['sensor_token']))
+            info['sensor'].pack(side=tk.LEFT, padx=(4, 6), ipady=2)
+
+            mode = cond.get('mode', 'instant')
+            info['mode'] = tk.StringVar(value=MODE_LABELS.get(mode, 'instant reading'))
+            info['op'] = tk.StringVar(
+                value=OP_LABELS.get(cond.get('op', 'above'), 'is above'))
+            info['value'] = tk.StringVar(
+                value=str(cond.get('value', '')) if cond.get('value') is not None else '')
+            info['window'] = tk.StringVar(value=str(cond.get('window', 5)))
+            info['sustain'] = tk.StringVar(value=str(cond.get('sustain', 1)))
+
+            def on_mode_change(*_a):
+                m = LABEL_MODES.get(info['mode'].get(), 'instant')
+                info['op_box'].config(values=op_labels_for_mode(m))
+                if info['op'].get() not in op_labels_for_mode(m):
+                    info['op'].set(op_labels_for_mode(m)[0])
+                info['win_box'].config(state=('normal' if m != 'instant' else 'disabled'))
+                schedule_test()
+            info['op_box'] = ttk.Combobox(
+                row, textvariable=info['op'], width=12, state='readonly',
+                values=op_labels_for_mode(mode))
+            tk.Entry(row, textvariable=info['value'], width=7, bg=bg2, fg=fg,
+                     insertbackground=fg, relief='flat', justify='center',
+                     highlightthickness=1, highlightbackground=bg3,
+                     font=('Segoe UI', 9)).pack(side=tk.LEFT, padx=2, ipady=2)
+            info['op_box'].pack(side=tk.LEFT, padx=(0, 2))
+            info['mode_box'] = ttk.Combobox(
+                row, textvariable=info['mode'], width=11, state='readonly',
+                values=list(MODE_LABELS.values()))
+            info['mode_box'].pack(side=tk.LEFT, padx=(2, 2))
+            info['win_box'] = ttk.Spinbox(
+                row, textvariable=info['window'], from_=1, to=5000, width=4,
+                font=('Segoe UI', 8), state=('normal' if mode != 'instant'
+                                             else 'disabled'))
+            tk.Label(row, text='win', font=('Segoe UI', 7), bg=bg3,
+                     fg='#888').pack(side=tk.LEFT, padx=(0, 2))
+            info['win_box'].pack(side=tk.LEFT)
+            info['sus_box'] = ttk.Spinbox(
+                row, textvariable=info['sustain'], from_=1, to=5000, width=4,
+                font=('Segoe UI', 8))
+            tk.Label(row, text='in a row', font=('Segoe UI', 7), bg=bg3,
+                     fg='#888').pack(side=tk.LEFT, padx=(0, 4))
+            info['sus_box'].pack(side=tk.LEFT)
+            tk.Button(row, text='✕', font=('Segoe UI', 8), bg=bg3, fg='#f66',
+                      relief='flat', width=2,
+                      command=lambda: remove_row(cond_rows, info)).pack(
+                side=tk.RIGHT, padx=3)
+            info['mode'].trace_add('write', on_mode_change)
+            for var in (info['op'], info['value'], info['window'], info['sustain']):
+                var.trace_add('write', lambda *_a: schedule_test())
+            cond_rows.append(info)
+            return info
+
+        def remove_row(rows, info):
+            info['frame'].destroy()
+            if info in rows:
+                rows.remove(info)
+            schedule_test()
+
+        def add_gate_row(gate=None):
+            gate = gate or {}
+            row = tk.Frame(gate_wrap, bg=bg3)
+            row.pack(fill=tk.X, padx=3, pady=3)
+            info = {'frame': row}
+
+            def pick_callback(col):
+                info['sensor'].config(text=col or '🔍  pick sensor…',
+                                      fg=(fg if col else '#888'))
+                info['sensor_token'] = col or ''
+                schedule_test()
+
+            info['sensor_token'] = gate.get('sensor', '')
+            info['sensor'] = tk.Button(
+                row, text=(gate.get('sensor') or '🔍  pick sensor…'),
+                font=('Segoe UI', 9), bg=bg2, fg=(fg if gate.get('sensor') else '#888'),
+                relief='flat', anchor='w', width=30,
+                command=lambda: self._pick_sensor(dialog, pick_callback,
+                                                  info['sensor_token']))
+            info['sensor'].pack(side=tk.LEFT, padx=(4, 6), ipady=2)
+            info['op'] = tk.StringVar(
+                value=OP_LABELS.get(gate.get('op', 'above'), 'is above'))
+            ttk.Combobox(row, textvariable=info['op'], width=9, state='readonly',
+                         values=[OP_LABELS['above'], OP_LABELS['below']]).pack(
+                side=tk.LEFT, padx=2)
+            info['value'] = tk.StringVar(value=str(gate.get('value', '')))
+            tk.Entry(row, textvariable=info['value'], width=7, bg=bg2, fg=fg,
+                     insertbackground=fg, relief='flat', justify='center',
+                     font=('Segoe UI', 9), highlightthickness=1,
+                     highlightbackground=bg3).pack(side=tk.LEFT, ipady=2)
+            info['value'].trace_add('write', lambda *_a: schedule_test())
+            info['op'].trace_add('write', lambda *_a: schedule_test())
+            tk.Button(row, text='✕', font=('Segoe UI', 8), bg=bg3, fg='#f66',
+                      relief='flat', width=2,
+                      command=lambda: remove_row(gate_rows, info)).pack(
+                side=tk.RIGHT, padx=3)
+            gate_rows.append(info)
+            return info
+
+        def collect():
+            conds = []
+            for r in cond_rows:
+                tok = r['sensor_token'].strip()
+                if not tok:
+                    continue
+                mode = LABEL_MODES.get(r['mode'].get(), 'instant')
                 try:
-                    compile(code, '<string>', 'exec')
-                except SyntaxError as e:
-                    messagebox.showerror("Syntax Error", f"Line {e.lineno}: {e.msg}\n\n{e.text}", parent=adv_dialog)
-                    code_area.focus()
-                    return
-                
-                state['signatures'][sig_name]['code'] = code
-                save_custom_signatures(state['signatures'])
-                messagebox.showinfo("Success", f"Advanced signature '{sig_name}' updated!", parent=adv_dialog)
-                adv_dialog.destroy()
-            
-            tk.Button(btn_frame, text="📖 Reference", font=('Segoe UI', 10),
-                     bg='#FF9800', fg='white', relief='flat', command=show_reference).pack(side=tk.LEFT, padx=2)
-            tk.Button(btn_frame, text="📚 View Examples", font=('Segoe UI', 10),
-                     bg='#2196F3', fg='white', relief='flat', command=show_code_examples).pack(side=tk.LEFT, padx=2)
-            tk.Button(btn_frame, text="Save Changes", font=('Segoe UI', 10, 'bold'),
-                     bg='#4caf50', fg='white', relief='flat', command=save_advanced).pack(side=tk.LEFT, padx=2)
-            tk.Button(btn_frame, text="Cancel", font=('Segoe UI', 9),
-                     bg=bg3, fg=fg, relief='flat', command=adv_dialog.destroy).pack(side=tk.LEFT, padx=2)
-        
-        def show_code_examples():
-            """Show pre-built signature code examples"""
-            ex_dialog = tk.Toplevel(adv_dialog if 'adv_dialog' in dir() else dialog)
-            ex_dialog.title("Advanced Signature Code Examples")
-            ex_dialog.geometry("950x650")
-            ex_dialog.minsize(900, 600)
-            ex_dialog.configure(bg=bg)
-            
-            main = tk.Frame(ex_dialog, bg=bg)
-            main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-            
-            header = tk.Frame(main, bg=bg)
-            header.pack(fill=tk.X, pady=(0, 10))
-            tk.Label(header, text="Advanced Signature Examples",
-                    font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w')
-            tk.Label(header, text="Click on an example to copy its code",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(4, 0))
-            
-            content_frame = tk.Frame(main, bg=bg)
-            content_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-            
-            examples = {
-                "Temperature Threshold Check": """col = 'GPU Hot Spot Temperature [C]'
-if col in df.columns:
-    temps = pd.to_numeric(df[col], errors='coerce')
-    max_temp = temps.max()
-    avg_temp = temps.mean()
-    
-    if max_temp > 90:
-        severity = "CRITICAL" if max_temp > 95 else "WARNING"
-        add('GPU Temperature High', severity,
-            f'GPU hotspot reached {max_temp:.1f}C',
-            [f'Max: {max_temp:.1f}C', f'Average: {avg_temp:.1f}C'])""",
-
-                "Usage Pattern Detection": """cpu_col = 'Total CPU Usage [%]'
-gpu_col = 'GPU Usage [%]'
-
-if cpu_col in df.columns and gpu_col in df.columns:
-    cpu_usage = pd.to_numeric(df[cpu_col], errors='coerce')
-    gpu_usage = pd.to_numeric(df[gpu_col], errors='coerce')
-    
-    high_cpu_low_gpu = ((cpu_usage > 80) & (gpu_usage < 30)).sum()
-    
-    if high_cpu_low_gpu > 10:
-        add('CPU Bottleneck Detected', 'INFO',
-            'CPU high while GPU idle - possible bottleneck',
-            [f'Samples: {high_cpu_low_gpu}', 
-             f'CPU avg: {cpu_usage.mean():.1f}%',
-             f'GPU avg: {gpu_usage.mean():.1f}%'])""",
-
-                "Multiple Column Search": """matching_cols = [c for c in df.columns if 'TEMP' in c.upper()]
-
-if len(matching_cols) > 0:
-    temps_data = {}
-    for col in matching_cols[:5]:
-        temp_values = pd.to_numeric(df[col], errors='coerce')
-        max_val = temp_values.max()
-        temps_data[col] = max_val
-    
-    add('Temperature Report', 'INFO',
-        f'Found {len(matching_cols)} temperature sensors',
-        [f'{col}: {temps_data[col]:.1f}C' for col in list(temps_data.keys())[:3]])""",
-
-                "Threshold Violations": """col = 'Total CPU Usage [%]'
-threshold = 95
-
-if col in df.columns:
-    usage = pd.to_numeric(df[col], errors='coerce')
-    violations = (usage > threshold).sum()
-    violation_pct = (violations / len(usage)) * 100
-    
-    if violations > 0:
-        add('CPU Usage Peak', 'WARNING',
-            f'CPU exceeded {threshold}% threshold',
-            [f'Violations: {violations} samples',
-             f'Percentage: {violation_pct:.1f}%',
-             f'Peak: {usage.max():.0f}%'])""",
-            }
-            
-            list_frame = tk.Frame(content_frame, bg=bg)
-            list_frame.pack(side=tk.LEFT, fill=tk.BOTH, padx=(0, 10))
-            
-            tk.Label(list_frame, text="Examples:", font=('Segoe UI', 9, 'bold'),
-                    bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            list_canvas = tk.Canvas(list_frame, bg=bg2, highlightthickness=1, highlightbackground=bg3)
-            list_scroll = tk.Scrollbar(list_frame, orient="vertical", command=list_canvas.yview)
-            list_body = tk.Frame(list_canvas, bg=bg2)
-            list_wid = list_canvas.create_window((0, 0), window=list_body, anchor="nw")
-            list_body.bind("<Configure>", lambda e: list_canvas.configure(scrollregion=list_canvas.bbox("all")))
-            list_canvas.bind("<Configure>", lambda e: list_canvas.itemconfig(list_wid, width=e.width))
-            list_canvas.configure(yscrollcommand=list_scroll.set)
-            list_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            list_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-            
-            code_frame = tk.Frame(content_frame, bg=bg)
-            code_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(10, 0))
-            
-            tk.Label(code_frame, text="Code Preview:", font=('Segoe UI', 9, 'bold'),
-                    bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            code_display = tk.Text(code_frame, bg=bg2, fg='#00ff00', font=('Courier', 9),
-                                  relief='flat', wrap=tk.WORD)
-            code_display.pack(fill=tk.BOTH, expand=True)
-            code_display.configure(state='disabled')
-            
-            def show_example(name):
-                code_display.configure(state='normal')
-                code_display.delete('1.0', tk.END)
-                code_display.insert('1.0', examples[name])
-                code_display.configure(state='disabled')
-            
-            for ex_name in examples.keys():
-                btn = tk.Button(list_body, text=ex_name, font=('Segoe UI', 9),
-                               bg=bg3, fg=fg, relief='flat', anchor='w',
-                               command=lambda n=ex_name: show_example(n))
-                btn.pack(fill=tk.X, padx=4, pady=2)
-            
-            show_example(list(examples.keys())[0])
-            
-            btn_row = tk.Frame(ex_dialog, bg=bg)
-            btn_row.pack(fill=tk.X, padx=10, pady=(0, 10))
-            
-            def copy_code():
-                code = code_display.get('1.0', tk.END)
-                ex_dialog.clipboard_clear()
-                ex_dialog.clipboard_append(code)
-                messagebox.showinfo("Copied", "Code copied to clipboard!")
-            
-            tk.Button(btn_row, text="Copy Code", font=('Segoe UI', 10, 'bold'),
-                     bg='#4caf50', fg='white', relief='flat', command=copy_code).pack(side=tk.LEFT, padx=2)
-            tk.Button(btn_row, text="Close", font=('Segoe UI', 9),
-                     bg=bg3, fg=fg, relief='flat', command=ex_dialog.destroy).pack(side=tk.LEFT, padx=2)
-        
-        def show_advanced_editor():
-            """Advanced signature code editor"""
-            adv_dialog = tk.Toplevel(dialog)
-            adv_dialog.title("Advanced Signature Editor")
-            adv_dialog.geometry("900x700")
-            adv_dialog.minsize(850, 600)
-            adv_dialog.configure(bg=bg)
-            self.root.update_idletasks()
-            x = dialog.winfo_x() + (dialog.winfo_width() // 2) - 450
-            y = dialog.winfo_y() + (dialog.winfo_height() // 2) - 350
-            adv_dialog.geometry(f"900x700+{x}+{y}")
-            
-            main = tk.Frame(adv_dialog, bg=bg)
-            main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-            
-            header = tk.Frame(main, bg=bg)
-            header.pack(fill=tk.X, pady=(0, 10))
-            
-            tk.Label(header, text="Advanced Signature Editor",
-                    font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w')
-            tk.Label(header, text="Write custom signature logic using Python (like built-in signatures)",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(4, 0))
-            
-            name_frame = tk.Frame(main, bg=bg)
-            name_frame.pack(fill=tk.X, pady=(0, 10))
-            tk.Label(name_frame, text="Name:", font=('Segoe UI', 9),
-                    bg=bg, fg=fg).pack(side=tk.LEFT, padx=(0, 5))
-            name_var = tk.StringVar()
-            name_entry = tk.Entry(name_frame, textvariable=name_var, font=('Segoe UI', 10),
-                                 bg=bg2, fg=fg, insertbackground=fg, relief='flat', width=40)
-            name_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
-            
-            sep = tk.Frame(main, bg=bg3, height=1)
-            sep.pack(fill=tk.X, pady=(0, 10))
-            
-            editor_frame = tk.Frame(main, bg=bg)
-            editor_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-            
-            tk.Label(editor_frame, text="Signature Code:", font=('Segoe UI', 9, 'bold'),
-                    bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            code_frame = tk.Frame(editor_frame, bg=bg)
-            code_frame.pack(fill=tk.BOTH, expand=True)
-            
-            code_area = tk.Text(code_frame, bg=bg2, fg='#00ff00', insertbackground='#00ff00',
-                               font=('Courier', 10), relief='flat', wrap=tk.WORD)
-            code_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-            
-            line_numbers = LineNumbers(code_frame, code_area, bg=bg2, highlightthickness=0)
-            line_numbers.pack(side=tk.LEFT, fill=tk.Y)
-            
-            syntax_label = tk.Label(editor_frame, text="✓ Syntax OK", font=('Segoe UI', 9),
-                                   bg='#1a5f1a', fg='#00ff00', relief='flat', anchor='w', padx=8, pady=3)
-            syntax_label.pack(fill=tk.X, side=tk.BOTTOM)
-            
-            def check_syntax(event=None):
-                code = code_area.get('1.0', tk.END).strip()
-                if not code:
-                    syntax_label.config(text="✓ Ready", bg='#1a3a1a', fg='#888888')
-                    return
+                    val = float(r['value'].get())
+                except ValueError:
+                    val = None
+                conds.append({'sensor': tok,
+                              'op': LABEL_OPS.get(r['op'].get(), 'above'),
+                              'value': val,
+                              'mode': mode,
+                              'window': _clamp_int(r['window'].get(), 1, 5000,
+                                                   5 if mode != 'instant' else 1),
+                              'sustain': _clamp_int(r['sustain'].get(), 1, 5000, 1)})
+            gates = []
+            for r in gate_rows:
+                tok = r['sensor_token'].strip()
+                if not tok:
+                    continue
                 try:
-                    compile(code, '<string>', 'exec')
-                    syntax_label.config(text="✓ Syntax OK", bg='#1a5f1a', fg='#00ff00')
-                except SyntaxError as e:
-                    msg = f"✗ Line {e.lineno}: {e.msg}" if e.lineno else f"✗ Syntax Error: {e.msg}"
-                    syntax_label.config(text=msg, bg='#5f1a1a', fg='#ff6666')
-            
-            code_area.bind('<KeyRelease>', check_syntax)
-            
-            template = "tracked = [\"Sensor1\", \"Sensor2\"]\nexcluded = [\"SkipMe\"]\n\nfor col in tracked:\n    if col not in df.columns:\n        continue\n    if any(exc.upper() in col.upper() for exc in excluded):\n        continue\n    \n    data = pd.to_numeric(df[col], errors='coerce')\n    violations = (data < 20) | (data > 100)\n    \n    if violations.sum() > 5:\n        add(\n            name=\"Your Signature\",\n            severity=\"WARNING\",\n            description=\"Description\",\n            evidence=[f\"{col}: {violations.sum()} violations\"]\n        )"
-            code_area.insert('1.0', template)
-            check_syntax()
-            
-            
-            def show_reference():
-                ref_dialog = tk.Toplevel(adv_dialog)
-                ref_dialog.title("Advanced Signature Reference")
-                ref_dialog.geometry("850x700")
-                ref_dialog.minsize(750, 600)
-                ref_dialog.configure(bg=bg)
-                
-                ref_main = tk.Frame(ref_dialog, bg=bg)
-                ref_main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-                
-                tk.Label(ref_main, text="Available Variables & Functions",
-                        font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(anchor='w', pady=(0, 10))
-                
-                ref_canvas = tk.Canvas(ref_main, bg=bg2, highlightthickness=1, highlightbackground=bg3)
-                ref_scrollbar = tk.Scrollbar(ref_main, orient="vertical", command=ref_canvas.yview)
-                ref_frame = tk.Frame(ref_canvas, bg=bg2)
-                
-                ref_wid = ref_canvas.create_window((0, 0), window=ref_frame, anchor="nw")
-                ref_frame.bind("<Configure>", lambda e: ref_canvas.configure(scrollregion=ref_canvas.bbox("all")))
-                ref_canvas.bind("<Configure>", lambda e: ref_canvas.itemconfig(ref_wid, width=e.width))
-                ref_canvas.configure(yscrollcommand=ref_scrollbar.set)
-                
-                ref_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-                ref_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-                
-                ref_items = [
-                    ("DISCOVER SENSORS", ""),
-                    ("Find all columns", "cols=list(df.columns)\nadd('Cols','INFO',f'Total:{len(cols)}',[str(cols[:15])])"),
-                    ("Find by keyword", "cpu=[c for c in df.columns if 'CPU' in c.upper()]\nadd('CPUcols','INFO',f'Found:{len(cpu)}',[str(cpu)])"),
-                    ("Find temps", "temps=[c for c in df.columns if 'TEMP' in c.upper()]\nadd('Temps','INFO',f'Found:{len(temps)}',[str(temps[:10])])"),
-                    ("Find GPU temps", "gpus=[c for c in df.columns if 'GPU' in c.upper() and 'TEMP' in c.upper()]\nadd('GPUtemps','INFO',f'Found:{len(gpus)}',[str(gpus)])"),
-                    ("", ""),
-                    ("QUICK EXAMPLES", ""),
-                    ("CPU Temp", "col='CPU Die (average) [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>85:\n        add('CPUHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
-                    ("GPU Temp", "col='GPU Hot Spot Temperature [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>90:\n        add('GPUHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
-                    ("CPU Usage", "col='Total CPU Usage [%]'\nif col in df.columns:\n    u=pd.to_numeric(df[col],errors='coerce')\n    if (u>95).any():\n        add('CPUMax','INFO','Maxed',[f'Peak:{u.max():.0f}%'])"),
-                    ("VRAM Temp", "col='GPU Memory Junction Temperature [C]'\nif col in df.columns:\n    t=pd.to_numeric(df[col],errors='coerce')\n    if t.max()>80:\n        add('VRAMHot','WARNING','Hot',[f'Max:{t.max():.1f}C'])"),
-                    ("", ""),
-                    ("YOUR COLUMNS", ""),
-                    ("'CPU Die (average) [C]'", "CPU die temp"),
-                    ("'CPU [Tdie] [C]'", "CPU Tdie"),
-                    ("'Total CPU Usage [%]'", "CPU usage"),
-                    ("'GPU Hot Spot Temperature [C]'", "GPU hotspot"),
-                    ("'GPU Temperature [C]'", "GPU temp"),
-                    ("'GPU Memory Junction Temperature [C]'", "VRAM temp"),
-                    ("", ""),
-                    ("PATTERNS", ""),
-                    ("Max check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    if d.max()>T:\n        add(...)"),
-                    ("Count check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    v=(d>T).sum()\n    if v>0:\n        add(...)"),
-                    ("Average check", "if c in df.columns:\n    d=pd.to_numeric(df[c],errors='coerce')\n    if d.mean()>T:\n        add(...)"),
-                    ("", ""),
-                    ("SEVERITY", ""),
-                    ("'INFO'", "Info message"),
-                    ("'WARNING'", "Warning"),
-                    ("'CRITICAL'", "Critical"),
-                ]
-                
-                for item, desc in ref_items:
-                    if item == "":
-                        continue
-                    if item.isupper() or (len(item) > 0 and item[0] == "'"):
-                        item_frame = tk.Frame(ref_frame, bg=bg2)
-                    else:
-                        item_frame = tk.Frame(ref_frame, bg=bg2, relief='flat')
-                    item_frame.pack(fill=tk.X, padx=8, pady=(6 if item.isupper() else 4), anchor='w')
-                    
-                    if item.isupper():
-                        tk.Label(item_frame, text=item, font=('Segoe UI', 10, 'bold'),
-                                bg=bg2, fg=accent).pack(anchor='w')
-                    else:
-                        tk.Label(item_frame, text=item, font=('Segoe UI', 9, 'bold'),
-                                bg=bg2, fg='#88ccff').pack(anchor='w', side=tk.LEFT, padx=(10, 8))
-                        if desc:
-                            tk.Label(item_frame, text=desc, font=('Segoe UI', 9),
-                                    bg=bg2, fg=fg, justify=tk.LEFT, wraplength=650).pack(anchor='w', side=tk.LEFT)
-                
-                tk.Button(ref_frame, text="Close", font=('Segoe UI', 9),
-                         bg=bg3, fg=fg, relief='flat', command=ref_dialog.destroy).pack(pady=10)
-            
-            btn_frame = tk.Frame(main, bg=bg)
-            btn_frame.pack(fill=tk.X)
-            
-            def save_advanced():
-                sig_name = name_var.get().strip()
-                if not sig_name:
-                    messagebox.showerror("Error", "Please enter a signature name", parent=adv_dialog)
-                    name_entry.focus()
-                    return
-                
-                code = code_area.get('1.0', tk.END).strip()
-                if not code:
-                    messagebox.showerror("Error", "Please enter signature code", parent=adv_dialog)
-                    code_area.focus()
-                    return
-                
-                try:
-                    compile(code, '<string>', 'exec')
-                except SyntaxError as e:
-                    messagebox.showerror("Syntax Error", f"Line {e.lineno}: {e.msg}\n\n{e.text}", parent=adv_dialog)
-                    code_area.focus()
-                    return
-                
-                state['signatures'][sig_name] = {
-                    'code': code,
-                    'advanced': True
-                }
-                save_custom_signatures(state['signatures'])
-                messagebox.showinfo("Success", f"Advanced signature '{sig_name}' saved!", parent=adv_dialog)
-                adv_dialog.destroy()
-                state['mode'] = 'create'
-                show_step_1()
-                update_progress()
-            
-            tk.Button(btn_frame, text="📖 Reference", font=('Segoe UI', 10),
-                     bg='#FF9800', fg='white', relief='flat', command=show_reference).pack(side=tk.LEFT, padx=2)
-            tk.Button(btn_frame, text="📚 View Examples", font=('Segoe UI', 10),
-                     bg='#2196F3', fg='white', relief='flat', command=show_code_examples).pack(side=tk.LEFT, padx=2)
-            tk.Button(btn_frame, text="Save Signature", font=('Segoe UI', 10, 'bold'),
-                     bg='#4caf50', fg='white', relief='flat', command=save_advanced).pack(side=tk.LEFT, padx=2)
-            tk.Button(btn_frame, text="Cancel", font=('Segoe UI', 9),
-                     bg=bg3, fg=fg, relief='flat', command=adv_dialog.destroy).pack(side=tk.LEFT, padx=2)
-        
-        def show_step_1():
-            """Step 1: Select action (New/Edit)"""
-            clear_content()
-            
-            tk.Label(content_frame, text="What would you like to do?",
-                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 15))
-            
-            if state['signatures']:
-                tk.Label(content_frame, text="Edit Existing Signature:",
-                        font=('Segoe UI', 10, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 8))
-                
-                sig_list_frame = tk.Frame(content_frame, bg=bg2, relief='flat')
-                sig_list_frame.pack(fill=tk.X, pady=(0, 15))
-                
-                sig_canvas = tk.Canvas(sig_list_frame, bg=bg2, highlightthickness=1, 
-                                      highlightbackground=bg3, height=120)
-                scrollbar = tk.Scrollbar(sig_list_frame, orient="vertical", command=sig_canvas.yview)
-                sig_body = tk.Frame(sig_canvas, bg=bg2)
-                sig_wid = sig_canvas.create_window((0, 0), window=sig_body, anchor="nw")
-                sig_body.bind("<Configure>", lambda e: sig_canvas.configure(scrollregion=sig_canvas.bbox("all")))
-                sig_canvas.bind("<Configure>", lambda e: sig_canvas.itemconfig(sig_wid, width=e.width))
-                sig_canvas.configure(yscrollcommand=scrollbar.set)
-                sig_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-                scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-                
-                for sig_name in sorted(state['signatures'].keys()):
-                    sig_data = state['signatures'][sig_name]
-                    is_disabled = sig_data.get('disabled', False)
-                    
-                    btn_frame = tk.Frame(sig_body, bg=bg3, relief='flat')
-                    btn_frame.pack(fill=tk.X, padx=4, pady=2)
-                    
-                    is_advanced = sig_data.get('advanced', False)
-                    status = "🚀 " if is_advanced else ("● " if not is_disabled else "⊘ ")
-                    label_text = f"{status}{sig_name}"
-                    label_color = '#9c27b0' if is_advanced else (fg if not is_disabled else '#666')
-                    tk.Label(btn_frame, text=label_text, font=('Segoe UI', 9),
-                            bg=bg3, fg=label_color, 
-                            width=30, anchor='w', padx=8, pady=6).pack(side=tk.LEFT, fill=tk.X, expand=True)
-                    
-                    def make_edit(name):
-                        def edit_sig():
-                            if state['signatures'][name].get('advanced', False):
-                                show_advanced_editor_edit(name)
-                            else:
-                                state['mode'] = 'edit'
-                                state['edit_sig'] = name
-                                state['current_sig'] = state['signatures'][name].copy()
-                                show_edit_menu(name)
-                        return edit_sig
-                    
-                    def make_test(name):
-                        def test_sig():
-                            if not hasattr(self, 'df') or self.df.empty:
-                                messagebox.showerror("Error", "Load a CSV file first to test signature")
-                                return
-                            
-                            sig_data_test = state['signatures'][name]
-                            if sig_data_test.get('disabled', False):
-                                messagebox.showwarning("Warning", "This signature is disabled")
-                                return
-                            
-                            try:
-                                df = self.df
-                                
-                                if sig_data_test.get('advanced', False):
-                                    code = sig_data_test.get('code', '')
-                                    test_results = []
-                                    def test_add(name, severity, description, evidence, advice=None, mask=None, cols=None):
-                                        test_results.append({
-                                            'name': name,
-                                            'severity': severity,
-                                            'description': description,
-                                            'evidence': evidence
-                                        })
-                                    
-                                    try:
-                                        exec(code, {'pd': pd, 'add': test_add, 'df': df})
-                                    except Exception as e:
-                                        messagebox.showerror("Execution Error", f"{type(e).__name__}: {str(e)}")
-                                        return
-                                    
-                                    if not test_results:
-                                        messagebox.showinfo("Test Result", "✓ No violations detected\n\nCode executed successfully but no signatures fired.")
-                                        return
-                                    
-                                    result = test_results[0]
-                                    msg = f"✓ Signature Fired!\n\n"
-                                    msg += f"Name: {result['name']}\n"
-                                    msg += f"Severity: {result['severity']}\n"
-                                    msg += f"Description: {result['description']}\n"
-                                    if result['evidence']:
-                                        msg += f"Evidence:\n" + "\n".join(f"  • {e}" for e in result['evidence'])
-                                    messagebox.showinfo("Test Result", msg)
-                                    return
-                                
-                                tracked = sig_data_test.get('tracked_sensors', [])
-                                excluded = sig_data_test.get('excluded_sensors', [])
-                                mins_dict = sig_data_test.get('sensor_mins', {})
-                                maxs_dict = sig_data_test.get('sensor_maxs', {})
-                                trigger_mode = sig_data_test.get('trigger', {}).get('mode', 'always')
-                                default_sev = sig_data_test.get('default_severity', 'WARNING')
-                                
-                                sensor_to_col = {}
-                                for sensor_name in tracked:
-                                    sensor_upper = sensor_name.upper()
-                                    if sensor_name in df.columns:
-                                        sensor_to_col[sensor_name] = sensor_name
-                                    else:
-                                        for col in df.columns:
-                                            if sensor_upper in col.upper():
-                                                sensor_to_col[sensor_name] = col
-                                                break
-                                
-                                excluded_upper_set = set(e.upper() for e in excluded)
-                                filtered_mapping = {}
-                                for sensor_name, col in sensor_to_col.items():
-                                    if not any(exc_upper in col.upper() for exc_upper in excluded_upper_set):
-                                        filtered_mapping[sensor_name] = col
-                                
-                                if not filtered_mapping:
-                                    messagebox.showinfo("Test Result", f"❌ No sensors matched!\n\nTracked: {tracked}\nExcluded: {excluded}")
-                                    return
-                                
-                                violation_count = 0
-                                evidence = []
-                                for sensor_name, col in filtered_mapping.items():
-                                    if col not in df.columns:
-                                        continue
-                                    col_data = pd.to_numeric(df[col], errors='coerce')
-                                    
-                                    if sensor_name in mins_dict:
-                                        min_val = float(mins_dict[sensor_name])
-                                        min_viols = (col_data < min_val).sum()
-                                        if min_viols > 0:
-                                            violation_count += min_viols
-                                            evidence.append(f"{col}: {min_viols} below {min_val}")
-                                    
-                                    if sensor_name in maxs_dict:
-                                        max_val = float(maxs_dict[sensor_name])
-                                        max_viols = (col_data > max_val).sum()
-                                        if max_viols > 0:
-                                            violation_count += max_viols
-                                            evidence.append(f"{col}: {max_viols} above {max_val}")
-                                
-                                if violation_count == 0:
-                                    messagebox.showinfo("Test Result", f"✓ No violations detected\n\nSensors checked: {len(filtered_mapping)}")
-                                    return
-                                
-                                if trigger_mode == 'always':
-                                    severity = default_sev
-                                else:
-                                    trigger_conf = sig_data_test.get('trigger', {})
-                                    info_threshold = trigger_conf.get('info_count', 5)
-                                    warn_threshold = trigger_conf.get('warn_count', 10)
-                                    crit_threshold = trigger_conf.get('crit_count', 15)
-                                    
-                                    if violation_count >= crit_threshold:
-                                        severity = 'CRITICAL'
-                                    elif violation_count >= warn_threshold:
-                                        severity = 'WARNING'
-                                    elif violation_count >= info_threshold:
-                                        severity = 'INFO'
-                                    else:
-                                        messagebox.showinfo("Test Result", f"✓ Below trigger threshold\n\nViolations: {violation_count}\nThresholds: INFO={info_threshold}, WARNING={warn_threshold}, CRITICAL={crit_threshold}")
-                                        return
-                                
-                                result_text = f"⚠️  SIGNATURE TRIGGERED\n\n"
-                                result_text += f"Severity: {severity}\n"
-                                result_text += f"Violations: {violation_count}\n\n"
-                                result_text += "Evidence:\n"
-                                for ev in evidence[:5]:
-                                    result_text += f"  • {ev}\n"
-                                
-                                messagebox.showinfo("Test Result", result_text)
-                                
-                            except Exception as e:
-                                messagebox.showerror("Error", f"Test failed: {str(e)}")
-                        return test_sig
-                    
-                    def make_delete(name):
-                        def delete_sig():
-                            if messagebox.askyesno("Confirm Delete", f"Delete signature '{name}'?\n\nThis cannot be undone."):
-                                del state['signatures'][name]
-                                save_custom_signatures(state['signatures'])
-                                show_step_1()
-                                update_progress()
-                        return delete_sig
-                    
-                    tk.Button(btn_frame, text="🧪 Test", font=('Segoe UI', 8), relief='flat',
-                             bg='#9c27b0', fg="white", width=8, command=make_test(sig_name)).pack(side=tk.LEFT, padx=1)
-                    tk.Button(btn_frame, text="Edit", font=('Segoe UI', 8), relief='flat',
-                             bg=accent, fg='white', width=6, command=make_edit(sig_name)).pack(side=tk.LEFT, padx=1)
-                    tk.Button(btn_frame, text="🗑️ Delete", font=('Segoe UI', 8), relief='flat',
-                             bg='#ff4d4d', fg="white", width=10, command=make_delete(sig_name)).pack(side=tk.LEFT, padx=1)
-            
-            tk.Label(content_frame, text="Create New Signature:",
-                    font=('Segoe UI', 10, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(15, 8))
-            
-            btn_frame = tk.Frame(content_frame, bg=bg)
-            btn_frame.pack(anchor='w', pady=(0, 10))
-            
-            tk.Button(btn_frame, text="✨ Create Simple Signature",
-                     font=('Segoe UI', 10, 'bold'), bg=accent, fg='white',
-                     relief='flat', padx=15, pady=10,
-                     command=lambda: (
-                         state.update({'mode': 'create', 'step': 2, 'edit_sig': None, 'advanced_mode': False}),
-                         state['current_sig'].update({
-                             'name': '', 'tracked_sensors': [], 'excluded_sensors': [],
-                             'sensor_mins': {}, 'sensor_maxs': {}, 'description': '', 'advice': ''
-                         }),
-                         show_step_2(),
-                         update_progress()
-                     )).pack()
-            
-            tk.Button(btn_frame, text="🚀 Create Advanced Signature",
-                     font=('Segoe UI', 10, 'bold'), bg='#9c27b0', fg='white',
-                     relief='flat', padx=15, pady=10,
-                     command=lambda: (
-                         state.update({'mode': 'create', 'edit_sig': None, 'advanced_mode': True}),
-                         show_advanced_editor()
-                     )).pack(pady=(5, 0))
-        
-        def show_step_2():
-            """Step 2: Name"""
-            clear_content()
-            
-            tk.Label(content_frame, text="Signature Name",
-                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            tk.Label(content_frame, text="Give your signature a descriptive name (e.g., 'GPU Overtemp Warning')",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 12))
-            
-            name_var = tk.StringVar(value=state['current_sig'].get('name', ''))
-            name_entry = tk.Entry(content_frame, textvariable=name_var, font=('Segoe UI', 10),
-                                 bg=bg2, fg=fg, insertbackground=fg, relief='flat', width=40)
-            name_entry.pack(anchor='w', fill=tk.X, pady=(0, 15))
-            name_entry.focus()
-            
-            feedback_label = tk.Label(content_frame, text="", font=('Segoe UI', 9),
-                                     bg=bg, fg='#888')
-            feedback_label.pack(anchor='w')
-            
-            def check_name(*args):
-                name = name_var.get().strip()
-                if not name:
-                    feedback_label.config(text="⚠️  Name is required", fg='#f39c12')
-                elif name in state['signatures'] and state['mode'] == 'create':
-                    feedback_label.config(text="⚠️  Name already exists", fg='#ff4444')
-                else:
-                    feedback_label.config(text="✓ Name is valid", fg='#4caf50')
-            
-            name_var.trace('w', check_name)
-            check_name()
-            
-            def next_step():
-                name = name_var.get().strip()
-                if not name:
-                    messagebox.showerror("Error", "Please enter a name")
-                    return
-                if name in state['signatures'] and state['mode'] == 'create':
-                    messagebox.showerror("Error", "This name already exists")
-                    return
-                state['current_sig']['name'] = name
-                state['step'] = 3
-                show_step_3()
-                update_progress()
-            
-            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
-                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(20, 0))
-        
-        def show_step_3():
-            """Step 3: Severity"""
-            clear_content()
-            
-            tk.Label(content_frame, text="Default Severity Level",
-                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            tk.Label(content_frame, text="Choose the severity for 'Always' mode or as base level for 'Consecutive' mode",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 15))
-            
-            sev_var = tk.StringVar(value=state['current_sig'].get('default_severity', 'WARNING'))
-            
-            for sev, color, desc in [
-                ('CRITICAL', '#ff4d4d', 'Serious issue - immediate attention required'),
-                ('WARNING', '#f59e0b', 'Problem detected - needs investigation'),
-                ('INFO', '#38bdf8', 'Informational - minor issues or trends')
-            ]:
-                frame = tk.Frame(content_frame, bg=bg3, relief='flat')
-                frame.pack(fill=tk.X, pady=4)
-                
-                rb = tk.Radiobutton(frame, text='', variable=sev_var, value=sev,
-                                   bg=bg3, fg=fg, selectcolor=accent, relief='flat')
-                rb.pack(side=tk.LEFT, padx=8, pady=8)
-                
-                tk.Label(frame, text=sev, font=('Segoe UI', 10, 'bold'),
-                        bg=color, fg='white', width=10, padx=8).pack(side=tk.LEFT)
-                
-                tk.Label(frame, text=desc, font=('Segoe UI', 9),
-                        bg=bg3, fg=fg, padx=8).pack(side=tk.LEFT, fill=tk.X, expand=True)
-            
-            def next_step():
-                state['current_sig']['default_severity'] = sev_var.get()
-                state['step'] = 4
-                show_step_4()
-                update_progress()
-            
-            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
-                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(20, 0))
-        
-        def show_step_4():
-            """Step 4: Trigger Mode"""
-            clear_content()
-            
-            tk.Label(content_frame, text="Trigger Mode",
-                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            tk.Label(content_frame, text="How should this signature trigger?",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 15))
-            
-            mode_var = tk.StringVar(value=state['current_sig'].get('trigger_mode', 'always'))
-            
-            frame1 = tk.Frame(content_frame, bg=bg3, relief='flat')
-            frame1.pack(fill=tk.X, pady=4)
-            rb1 = tk.Radiobutton(frame1, text='', variable=mode_var, value='always',
-                                bg=bg3, selectcolor=accent)
-            rb1.pack(side=tk.LEFT, padx=8, pady=8)
-            tk.Label(frame1, text="Always Trigger", font=('Segoe UI', 10, 'bold'),
-                    bg=bg3, fg=fg).pack(side=tk.LEFT, padx=8)
-            
-            always_desc = tk.Frame(content_frame, bg=bg)
-            always_desc.pack(fill=tk.X, padx=30, pady=(0, 15))
-            tk.Label(always_desc, text="Triggers immediately when any violation is detected\nUse for: Absolute limits that should never be exceeded",
-                    font=('Segoe UI', 9), bg=bg, fg='#888', justify='left').pack(anchor='w')
-            
-            frame2 = tk.Frame(content_frame, bg=bg3, relief='flat')
-            frame2.pack(fill=tk.X, pady=4)
-            rb2 = tk.Radiobutton(frame2, text='', variable=mode_var, value='consecutive',
-                                bg=bg3, selectcolor=accent)
-            rb2.pack(side=tk.LEFT, padx=8, pady=8)
-            tk.Label(frame2, text="Consecutive Violations", font=('Segoe UI', 10, 'bold'),
-                    bg=bg3, fg=fg).pack(side=tk.LEFT, padx=8)
-            
-            cons_desc = tk.Frame(content_frame, bg=bg)
-            cons_desc.pack(fill=tk.X, padx=30, pady=(0, 15))
-            tk.Label(cons_desc, text="Escalates severity based on violation count\nUse for: Detecting trends, reducing false positives",
-                    font=('Segoe UI', 9), bg=bg, fg='#888', justify='left').pack(anchor='w')
-            
-            def next_step():
-                state['current_sig']['trigger_mode'] = mode_var.get()
-                state['step'] = 5
-                show_step_5()
-                update_progress()
-            
-            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
-                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(20, 0))
-        
-        def show_step_5():
-            """Step 5: Select Sensors"""
-            clear_content()
-            
-            tk.Label(content_frame, text="Select Sensors to Monitor",
-                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            available_sensors = get_available_sensors()
-            
-            if not available_sensors:
-                tk.Label(content_frame, text="⚠️  No sensors available. Load a CSV file first.",
-                        font=('Segoe UI', 10), bg=bg, fg='#ff4444').pack(anchor='w', pady=20)
-                
-                def next_step():
-                    state['step'] = 6
-                    show_step_6()
-                    update_progress()
-                
-                tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
-                         bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(20, 0))
+                    val = float(r['value'].get())
+                except ValueError:
+                    continue
+                gates.append({'sensor': tok,
+                              'op': LABEL_OPS.get(r['op'].get(), 'above'),
+                              'value': val})
+            return {'format': CUSTOM_SIG_FORMAT,
+                    'name': name_var.get().strip(),
+                    'severity': sev_var.get(),
+                    'logic': ('any' if logic_var.get() == 'ANY' else 'all'),
+                    'conditions': conds, 'gates': gates,
+                    'description': desc_var.get().strip(),
+                    'advice': adv_var.get().strip()}
+
+        def load_into_editor(sig):
+            for r in list(cond_rows):
+                remove_row(cond_rows, r)
+            for r in list(gate_rows):
+                remove_row(gate_rows, r)
+            name_var.set(sig.get('name', ''))
+            sev_var.set(sig.get('severity', 'WARNING'))
+            logic_var.set('ANY' if sig.get('logic') == 'any' else 'ALL')
+            desc_var.set(sig.get('description', ''))
+            adv_var.set(sig.get('advice', ''))
+            for c in sig.get('conditions') or []:
+                add_condition_row(c)
+            if not (sig.get('conditions') or []):
+                add_condition_row()
+            for g in sig.get('gates') or []:
+                add_gate_row(g)
+            schedule_test()
+
+        def draw_spark(res):
+            w, h = spark.winfo_width(), spark.winfo_height()
+            if w < 40 or h < 30:
+                w, h = 330, 96
+            spark.delete('all')
+            if not has_df:
+                spark.create_text(w // 2, h // 2, text='no log loaded',
+                                  fill='#666', font=('Segoe UI', 9))
                 return
-            
-            tk.Label(content_frame, text="Select sensors to track for violations:",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 10))
-            
-            search_frame = tk.Frame(content_frame, bg=bg)
-            search_frame.pack(fill=tk.X, pady=(0, 10))
-            
-            tk.Label(search_frame, text="Search:", font=('Segoe UI', 9),
-                    bg=bg, fg=fg).pack(side=tk.LEFT, padx=(0, 5))
-            
-            search_var = tk.StringVar()
-            search_entry = tk.Entry(search_frame, textvariable=search_var, font=('Segoe UI', 9),
-                                   bg=bg2, fg=fg, insertbackground=fg, relief='flat', width=30)
-            search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
-            search_entry.focus()
-            
-            sensor_frame = tk.Frame(content_frame, bg=bg)
-            sensor_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
-            
-            sensor_canvas = tk.Canvas(sensor_frame, bg=bg2, highlightthickness=1,
-                                     highlightbackground=bg3)
-            scrollbar = tk.Scrollbar(sensor_frame, orient="vertical", command=sensor_canvas.yview)
-            sensor_body = tk.Frame(sensor_canvas, bg=bg2)
-            sensor_wid = sensor_canvas.create_window((0, 0), window=sensor_body, anchor="nw")
-            sensor_body.bind("<Configure>", lambda e: sensor_canvas.configure(scrollregion=sensor_canvas.bbox("all")))
-            sensor_canvas.bind("<Configure>", lambda e: sensor_canvas.itemconfig(sensor_wid, width=e.width))
-            sensor_canvas.configure(yscrollcommand=scrollbar.set)
-            sensor_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-            
-            sensor_vars = {}
-            
-            def render_sensors(filter_text=''):
-                """Render sensors, filtering by search text"""
-                for w in sensor_body.winfo_children():
-                    w.destroy()
-                
-                filtered = [s for s in available_sensors if filter_text.lower() in s.lower()]
-                
-                if not filtered:
-                    tk.Label(sensor_body, text="No sensors match search", font=('Segoe UI', 9),
-                            bg=bg2, fg='#888').pack(fill=tk.X, padx=8, pady=10)
-                    return
-                
-                for sensor in filtered:
-                    is_tracked = sensor in state['current_sig'].get('tracked_sensors', [])
-                    var = tk.BooleanVar(value=is_tracked)
-                    sensor_vars[sensor] = var
-                    
-                    frame = tk.Frame(sensor_body, bg=bg3)
-                    frame.pack(fill=tk.X, padx=4, pady=2)
-                    
-                    cb = tk.Checkbutton(frame, text=sensor, variable=var,
-                                       font=('Segoe UI', 9), bg=bg3, fg=fg,
-                                       selectcolor=accent, activebackground=bg3)
-                    cb.pack(fill=tk.X, padx=8, pady=6)
-            
-            def on_search(*args):
-                """Handle search input"""
-                render_sensors(search_var.get())
-            
-            search_var.trace('w', on_search)
-            render_sensors()
-            
-            def next_step():
-                tracked = [s for s, v in sensor_vars.items() if v.get()]
-                if not tracked:
-                    messagebox.showerror("Error", "Please select at least one sensor")
-                    return
-                state['current_sig']['tracked_sensors'] = tracked
-                state['step'] = 6
-                show_step_6()
-                update_progress()
-            
-            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
-                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(10, 0))
-        
-        def show_step_6():
-            """Step 6: Set Thresholds"""
-            clear_content()
-            
-            tk.Label(content_frame, text="Set Min/Max Thresholds",
-                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            tk.Label(content_frame, text="Define acceptable value ranges for selected sensors:",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 15))
-            
-            threshold_frame = tk.Frame(content_frame, bg=bg)
-            threshold_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
-            
-            threshold_canvas = tk.Canvas(threshold_frame, bg=bg2, highlightthickness=1,
-                                        highlightbackground=bg3)
-            scrollbar = tk.Scrollbar(threshold_frame, orient="vertical", command=threshold_canvas.yview)
-            threshold_body = tk.Frame(threshold_canvas, bg=bg2)
-            threshold_wid = threshold_canvas.create_window((0, 0), window=threshold_body, anchor="nw")
-            threshold_body.bind("<Configure>", lambda e: threshold_canvas.configure(scrollregion=threshold_canvas.bbox("all")))
-            threshold_canvas.bind("<Configure>", lambda e: threshold_canvas.itemconfig(threshold_wid, width=e.width))
-            threshold_canvas.configure(yscrollcommand=scrollbar.set)
-            threshold_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-            
-            threshold_vars = {}
-            mins_dict = state['current_sig'].get('sensor_mins', {})
-            maxs_dict = state['current_sig'].get('sensor_maxs', {})
-            
-            for sensor in state['current_sig'].get('tracked_sensors', []):
-                frame = tk.Frame(threshold_body, bg=bg3, relief='flat')
-                frame.pack(fill=tk.X, padx=4, pady=4)
-                
-                tk.Label(frame, text=sensor, font=('Segoe UI', 9, 'bold'),
-                        bg=bg3, fg=fg, width=25, anchor='w').pack(side=tk.LEFT, padx=8, pady=6)
-                
-                min_var = tk.StringVar(value=str(mins_dict.get(sensor, '')))
-                min_entry = tk.Entry(frame, textvariable=min_var, font=('Segoe UI', 9),
-                                    bg=bg, fg=fg, insertbackground=fg, relief='flat', width=8)
-                min_entry.pack(side=tk.LEFT, padx=4)
-                tk.Label(frame, text="min", font=('Segoe UI', 8),
-                        bg=bg3, fg='#888').pack(side=tk.LEFT)
-                
-                max_var = tk.StringVar(value=str(maxs_dict.get(sensor, '')))
-                max_entry = tk.Entry(frame, textvariable=max_var, font=('Segoe UI', 9),
-                                    bg=bg, fg=fg, insertbackground=fg, relief='flat', width=8)
-                max_entry.pack(side=tk.LEFT, padx=4)
-                tk.Label(frame, text="max", font=('Segoe UI', 8),
-                        bg=bg3, fg='#888').pack(side=tk.LEFT)
-                
-                threshold_vars[sensor] = (min_var, max_var)
-            
-            if state['current_sig'].get('trigger_mode') == 'consecutive':
-                tk.Label(content_frame, text="Violation Thresholds (for Consecutive mode):",
-                        font=('Segoe UI', 10, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(15, 8))
-                
-                thres_frame = tk.Frame(content_frame, bg=bg)
-                thres_frame.pack(fill=tk.X, pady=(0, 10))
-                
-                info_var = tk.StringVar(value=str(state['current_sig'].get('info_count', 5)))
-                warn_var = tk.StringVar(value=str(state['current_sig'].get('warn_count', 10)))
-                crit_var = tk.StringVar(value=str(state['current_sig'].get('crit_count', 15)))
-                
-                row1 = tk.Frame(thres_frame, bg=bg)
-                row1.pack(fill=tk.X, pady=2)
-                tk.Label(row1, text="INFO after", font=('Segoe UI', 9),
-                        bg=bg, fg=fg).pack(side=tk.LEFT)
-                tk.Entry(row1, textvariable=info_var, font=('Segoe UI', 9),
-                        bg=bg2, fg=fg, relief='flat', width=6).pack(side=tk.LEFT, padx=4)
-                tk.Label(row1, text="violations", font=('Segoe UI', 9),
-                        bg=bg, fg=fg).pack(side=tk.LEFT)
-                
-                row2 = tk.Frame(thres_frame, bg=bg)
-                row2.pack(fill=tk.X, pady=2)
-                tk.Label(row2, text="WARNING after", font=('Segoe UI', 9),
-                        bg=bg, fg=fg).pack(side=tk.LEFT)
-                tk.Entry(row2, textvariable=warn_var, font=('Segoe UI', 9),
-                        bg=bg2, fg=fg, relief='flat', width=6).pack(side=tk.LEFT, padx=4)
-                tk.Label(row2, text="violations", font=('Segoe UI', 9),
-                        bg=bg, fg=fg).pack(side=tk.LEFT)
-                
-                row3 = tk.Frame(thres_frame, bg=bg)
-                row3.pack(fill=tk.X, pady=2)
-                tk.Label(row3, text="CRITICAL after", font=('Segoe UI', 9),
-                        bg=bg, fg=fg).pack(side=tk.LEFT)
-                tk.Entry(row3, textvariable=crit_var, font=('Segoe UI', 9),
-                        bg=bg2, fg=fg, relief='flat', width=6).pack(side=tk.LEFT, padx=4)
-                tk.Label(row3, text="violations", font=('Segoe UI', 9),
-                        bg=bg, fg=fg).pack(side=tk.LEFT)
-            else:
-                info_var = warn_var = crit_var = None
-            
-            def next_step():
-                mins = {}
-                maxs = {}
-                for sensor, (min_v, max_v) in threshold_vars.items():
-                    min_str = min_v.get().strip()
-                    max_str = max_v.get().strip()
-                    if min_str:
-                        try:
-                            mins[sensor] = float(min_str)
-                        except ValueError:
-                            pass
-                    if max_str:
-                        try:
-                            maxs[sensor] = float(max_str)
-                        except ValueError:
-                            pass
-                
-                if not mins and not maxs:
-                    messagebox.showerror("Error", "Set at least one min or max threshold")
-                    return
-                
-                state['current_sig']['sensor_mins'] = mins
-                state['current_sig']['sensor_maxs'] = maxs
-                
-                if state['current_sig'].get('trigger_mode') == 'consecutive':
+            sig = collect()
+            series = None
+            for c in sig.get('conditions') or []:
+                col, status, _c = resolve_sensor_token(self.df, c.get('sensor'))
+                if col is not None:
                     try:
-                        state['current_sig']['info_count'] = int(info_var.get() or 5)
-                        state['current_sig']['warn_count'] = int(warn_var.get() or 10)
-                        state['current_sig']['crit_count'] = int(crit_var.get() or 15)
-                    except (ValueError, TypeError):
-                        pass
-                
-                if state['advanced_mode']:
-                    state['step'] = 6.5
-                    show_step_6_advanced()
-                else:
-                    state['step'] = 7
-                    show_step_7()
-                update_progress()
-            
-            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
-                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(10, 0))
-        
-        def show_step_6_advanced():
-            """Step 6.5: Advanced Fields (optional)"""
-            clear_content()
-            
-            if not state['advanced_mode']:
-                state['step'] = 7
-                show_step_7()
-                update_progress()
+                        series = _cond_series(
+                            self.df, dict(c, _col=col),
+                            estimate_poll_seconds(self.df))
+                    except Exception:
+                        series = None
+                    if series is not None:
+                        break
+            if series is None:
+                spark.create_text(w // 2, h // 2, text='pick a sensor to preview',
+                                  fill='#666', font=('Segoe UI', 9))
                 return
-            
-            tk.Label(content_frame, text="Advanced Options (Optional)",
-                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 5))
-            
-            tk.Label(content_frame, text="Add custom description and advice text (like built-in signatures):",
-                    font=('Segoe UI', 9), bg=bg, fg='#888').pack(anchor='w', pady=(0, 12))
-            
-            tk.Label(content_frame, text="Description:",
-                    font=('Segoe UI', 9, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 4))
-            
-            desc_text = tk.Text(content_frame, height=3, width=40, bg=bg2, fg=fg,
-                               insertbackground=fg, relief='flat')
-            desc_text.pack(fill=tk.X, pady=(0, 8))
-            desc_text.insert('1.0', state['current_sig'].get('description', ''))
-            
-            tk.Label(content_frame, text="Advice (optional):",
-                    font=('Segoe UI', 9, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(8, 4))
-            
-            advice_text = tk.Text(content_frame, height=3, width=40, bg=bg2, fg=fg,
-                                 insertbackground=fg, relief='flat')
-            advice_text.pack(fill=tk.X, pady=(0, 8))
-            advice_text.insert('1.0', state['current_sig'].get('advice', ''))
-            
-            def next_step():
-                state['current_sig']['description'] = desc_text.get('1.0', tk.END).strip()
-                state['current_sig']['advice'] = advice_text.get('1.0', tk.END).strip()
-                state['step'] = 7
-                show_step_7()
-                update_progress()
-            
-            tk.Button(content_frame, text="Next →", font=('Segoe UI', 9, 'bold'),
-                     bg=accent, fg='white', relief='flat', command=next_step).pack(anchor='w', pady=(10, 0))
-        
-        def show_step_7():
-            """Step 7: Review and Save"""
-            clear_content()
-            
-            tk.Label(content_frame, text="Review & Save",
-                    font=('Segoe UI', 11, 'bold'), bg=bg, fg=fg).pack(anchor='w', pady=(0, 15))
-            
-            sig = state['current_sig']
-            
-            summary_frame = tk.Frame(content_frame, bg=bg3, relief='flat')
-            summary_frame.pack(fill=tk.X, pady=(0, 15))
-            
-            summary_text = f"""
-Name: {sig.get('name', 'N/A')}
-Severity: {sig.get('default_severity', 'WARNING')}
-Mode: {sig.get('trigger_mode', 'always').title()}
-Sensors: {len(sig.get('tracked_sensors', []))} selected
+            s = series.dropna()
+            if len(s) < 2:
+                spark.create_text(w // 2, h // 2, text='sensor has no data',
+                                  fill='#666', font=('Segoe UI', 9))
+                return
+            lo, hi = float(s.min()), float(s.max())
+            if lo == hi:
+                hi = lo + 1.0
+            n = len(series)
+            pad_l, pad_r, pad_t, pad_b = 34, 6, 6, 16
+            def X(i):
+                return pad_l + (w - pad_l - pad_r) * (i / max(1, n - 1))
+            def Y(v):
+                return pad_t + (h - pad_t - pad_b) * (1 - (v - lo) / (hi - lo))
+            if res is not None and res.get('fired') and res.get('spans'):
+                for a, b in res['spans']:
+                    spark.create_rectangle(X(a), pad_t, X(b), h - pad_b,
+                                           fill='#ff4d4d', stipple='gray50',
+                                           outline='')
+            coords, chunk = [], []
+            for i, v in enumerate(series.values):
+                if v is None or (isinstance(v, float) and math.isnan(v)):
+                    if len(chunk) > 1:
+                        coords.extend(chunk)
+                    chunk = []
+                    continue
+                chunk.extend((X(i), Y(float(v))))
+                if len(chunk) > 1600:
+                    coords.extend(chunk)
+                    chunk = []
+            if len(chunk) > 1:
+                coords.extend(chunk)
+            if len(coords) >= 4:
+                spark.create_line(*coords, fill=accent, width=1)
+            spark.create_text(4, pad_t + 4, anchor='nw', text=f'{hi:g}',
+                              fill='#888', font=('Segoe UI', 7))
+            spark.create_text(4, h - pad_b - 4, anchor='sw', text=f'{lo:g}',
+                              fill='#888', font=('Segoe UI', 7))
+            tc = next((c for c in ('Time', 'time') if c in self.df.columns), None)
+            if tc is not None and n > 1:
+                try:
+                    t0 = str(self.df[tc].iloc[0]).split('.')[0]
+                    t1 = str(self.df[tc].iloc[n - 1]).split('.')[0]
+                    spark.create_text(pad_l, h - pad_b + 2, anchor='nw', text=t0,
+                                      fill='#666', font=('Segoe UI', 7))
+                    spark.create_text(w - pad_r, h - pad_b + 2, anchor='ne',
+                                      text=t1, fill='#666', font=('Segoe UI', 7))
+                except Exception:
+                    pass
 
-Min/Max Thresholds:
-"""
-            for sensor in sig.get('tracked_sensors', []):
-                min_v = sig.get('sensor_mins', {}).get(sensor)
-                max_v = sig.get('sensor_maxs', {}).get(sensor)
-                if min_v is not None:
-                    summary_text += f"  • {sensor}: min={min_v}"
-                if max_v is not None:
-                    summary_text += f" max={max_v}" if min_v else f"  • {sensor}: max={max_v}"
-                summary_text += "\n"
-            
-            if sig.get('trigger_mode') == 'consecutive':
-                summary_text += f"\nViolation Thresholds:\n"
-                summary_text += f"  • INFO: {sig.get('info_count', 5)}\n"
-                summary_text += f"  • WARNING: {sig.get('warn_count', 10)}\n"
-                summary_text += f"  • CRITICAL: {sig.get('crit_count', 15)}"
-            
-            tk.Label(content_frame, text=summary_text, font=('Segoe UI', 9),
-                    bg=bg3, fg=fg, justify='left', padx=12, pady=10).pack(fill=tk.X)
-            
-            tk.Label(content_frame, text="✓ Ready to save! Click 'Save Signature' to continue.",
-                    font=('Segoe UI', 9), bg=bg, fg='#4caf50').pack(anchor='w', pady=(15, 0))
-            
-            def save():
-                name = sig.get('name', '')
-                if state['mode'] == 'edit' and state['edit_sig']:
-                    if name != state['edit_sig'] and state['edit_sig'] in state['signatures']:
-                        del state['signatures'][state['edit_sig']]
-                
-                disabled = state['signatures'].get(state['edit_sig'], {}).get('disabled', False) if state['mode'] == 'edit' else False
-                
-                sig_to_save = {
-                    'default_severity': sig['default_severity'],
-                    'tracked_sensors': sig['tracked_sensors'],
-                    'excluded_sensors': sig.get('excluded_sensors', []),
-                    'sensor_mins': sig['sensor_mins'],
-                    'sensor_maxs': sig['sensor_maxs'],
-                    'trigger': {
-                        'mode': sig['trigger_mode'],
-                        'info_count': sig.get('info_count', 5),
-                        'warn_count': sig.get('warn_count', 10),
-                        'crit_count': sig.get('crit_count', 15)
-                    },
-                    'disabled': disabled
-                }
-                
-                if state['advanced_mode']:
-                    if sig.get('description'):
-                        sig_to_save['description'] = sig['description']
-                    if sig.get('advice'):
-                        sig_to_save['advice'] = sig['advice']
-                
-                state['signatures'][name] = sig_to_save
-                
-                save_custom_signatures(state['signatures'])
-                
-                state['current_sig'] = {
-                    'name': '', 'default_severity': 'WARNING', 'trigger_mode': 'always',
-                    'tracked_sensors': [], 'excluded_sensors': [],
-                    'sensor_mins': {}, 'sensor_maxs': {}
-                }
-                state['mode'] = 'create'
-                state['edit_sig'] = None
-                state['step'] = 1
-                show_step_1()
-                update_progress()
-                messagebox.showinfo("Success", f"Signature '{name}' saved!")
-            
-            tk.Button(content_frame, text="✓ Save Signature", font=('Segoe UI', 10, 'bold'),
-                     bg='#4caf50', fg='white', relief='flat', command=save).pack(anchor='w', pady=(0, 10))
-        
-        show_step_1()
-        update_progress()
-        
-        for btn in btn_row.winfo_children():
-            btn.destroy()
-        
-        def save_all():
-            save_custom_signatures(state['signatures'])
-            messagebox.showinfo("Success", f"Saved {len(state['signatures'])} signature(s).")
-            dialog.destroy()
-        
-        def cancel():
-            if state['signatures'] != custom_sigs:
-                if messagebox.askyesno("Confirm", "Close without saving changes?"):
-                    dialog.destroy()
+        def run_test():
+            state['job'] = None
+            if not has_df:
+                test_status.config(text='- no log loaded -', fg='#888')
+                test_ev.config(state='normal')
+                test_ev.delete('1.0', tk.END)
+                test_ev.insert('1.0',
+                               "Open a CSV log first - the signature will be "
+                               "tested live as you edit.")
+                test_ev.config(state='disabled')
+                draw_spark(None)
+                return
+            sig = collect()
+            res = evaluate_custom_signature(
+                self.df, sig,
+                hints=(getattr(self, 'median_poll_sec', None),))
+            state['last_result'] = res
+            test_ev.config(state='normal')
+            test_ev.delete('1.0', tk.END)
+            if res['fired']:
+                col = _SEV_COLORS.get(res['severity'], '#f59e0b')
+                span = ''
+                if res['spans']:
+                    span = f" · {len(res['spans'])} event(s) · {res['n_event']} readings"
+                test_status.config(text=f"✓ FIRES ({res['severity']}){span}", fg=col)
+                for l in res['evidence']:
+                    test_ev.insert(tk.END, l + '\n')
             else:
-                dialog.destroy()
-        
-        tk.Button(btn_row, text="Save & Close", font=('Segoe UI', 9, 'bold'),
-                 bg=accent, fg='white', relief='flat', command=save_all).pack(side=tk.LEFT, padx=2)
-        tk.Button(btn_row, text="Cancel", font=('Segoe UI', 9),
-                 relief='flat', bg=bg3, fg=fg, command=cancel).pack(side=tk.LEFT, padx=2)
+                ok_conds = [p for p in res['per_condition'] if p['col'] is not None]
+                if ok_conds and not res['notes']:
+                    test_status.config(text="✗ does not fire on this log", fg='#7a9')
+                    best = max(ok_conds, key=lambda p: p['n_bad'])
+                    test_ev.insert(
+                        tk.END,
+                        f"Closest condition: {best['label']}\n"
+                        f"  {best['col']}: {best['n_bad']} violating readings "
+                        f"(longest run {best['longest']}) - never sustained "
+                        "enough to fire.\n")
+                else:
+                    test_status.config(text="✗ not testable on this log", fg='#f66')
+            for n in res['notes']:
+                test_ev.insert(tk.END, f"⚠ {n}\n")
+            test_ev.config(state='disabled')
+            draw_spark(res)
+
+        def refresh_list():
+            for w in list_body.winfo_children():
+                w.destroy()
+            names = sorted(state['signatures'].keys())
+
+            def select(name):
+                state['sel'] = name
+                d = state['signatures'][name]
+                if isinstance(d, dict) and d.get('advanced'):
+                    open_advanced(name=name, code=str(d.get('code', '')))
+                    return
+                load_into_editor(dict(d, name=name))
+                refresh_list()
+
+            for name in names:
+                d = state['signatures'][name]
+                row = tk.Frame(list_body, bg=bg3)
+                row.pack(fill=tk.X, padx=3, pady=2)
+                is_adv = bool(d.get('advanced'))
+                legacy = not (isinstance(d, dict) and d.get('format') == 2
+                              or is_adv)
+                if legacy:
+                    mark, mcol = '◇', '#777'
+                elif name in self.disabled_sigs:
+                    mark, mcol = '⊘', ('#9c27b0' if is_adv else '#666')
+                elif is_adv:
+                    mark, mcol = '🚀', '#9c27b0'
+                else:
+                    mark, mcol = '●', '#4caf50'
+                sel = (state['sel'] == name)
+                btn = tk.Button(row, text=f"{mark}  {name}", font=('Segoe UI', 9),
+                                bg=(bg2 if sel else bg3), fg=(mcol if not sel else fg),
+                                relief='flat', anchor='w',
+                                command=lambda n=name: select(n))
+                btn.pack(fill=tk.X, ipady=3)
+            if not names:
+                tk.Label(list_body, text="No signatures yet.\nCreate one on the right →",
+                         font=('Segoe UI', 9), bg=bg2, fg='#666',
+                         justify='left').pack(padx=8, pady=10, anchor='w')
+
+        def do_new():
+            state['sel'] = None
+            load_into_editor({'name': '', 'severity': 'WARNING',
+                              'logic': 'all', 'conditions': [{}], 'gates': [],
+                              'description': '', 'advice': ''})
+            refresh_list()
+            name_entry.focus_set()
+
+        def do_save():
+            sig = collect()
+            if not sig['name']:
+                messagebox.showwarning("Name needed",
+                                       "Give the signature a name first.",
+                                       parent=dialog)
+                return
+            if not sig['conditions']:
+                messagebox.showwarning(
+                    "No conditions",
+                    "Add at least one condition with a sensor and a value.",
+                    parent=dialog)
+                return
+            bad = [c for c in sig['conditions'] if c['value'] is None]
+            if bad:
+                messagebox.showwarning(
+                    "Bad value",
+                    "Every condition needs a numeric value.",
+                    parent=dialog)
+                return
+            old = state['sel']
+            if old and old != sig['name']:
+                state['signatures'].pop(old, None)
+            state['signatures'][sig['name']] = sig
+            save_custom_signatures(state['signatures'])
+            state['sel'] = sig['name']
+            refresh_list()
+            try:
+                self._build_checklist()
+            except Exception:
+                pass
+
+        def do_duplicate():
+            sig = collect()
+            if not sig['name']:
+                messagebox.showwarning("Nothing to duplicate",
+                                       "Fill in the current signature first.",
+                                       parent=dialog)
+                return
+            base = sig['name']
+            copy_name = f"{base} (copy)"
+            i = 2
+            while copy_name in state['signatures']:
+                copy_name = f"{base} (copy {i})"
+                i += 1
+            sig['name'] = copy_name
+            state['signatures'][copy_name] = sig
+            save_custom_signatures(state['signatures'])
+            state['sel'] = copy_name
+            load_into_editor(sig)
+            refresh_list()
+
+        def do_delete():
+            name = state['sel']
+            if not name:
+                messagebox.showwarning("Nothing selected",
+                                       "Select a signature in the list first.",
+                                       parent=dialog)
+                return
+            if not messagebox.askyesno("Confirm delete",
+                                       f"Delete '{name}'?\n\nThis cannot be undone.",
+                                       parent=dialog):
+                return
+            state['signatures'].pop(name, None)
+            save_custom_signatures(state['signatures'])
+            state['sel'] = None
+            do_new()
+            refresh_list()
+
+        def on_advanced_saved():
+            state['signatures'] = load_custom_signatures()
+            refresh_list()
+
+        def builder_load(simple):
+            state['sel'] = None
+            load_into_editor(dict(simple))
+            refresh_list()
+
+        def open_advanced(name=None, code=None):
+            self._open_advanced_sig_editor(on_saved=on_advanced_saved,
+                                           name=name, code=code,
+                                           load_builder=builder_load)
+
+        btn_col = tk.Frame(left, bg=bg)
+        btn_col.pack(fill=tk.X, pady=(0, 6))
+        tk.Button(btn_col, text="＋  New", font=('Segoe UI', 9, 'bold'), bg=accent,
+                  fg='white', relief='flat', command=do_new).pack(
+            fill=tk.X, ipady=3, pady=1)
+        tk.Button(btn_col, text="⧉  Duplicate", font=('Segoe UI', 9), bg=bg3,
+                  fg=fg, relief='flat', command=do_duplicate).pack(
+            fill=tk.X, ipady=2, pady=1)
+        tk.Button(btn_col, text="🗑  Delete", font=('Segoe UI', 9), bg=bg3,
+                  fg=fg, relief='flat', command=do_delete).pack(
+            fill=tk.X, ipady=2, pady=1)
+        save_btn = tk.Button(btn_col, text="💾  Save", font=('Segoe UI', 10, 'bold'),
+                             bg='#2e7d32', fg='white', relief='flat',
+                             command=do_save)
+        save_btn.pack(fill=tk.X, ipady=4, pady=(8, 1))
+        tk.Button(btn_col, text="🚀  Advanced (Python)…", font=('Segoe UI', 9),
+                  bg=bg3, fg='#9c27b0', relief='flat',
+                  command=lambda: open_advanced()).pack(fill=tk.X, ipady=2,
+                                                        pady=(8, 1))
+        tk.Button(btn_col, text="📖  Recipes & help", font=('Segoe UI', 9),
+                  bg=bg3, fg=fg, relief='flat',
+                  command=lambda: self._show_sig_cookbook(
+                      dialog,
+                      insert_code=lambda code, nm=None: open_advanced(
+                          name=nm, code=code),
+                      load_builder=builder_load)).pack(
+                          fill=tk.X, ipady=2, pady=1)
+        tk.Button(btn_col, text="Done", font=('Segoe UI', 9), bg=bg3, fg=fg,
+                  relief='flat',
+                  command=dialog.destroy).pack(fill=tk.X, ipady=2, pady=(8, 0))
+
+        tk.Label(cond_body, text='', bg=bg2).pack()
+        _add_cond_btn_holder = tk.Frame(cond_body, bg=bg2)
+        _add_cond_btn_holder.pack(fill=tk.X, padx=3, pady=(2, 4))
+        tk.Button(_add_cond_btn_holder, text="＋  Add condition", font=('Segoe UI', 9),
+                  bg=bg3, fg=accent, relief='flat',
+                  command=lambda: (add_condition_row(),
+                                   cond_canvas.yview_moveto(1.0))).pack(
+            side=tk.LEFT, ipady=2)
+        _add_gate_btn_holder = tk.Frame(gate_wrap, bg=bg2)
+        _add_gate_btn_holder.pack(fill=tk.X, padx=3, pady=(2, 4))
+        tk.Button(_add_gate_btn_holder, text="＋  Add gate condition",
+                  font=('Segoe UI', 9), bg=bg3, fg=accent, relief='flat',
+                  command=add_gate_row).pack(side=tk.LEFT, ipady=2)
+
+        tk.Label(right, text="window = readings averaged together (for average / "
+                             "rate) · in a row = consecutive violating readings "
+                             "required to fire",
+                 font=('Segoe UI', 8), bg=bg, fg='#777', anchor='w',
+                 justify='left').pack(fill=tk.X, pady=(2, 0))
+
+        for var in (name_var, sev_var, logic_var, desc_var, adv_var):
+            var.trace_add('write', lambda *_a: schedule_test())
+
+        refresh_list()
+        do_new()
+        spark.bind('<Configure>', lambda e: draw_spark(state['last_result']))
+        dialog.protocol('WM_DELETE_WINDOW', dialog.destroy)
+
+    def _pick_sensor(self, master, on_pick, current=''):
+        _t = self._get_theme()
+        bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]
+        fg = _t["fg"]; accent = _t["accent"]
+
+        has_df = hasattr(self, 'df') and self.df is not None and len(self.df) > 0
+        dialog = tk.Toplevel(master)
+        dialog.title("Pick a sensor")
+        dialog.geometry("680x560")
+        dialog.minsize(560, 420)
+        dialog.transient(master)
+        dialog.grab_set()
+        dialog.configure(bg=bg)
+        dialog.focus_set()
+
+        search_var = tk.StringVar(value='')
+        tk.Label(dialog, text="Search:", font=('Segoe UI', 9), bg=bg,
+                 fg=fg).pack(side=tk.TOP, anchor='w', padx=10, pady=(10, 2))
+        search_entry = tk.Entry(dialog, textvariable=search_var, font=('Segoe UI', 10),
+                                bg=bg2, fg=fg, insertbackground=fg, relief='flat',
+                                highlightthickness=1, highlightbackground=bg3)
+        search_entry.pack(fill=tk.X, padx=10, ipady=3)
+        search_entry.focus_set()
+
+        list_wrap = tk.Frame(dialog, bg=bg2, highlightthickness=1,
+                             highlightbackground=bg3)
+        list_wrap.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
+        canvas = tk.Canvas(list_wrap, bg=bg2, highlightthickness=0)
+        scroll = tk.Scrollbar(list_wrap, orient='vertical', command=canvas.yview)
+        body = tk.Frame(canvas, bg=bg2)
+        _w = canvas.create_window((0, 0), window=body, anchor='nw')
+        body.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+        canvas.bind('<Configure>', lambda e: canvas.itemconfig(_w, width=e.width))
+        canvas.configure(yscrollcommand=scroll.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        stats = {}
+        if has_df:
+            for c in self.df.columns:
+                if c in ('Date', 'Time'):
+                    continue
+                try:
+                    if self.df[c].dtype.kind not in 'fi':
+                        continue
+                    s = self.df[c]
+                    if s.notna().sum() < 5:
+                        continue
+                    stats[c] = (float(s.min()), float(s.median()), float(s.max()))
+                except Exception:
+                    continue
+
+        def use(col):
+            dialog.destroy()
+            on_pick(col)
+
+        def rebuild(*_a):
+            for w in body.winfo_children():
+                w.destroy()
+            q = search_var.get().strip().upper()
+            groups = {}
+            for col in stats:
+                cat = self._get_category(col)
+                groups.setdefault(cat, []).append(col)
+            shown = 0
+            for cat in sorted(groups):
+                cols = sorted(groups[cat])
+                if q:
+                    cols = [c for c in cols if q in c.upper() or q in cat.upper()]
+                if not cols:
+                    continue
+                tk.Label(body, text=cat, font=('Segoe UI', 9, 'bold'), bg=bg2,
+                         fg=accent, anchor='w').pack(fill=tk.X, padx=6,
+                                                     pady=(8, 1))
+                for col in cols:
+                    row = tk.Frame(body, bg=bg3)
+                    row.pack(fill=tk.X, padx=4, pady=1)
+                    lo, med, hi = stats[col]
+                    txt = (f"min {lo:g} · med {med:g} · max {hi:g}")
+                    btn = tk.Button(row, text=col, font=('Segoe UI', 9), bg=bg3,
+                                    fg=fg, relief='flat', anchor='w',
+                                    command=lambda c=col: use(c))
+                    btn.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=2, padx=2)
+                    btn.bind('<Double-Button-1>', lambda e, c=col: use(c))
+                    tk.Label(row, text=txt, font=('Segoe UI', 8), bg=bg3,
+                             fg='#888', anchor='e').pack(side=tk.RIGHT, padx=6)
+                    shown += 1
+            if not shown:
+                tk.Label(body, text=("No matching sensors in this log."
+                                     if q else
+                                     "This log has no numeric sensor columns."),
+                         font=('Segoe UI', 9), bg=bg2, fg='#666').pack(padx=10,
+                                                                       pady=12,
+                                                                       anchor='w')
+
+        search_var.trace_add('write', rebuild)
+        rebuild()
+
+        bottom = tk.Frame(dialog, bg=bg)
+        bottom.pack(fill=tk.X, padx=10, pady=(0, 10))
+        tk.Label(bottom, text="Sensor not in this log? Type its name:",
+                 font=('Segoe UI', 8), bg=bg, fg='#888').pack(side=tk.LEFT)
+        token_var = tk.StringVar(value=current or '')
+        tk.Entry(bottom, textvariable=token_var, font=('Segoe UI', 9), bg=bg2,
+                 fg=fg, insertbackground=fg, relief='flat', width=28,
+                 highlightthickness=1, highlightbackground=bg3).pack(
+            side=tk.LEFT, padx=6, ipady=2)
+        tk.Button(bottom, text="Use token", font=('Segoe UI', 9), bg=bg3, fg=fg,
+                  relief='flat',
+                  command=lambda: (token_var.get().strip() and
+                                   use(token_var.get().strip()))).pack(
+            side=tk.LEFT, ipady=2)
+        dialog.bind('<Return>', lambda e: (token_var.get().strip()
+                                           and use(token_var.get().strip())))
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
+
+    def _open_advanced_sig_editor(self, on_saved=None, name=None, code=None,
+                                  load_builder=None):
+
+
+
+
+        _t = self._get_theme()
+        bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]
+        fg = _t["fg"]; accent = _t["accent"]
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Advanced Signature (Python)")
+        dialog.geometry("960x780")
+        dialog.minsize(820, 640)
+        dialog.grab_set()
+        dialog.configure(bg=bg)
+        self.root.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 480
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 390
+        dialog.geometry(f"960x780+{max(x, 0)}+{max(y, 0)}")
+
+        has_df = hasattr(self, 'df') and self.df is not None \
+            and len(self.df) > 0
+        state = {'hl_job': None, 'initial': code or ADV_STARTER,
+                 'env': None}
+
+        main = tk.Frame(dialog, bg=bg)
+        main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        tk.Label(main, text="Advanced Signature Editor",
+                 font=('Segoe UI', 12, 'bold'), bg=bg, fg=accent).pack(
+                     anchor='w')
+        tk.Label(main, text="Python, runs with df / pd / np / add(...) "
+                            "plus helpers - see Reference & recipes",
+                 font=('Segoe UI', 9), bg=bg, fg='#888').pack(
+                     anchor='w', pady=(2, 8))
+
+        bar = tk.Frame(main, bg=bg)
+        bar.pack(fill=tk.X, pady=(0, 6))
+        tk.Label(bar, text="Name:", font=('Segoe UI', 9), bg=bg,
+                 fg=fg).pack(side=tk.LEFT, padx=(0, 5))
+        name_var = tk.StringVar(value=name or '')
+        tk.Entry(bar, textvariable=name_var, font=('Segoe UI', 10), bg=bg2,
+                 fg=fg, insertbackground=fg, relief='flat',
+                 width=30).pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        def insert_at_cursor(text):
+            code_area.insert(tk.INSERT, text)
+            code_area.focus_set()
+            do_highlight()
+            check_syntax()
+
+        def pick_sensor():
+            def on_pick(col):
+                q = '"' if '"' not in str(col) else "'"
+                insert_at_cursor(f"df[{q}{col}{q}]")
+            self._pick_sensor(dialog, on_pick)
+
+        tk.Button(bar, text="＋ Insert sensor…", font=('Segoe UI', 9),
+                  bg=bg3, fg=fg, relief='flat',
+                  command=pick_sensor).pack(side=tk.RIGHT, ipadx=8,
+                                            padx=(6, 0))
+
+        def insert_recipe(rcode, rname=None):
+            cur = code_area.get('1.0', 'end-1c').strip()
+            if cur and cur != state['initial'].strip():
+                if not messagebox.askyesno(
+                        "Replace code?",
+                        "Replace the current code with this recipe?",
+                        parent=dialog):
+                    return
+            code_area.delete('1.0', tk.END)
+            code_area.insert('1.0', rcode)
+            if rname and not name_var.get().strip():
+                name_var.set(rname)
+            state['initial'] = rcode
+            do_highlight()
+            check_syntax()
+            run_test()
+
+        def open_cookbook():
+            self._show_sig_cookbook(dialog, insert_code=insert_recipe,
+                                    load_builder=load_builder)
+
+        tk.Button(bar, text="📖 Reference & recipes", font=('Segoe UI', 9),
+                  bg=bg3, fg=fg, relief='flat',
+                  command=open_cookbook).pack(side=tk.RIGHT, ipadx=8,
+                                              padx=(6, 0))
+
+        tpl_bar = tk.Frame(bar, bg=bg)
+        tpl_bar.pack(side=tk.RIGHT, padx=(6, 0))
+        tpl_mb = tk.Menubutton(tpl_bar, text="Template ▾",
+                               font=('Segoe UI', 9), bg=bg3, fg=fg,
+                               relief='flat', direction='below',
+                               indicatoron=True)
+        tpl_mb.pack()
+        tpl_menu = tk.Menu(tpl_mb, tearoff=0, bg=bg2, fg=fg,
+                           activebackground=accent, activeforeground='white')
+        tpl_menu.add_command(
+            label="Starter (safe default)",
+            command=lambda: insert_recipe(ADV_STARTER))
+        for _r in ADV_RECIPES:
+            tpl_menu.add_command(
+                label=_r['title'],
+                command=lambda _rr=_r: insert_recipe(
+                    _rr['code'],
+                    (_rr.get('simple') or {}).get('name') or _rr['title']))
+        tpl_mb.configure(menu=tpl_menu)
+
+        code_frame = tk.Frame(main, bg=bg)
+        code_frame.pack(fill=tk.BOTH, expand=True)
+        code_area = tk.Text(code_frame, bg='#161b26', fg='#d6e2f0',
+                            insertbackground='#d6e2f0',
+                            font=('Courier', 10), relief='flat',
+                            wrap=tk.NONE, undo=True,
+                            selectbackground='#31435f')
+        code_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        line_numbers = LineNumbers(code_frame, code_area, bg='#161b26',
+                                   highlightthickness=0)
+        line_numbers.pack(side=tk.LEFT, fill=tk.Y)
+        py_configure_tags(code_area)
+
+        syntax_label = tk.Label(main, text='✓ Ready', font=('Segoe UI', 9),
+                                bg='#1a3a1a', fg='#888888', relief='flat',
+                                anchor='w', padx=8, pady=3)
+
+        def check_syntax(event=None):
+            code = code_area.get('1.0', tk.END).strip()
+            if not code:
+                syntax_label.config(text='✓ Ready', bg='#1a3a1a',
+                                    fg='#888888')
+                return
+            try:
+                compile(code, '<string>', 'exec')
+                syntax_label.config(text='✓ Syntax OK', bg='#1a5f1a',
+                                    fg='#00ff00')
+            except SyntaxError as e:
+                msg = (f'✗ Line {e.lineno}: {e.msg}' if e.lineno
+                       else f'✗ Syntax Error: {e.msg}')
+                syntax_label.config(text=msg, bg='#5f1a1a', fg='#ff6666')
+
+        def do_highlight():
+            py_highlight(code_area)
+            line_numbers.redraw()
+
+        def sched_highlight(*_a):
+            if state['hl_job']:
+                code_area.after_cancel(state['hl_job'])
+            state['hl_job'] = code_area.after(140, do_highlight)
+
+        def on_tab(_e):
+            code_area.insert(tk.INSERT, '    ')
+            return 'break'
+
+        code_area.bind('<KeyRelease>', lambda e: (check_syntax(),
+                                                  sched_highlight()))
+        code_area.bind('<Tab>', on_tab)
+        code_area.insert('1.0', code or ADV_STARTER)
+        do_highlight()
+        check_syntax()
+        syntax_label.pack(fill=tk.X, pady=(6, 0))
+
+        # ---- live test panel --------------------------------------------
+        panel = tk.Frame(main, bg=bg2, highlightthickness=1,
+                         highlightbackground=bg3)
+        panel.pack(fill=tk.X, pady=(8, 0))
+
+        head = tk.Frame(panel, bg=bg2)
+        head.pack(fill=tk.X, padx=8, pady=(6, 0))
+        tk.Label(head, text="LIVE TEST", font=('Segoe UI', 8, 'bold'),
+                 bg=bg2, fg=accent).pack(side=tk.LEFT)
+        test_status = tk.Label(head, text='- press Test (Ctrl+T) -',
+                               font=('Segoe UI', 9), bg=bg2, fg='#888')
+        test_status.pack(side=tk.LEFT, padx=10)
+
+        body_row = tk.Frame(panel, bg=bg2)
+        body_row.pack(fill=tk.X, padx=8, pady=(4, 6))
+        test_ev = tk.Text(body_row, bg=bg2, fg=fg, font=('Segoe UI', 9),
+                          relief='flat', wrap=tk.WORD, height=7,
+                          state='disabled')
+        test_ev.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        for _tag, _col in (('sev_CRITICAL', '#ff5f5f'),
+                           ('sev_WARNING', '#f59e0b'),
+                           ('sev_INFO', '#8ab4f8'), ('ok', '#7a9'),
+                           ('err', '#ff6666'), ('muted', '#777')):
+            test_ev.tag_configure(_tag, foreground=_col)
+        spark = tk.Canvas(body_row, bg=bg2, highlightthickness=0,
+                          width=330, height=86)
+        spark.pack(side=tk.LEFT, padx=(8, 0))
+
+        def draw_mask_strip(mask, title=''):
+            w = max(spark.winfo_width(), 330)
+            h = max(spark.winfo_height(), 86)
+            spark.delete('all')
+            spark.create_rectangle(0, h - 22, w, h - 10, fill='#2a2f3a',
+                                   outline='')
+            tc = next((c for c in ('Time', 'time')
+                       if has_df and c in self.df.columns), None)
+            if tc is not None:
+                try:
+                    spark.create_text(
+                        2, h - 8, anchor='nw',
+                        text=str(self.df[tc].iloc[0]).split('.')[0],
+                        fill='#666', font=('Segoe UI', 7))
+                    spark.create_text(
+                        w - 2, h - 8, anchor='ne',
+                        text=str(self.df[tc].iloc[-1]).split('.')[0],
+                        fill='#666', font=('Segoe UI', 7))
+                except Exception:
+                    pass
+            if mask is None:
+                spark.create_text(w // 2, (h - 16) // 2,
+                                  text='no mask supplied\n'
+                                       '(timeline will not be highlighted)',
+                                  fill='#666', justify='center',
+                                  font=('Segoe UI', 8))
+                return
+            try:
+                vals = (mask.fillna(False).astype(bool).values
+                        if hasattr(mask, 'fillna') else list(mask))
+                vals = [bool(v) for v in vals]
+            except Exception:
+                vals = []
+            n = len(vals)
+            if n != (len(self.df) if has_df else n):
+                spark.create_text(w // 2, (h - 16) // 2,
+                                  text='mask length mismatch',
+                                  fill='#a66', font=('Segoe UI', 8))
+                return
+            runs, start = [], None
+            for i, v in enumerate(vals):
+                if v and start is None:
+                    start = i
+                elif not v and start is not None:
+                    runs.append((start, i - 1))
+                    start = None
+            if start is not None:
+                runs.append((start, n - 1))
+            for a, b in runs:
+                x0 = w * a / max(1, n - 1)
+                x1 = max(x0 + 1, w * b / max(1, n - 1))
+                spark.create_rectangle(x0, h - 22, x1, h - 10,
+                                       fill='#ff4d4d', outline='')
+            if title:
+                spark.create_text(2, 4, anchor='nw', text=title,
+                                  fill='#999', font=('Segoe UI', 8))
+
+        def set_ev(lines):
+            """lines = [(text, tag|None), ...]"""
+            test_ev.config(state='normal')
+            test_ev.delete('1.0', tk.END)
+            for txt, tag in lines:
+                if tag:
+                    test_ev.insert(tk.END, txt, tag)
+                else:
+                    test_ev.insert(tk.END, txt)
+            test_ev.config(state='disabled')
+
+        def run_test():
+            if state['hl_job']:
+                code_area.after_cancel(state['hl_job'])
+                state['hl_job'] = None
+            do_highlight()
+            code = code_area.get('1.0', 'end-1c').strip()
+            if not code:
+                test_status.config(text='- nothing to test -', fg='#888')
+                set_ev([])
+                draw_mask_strip(None)
+                return
+            if not has_df:
+                test_status.config(text='- no log loaded -', fg='#888')
+                set_ev([("Open a CSV log first - Test runs the code on "
+                         "the loaded log.\n", None)])
+                draw_mask_strip(None)
+                return
+            results = []
+
+            def test_add(name, severity='INFO', description='',
+                         evidence=None, advice=None, mask=None, cols=None):
+                results.append({'name': str(name),
+                                'severity': str(severity),
+                                'description': str(description),
+                                'evidence': [str(e)
+                                             for e in (evidence or [])],
+                                'advice': advice, 'mask': mask,
+                                'cols': [str(c) for c in (cols or [])]})
+
+            env = build_advanced_env(
+                self.df, test_add,
+                hints=(getattr(self, 'median_poll_sec', None),
+                       getattr(getattr(self, 'analyzer', None),
+                               'time_series', None)))
+            state['env'] = env
+            try:
+                compile(code, '<string>', 'exec')
+                exec(code, env)
+            except SyntaxError as e:
+                where = advanced_error_line(e)
+                test_status.config(
+                    text=f'✗ Syntax error'
+                         + (f' ({where})' if where else ''),
+                    fg='#ff6666')
+                set_ev([(f"{type(e).__name__}: {e}\n", 'err')])
+                draw_mask_strip(None)
+                return
+            except Exception as e:
+                where = advanced_error_line(e)
+                test_status.config(
+                    text=f'✗ {type(e).__name__}'
+                         + (f' at {where}' if where else ''),
+                    fg='#ff6666')
+                set_ev([(f"{type(e).__name__}: {e}\n", 'err'),
+                        ("\nStack line numbers refer to your code "
+                         "as shown in the editor.", 'muted')])
+                draw_mask_strip(None)
+                return
+            if not results:
+                test_status.config(
+                    text='✓ ran clean - no findings (signature stays '
+                         'silent on this log)', fg='#7a9')
+                set_ev([("Code executed without calling add() - on this "
+                         "log the signature stays silent.\n"
+                         "That is correct behaviour when its sensors "
+                         "are missing or healthy.\n", None)])
+                draw_mask_strip(None)
+                return
+            n_crit = sum(1 for r in results
+                         if r['severity'].upper() == 'CRITICAL')
+            n_warn = sum(1 for r in results
+                         if r['severity'].upper() == 'WARNING')
+            bits = [f"{len(results)} finding(s)"]
+            if n_crit:
+                bits.append(f"{n_crit} critical")
+            if n_warn:
+                bits.append(f"{n_warn} warning")
+            test_status.config(text='✓ ' + ' · '.join(bits), fg='#7a9')
+            lines = []
+            first_mask = None
+            mask_title = ''
+            for r in results:
+                lines.append((f"● {r['name']}  [{r['severity']}]\n",
+                              'sev_' + r['severity'].upper()
+                              if r['severity'].upper() in
+                              ('CRITICAL', 'WARNING', 'INFO') else None))
+                if r['description']:
+                    lines.append((f"  {r['description']}\n", None))
+                for e in r['evidence']:
+                    lines.append((f"     • {e}\n", None))
+                if r['advice']:
+                    lines.append((f"  advice: {r['advice']}\n", 'muted'))
+                m = r['mask']
+                if m is not None and first_mask is None:
+                    try:
+                        vals = (m.fillna(False).astype(bool).values
+                                if hasattr(m, 'fillna') else list(m))
+                        covered = int(sum(bool(v) for v in vals))
+                        total = len(vals)
+                        pct = 100.0 * covered / max(1, total)
+                        evs = env['events'](m)
+                        first_line = (f"  mask: {covered}/{total} readings "
+                                      f"({pct:.0f}%) highlighted")
+                        if evs:
+                            first_line += (f" · {len(evs)} event(s) · "
+                                           f"first at "
+                                           f"{env['time_str'](evs[0][0])}")
+                        lines.append((first_line + '\n', 'muted'))
+                        first_mask = m
+                        mask_title = r['name']
+                    except Exception:
+                        lines.append(("  mask: not a usable True/False "
+                                      "series\n", 'err'))
+                if r['cols']:
+                    lines.append(("  cols: " + ', '.join(r['cols']) + '\n',
+                                  'muted'))
+                lines.append(('\n', None))
+            set_ev(lines)
+            draw_mask_strip(first_mask, mask_title)
+
+        # ---- buttons ----------------------------------------------------
+        btns = tk.Frame(main, bg=bg)
+        btns.pack(fill=tk.X, pady=(10, 0))
+
+        def save_advanced():
+            n = name_var.get().strip()
+            if not n:
+                messagebox.showwarning("Name needed",
+                                       "Give the signature a name first.",
+                                       parent=dialog)
+                return
+            code_now = code_area.get('1.0', tk.END).strip()
+            try:
+                compile(code_now, '<string>', 'exec')
+            except SyntaxError as e:
+                if not messagebox.askyesno(
+                        "Syntax error",
+                        f"The code has a syntax error:\n{e}\n\nSave "
+                        "anyway?", parent=dialog):
+                    return
+            sigs = load_custom_signatures()
+            sigs[n] = {'format': CUSTOM_SIG_FORMAT, 'advanced': True,
+                       'name': n, 'code': code_now}
+            save_custom_signatures(sigs)
+            if on_saved:
+                on_saved()
+            dialog.destroy()
+
+        tk.Button(btns, text="🧪 Test on loaded log  (Ctrl+T)",
+                  font=('Segoe UI', 9, 'bold'), bg='#9c27b0', fg='white',
+                  relief='flat', command=run_test).pack(
+                      side=tk.LEFT, ipadx=10, ipady=3)
+        tk.Button(btns, text="💾 Save  (Ctrl+S)", font=('Segoe UI', 9, 'bold'),
+                  bg='#2e7d32', fg='white', relief='flat',
+                  command=save_advanced).pack(side=tk.LEFT, padx=6,
+                                              ipadx=10, ipady=3)
+        tk.Button(btns, text="Close", font=('Segoe UI', 9), bg=bg3, fg=fg,
+                  relief='flat',
+                  command=dialog.destroy).pack(side=tk.RIGHT, ipadx=10,
+                                               ipady=3)
+
+        dialog.bind('<Control-t>', lambda e: run_test())
+        dialog.bind('<Control-T>', lambda e: run_test())
+        dialog.bind('<Control-s>', lambda e: save_advanced())
+        dialog.bind('<Control-S>', lambda e: save_advanced())
+        code_area.bind('<Control-t>', lambda e: run_test())
+        code_area.bind('<Control-s>', lambda e: save_advanced())
+
+        if has_df and (code or '').strip():
+            dialog.after(300, run_test)
+
+    def _show_sig_cookbook(self, master, insert_code=None, load_builder=None):
+
+        _t = self._get_theme()
+        bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]
+        fg = _t["fg"]; accent = _t["accent"]
+
+        dialog = tk.Toplevel(master)
+        dialog.title("Signature Cookbook & Reference")
+        dialog.geometry("900x640")
+        dialog.minsize(760, 540)
+        dialog.transient(master)
+        dialog.grab_set()
+        dialog.configure(bg=bg)
+
+        topics = build_cookbook_topics()
+
+        main = tk.Frame(dialog, bg=bg)
+        main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        left = tk.Frame(main, bg=bg2, highlightthickness=1,
+                        highlightbackground=bg3)
+        left.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 8))
+        tk.Label(left, text="  CHAPTERS", font=('Segoe UI', 8, 'bold'),
+                 bg=bg2, fg='#888', anchor='w').pack(fill=tk.X,
+                                                     pady=(8, 2))
+        list_body = tk.Canvas(left, bg=bg2, highlightthickness=0)
+        list_scroll = tk.Scrollbar(left, orient='vertical',
+                                   command=list_body.yview)
+        list_inner = tk.Frame(list_body, bg=bg2)
+        _lw = list_body.create_window((0, 0), window=list_inner,
+                                      anchor='nw')
+        list_inner.bind(
+            '<Configure>',
+            lambda e: list_body.configure(
+                scrollregion=list_body.bbox('all')))
+        list_body.bind('<Configure>',
+                       lambda e: list_body.itemconfig(_lw, width=e.width))
+        list_body.configure(yscrollcommand=list_scroll.set)
+        list_body.pack(side=tk.LEFT, fill=tk.BOTH, expand=True,
+                       pady=(0, 8))
+        list_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        list_body.bind('<Enter>', lambda e: list_body.bind_all(
+            '<MouseWheel>', lambda ev: list_body.yview_scroll(
+                -1 * int(ev.delta / 120), 'units')))
+        list_body.bind('<Leave>', lambda e: list_body.unbind_all(
+            '<MouseWheel>'))
+
+        # right: content ----------------------------------------------------
+        right = tk.Frame(main, bg=bg)
+        right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        content = tk.Text(right, bg=bg2, fg=fg, font=('Segoe UI', 10),
+                          relief='flat', wrap=tk.WORD, padx=14, pady=10,
+                          state='disabled')
+        content.pack(fill=tk.BOTH, expand=True)
+        cscroll = tk.Scrollbar(right, orient='vertical',
+                               command=content.yview)
+        cscroll.pack(side=tk.RIGHT, fill=tk.Y)
+        content.configure(yscrollcommand=cscroll.set)
+        content.tag_configure('h', font=('Segoe UI', 11, 'bold'),
+                              foreground=accent, spacing3=4)
+        content.tag_configure('body', foreground=fg, spacing1=2,
+                              spacing3=2)
+        content.tag_configure('bullet', foreground=fg, lmargin1=18,
+                              lmargin2=28)
+        content.tag_configure('code', font=('Courier', 9),
+                              foreground='#a5d6a7', lmargin1=18,
+                              lmargin2=18)
+        content.tag_configure('warn', foreground='#f0a45d', lmargin1=12,
+                              lmargin2=12, spacing1=2)
+        content.tag_configure('note', foreground='#888', lmargin1=12,
+                              lmargin2=12, spacing1=2)
+
+        btn_bar = tk.Frame(right, bg=bg)
+        btn_bar.pack(fill=tk.X, pady=(8, 0))
+
+        def render_topic(topic):
+            content.config(state='normal')
+            content.delete('1.0', tk.END)
+            for line in topic['text'].split('\n'):
+                if line.startswith('@H '):
+                    content.insert(tk.END, line[3:] + '\n', 'h')
+                elif line.startswith('@C '):
+                    content.insert(tk.END, '  ' + line[3:] + '\n', 'code')
+                elif line.startswith('@B '):
+                    content.insert(tk.END, '  •  ' + line[3:] + '\n',
+                                   'bullet')
+                elif line.startswith('@W '):
+                    content.insert(tk.END, '  ' + line[3:] + '\n', 'warn')
+                elif line.startswith('@N '):
+                    content.insert(tk.END, '  ' + line[3:] + '\n', 'note')
+                elif line.strip():
+                    content.insert(tk.END, line + '\n', 'body')
+                else:
+                    content.insert(tk.END, '\n')
+            content.config(state='disabled')
+            content.yview_moveto(0.0)
+            for w in btn_bar.winfo_children():
+                w.destroy()
+            r = topic.get('recipe')
+            if r is not None:
+                sug = (r.get('simple') or {}).get('name') or r['title']
+                if insert_code is not None:
+                    tk.Button(btn_bar, text="⬇ Insert as Python",
+                              font=('Segoe UI', 9, 'bold'), bg='#9c27b0',
+                              fg='white', relief='flat',
+                              command=lambda: insert_code(r['code'],
+                                                          sug)).pack(
+                        side=tk.LEFT, ipadx=8, ipady=2)
+                if load_builder is not None and r.get('builder'):
+                    tk.Button(btn_bar, text="🧱 Load into builder",
+                              font=('Segoe UI', 9, 'bold'), bg='#2e7d32',
+                              fg='white', relief='flat',
+                              command=lambda: (load_builder(r['simple']),
+                                               dialog.destroy())).pack(
+                        side=tk.LEFT, padx=6, ipadx=8, ipady=2)
+
+                def copy_code():
+                    dialog.clipboard_clear()
+                    dialog.clipboard_append(r['code'])
+                    btn_txt.set('📋 Copied!')
+
+                btn_txt = tk.StringVar(value='📋 Copy code')
+                tk.Button(btn_bar, textvariable=btn_txt,
+                          font=('Segoe UI', 9), bg=bg3, fg=fg,
+                          relief='flat',
+                          command=copy_code).pack(side=tk.LEFT, ipadx=8,
+                                                  ipady=2)
+            else:
+                def copy_text():
+                    dialog.clipboard_clear()
+                    dialog.clipboard_append(
+                        strip_marked_text(topic['text']))
+                    btn_txt.set('📋 Copied!')
+
+                btn_txt = tk.StringVar(value='📋 Copy text')
+                tk.Button(btn_bar, textvariable=btn_txt,
+                          font=('Segoe UI', 9), bg=bg3, fg=fg,
+                          relief='flat', command=copy_text).pack(
+                    side=tk.LEFT, ipadx=8, ipady=2)
+            tk.Button(btn_bar, text="Close", font=('Segoe UI', 9),
+                      bg=bg3, fg=fg, relief='flat',
+                      command=dialog.destroy).pack(side=tk.RIGHT,
+                                                   ipadx=8, ipady=2)
+
+        def add_topic_button(topic):
+            btn = tk.Button(list_inner, text=topic['title'],
+                            font=('Segoe UI', 9), bg=bg2, fg=fg,
+                            relief='flat', anchor='w',
+                            command=lambda: (select(topic),
+                                             highlight(btn)))
+            btn.pack(fill=tk.X, padx=6, pady=1, ipady=2)
+            return btn
+
+        def highlight(btn):
+            for w in list_inner.winfo_children():
+                if isinstance(w, tk.Button):
+                    w.config(bg=bg2, fg=fg)
+            btn.config(bg=bg3, fg=accent)
+
+        def select(topic):
+            render_topic(topic)
+
+        first_btn = None
+        for topic in topics:
+            if 'section' in topic:
+                tk.Label(list_inner, text='  ' + topic['section'],
+                         font=('Segoe UI', 8, 'bold'), bg=bg2,
+                         fg='#777', anchor='w').pack(fill=tk.X,
+                                                     pady=(8, 1))
+            else:
+                b = add_topic_button(topic)
+                if first_btn is None:
+                    first_btn = b
+        render_topic(next(t for t in topics if 'section' not in t))
+        highlight(first_btn)
+        dialog.bind('<Escape>', lambda e: dialog.destroy())
 
     def _open_limits_editor(self):
         """Open a scrollable dialog to view and edit all detection thresholds."""
@@ -3249,7 +4832,8 @@ Min/Max Thresholds:
         _ALL_SIGNATURES = SIGNATURE_REGISTRY
 
         _SEV_COLORS = {"CRITICAL": "#ff4d4d", "WARNING": "#f59e0b",
-                       "INFO": "#38bdf8", "CRITICAL/WARNING": "#ff8c42"}
+                       "INFO": "#38bdf8", "CRITICAL/WARNING": "#ff8c42",
+                       "WARNING/INFO": "#f5a623"}
         sig_vars = {}
         _cur_domain = None
         for sig_name, sev_hint, sig_domain in _ALL_SIGNATURES:
@@ -3274,6 +4858,37 @@ Min/Max Thresholds:
                      font=('Segoe UI', 9), anchor='w').pack(side=tk.LEFT)
             tk.Label(row_f, text=sev_hint, bg=bg, fg=sev_color,
                      font=('Segoe UI', 8), anchor='w').pack(side=tk.LEFT, padx=(6, 0))
+
+        _custom_loaded = load_custom_signatures()
+        if _custom_loaded:
+            tk.Label(body, text="Custom Signatures (user-created)", bg=bg, fg=accent,
+                     font=('Segoe UI', 9, 'bold'),
+                     anchor='w').pack(fill=tk.X, padx=8, pady=(8, 1))
+            for sig_name, sig_def in sorted(_custom_loaded.items()):
+                enabled = sig_name not in self.disabled_sigs
+                var = tk.BooleanVar(value=enabled)
+                sig_vars[sig_name] = var
+                row_f = tk.Frame(body, bg=bg)
+                row_f.pack(fill=tk.X, pady=1, padx=8)
+                cb = tk.Checkbutton(row_f, variable=var, bg=bg, activebackground=bg,
+                                    selectcolor="#1f6aa5" if is_dark else "#ffffff",
+                                    fg=fg, activeforeground=fg,
+                                    relief='flat', cursor='hand2')
+                cb.pack(side=tk.LEFT)
+                _is_adv = isinstance(sig_def, dict) and sig_def.get('advanced', False)
+                _legacy = (isinstance(sig_def, dict)
+                           and not _is_adv
+                           and sig_def.get('format') != 2)
+                _hint = ('PYTHON' if _is_adv
+                         else 'LEGACY' if _legacy
+                         else str(sig_def.get('severity', 'WARNING')))
+                _hint_col = ('#9c27b0' if _is_adv
+                             else '#777' if _legacy
+                             else _SEV_COLORS.get(_hint, '#aaa'))
+                tk.Label(row_f, text=sig_name, bg=bg, fg=fg,
+                         font=('Segoe UI', 9), anchor='w').pack(side=tk.LEFT)
+                tk.Label(row_f, text=_hint, bg=bg, fg=_hint_col,
+                         font=('Segoe UI', 8), anchor='w').pack(side=tk.LEFT, padx=(6, 0))
 
         btn_f = tk.Frame(dialog, bg=bg)
         btn_f.pack(fill=tk.X, padx=10, pady=10)
@@ -5508,6 +7123,23 @@ Min/Max Thresholds:
             lightcolor=[('focus', accent)],
             fieldbackground=[('disabled', t3), ('readonly', t2)])
 
+        self.style.configure("TCombobox", fieldbackground=t2, background=t3,
+                             foreground=fg, arrowcolor=fg, bordercolor=t3,
+                             lightcolor=t2, darkcolor=t2, padding=(4, 2))
+        self.style.map("TCombobox",
+                       fieldbackground=[('readonly', t2), ('disabled', t3)],
+                       foreground=[('readonly', fg), ('disabled', dim)],
+                       selectbackground=[('readonly', t2)],
+                       selectforeground=[('readonly', fg)],
+                       arrowcolor=[('disabled', dim)])
+        self.style.configure("TSpinbox", fieldbackground=t2, background=t3,
+                             foreground=fg, arrowcolor=fg, bordercolor=t3,
+                             lightcolor=t2, darkcolor=t2, padding=(4, 2))
+        self.style.map("TSpinbox",
+                       fieldbackground=[('disabled', t3)],
+                       foreground=[('disabled', dim)],
+                       arrowcolor=[('disabled', dim)])
+
         if not modern:
             self._apply_classic_overrides(bg, fg, accent, t3)
 
@@ -6728,21 +8360,31 @@ Min/Max Thresholds:
         intel_pcore_eff = sorted([c for c in df.columns
                                    if 'P-CORE' in c.upper()
                                    and 'EFFECTIVE CLOCK' in c.upper()])
+        intel_ecore_req_dbg = sorted([c for c in df.columns
+                                      if 'E-CORE' in c.upper()
+                                      and 'CLOCK [MHZ]' in c.upper()
+                                      and 'EFFECTIVE' not in c.upper()
+                                      and 'OC RATIO' not in c.upper()])
+        intel_ecore_eff_dbg = sorted([c for c in df.columns
+                                      if 'E-CORE' in c.upper()
+                                      and 'EFFECTIVE CLOCK' in c.upper()])
 
         if req_cols:
             wl(f"  CPU Architecture    : AMD (Ryzen / perf# naming)", 'ok')
             wl(f"  Detection path      : AMD - Clock (perf #N) vs Core N Effective", 'ok')
-        elif intel_pcore_req and intel_pcore_eff:
+        elif (intel_pcore_req or intel_ecore_req_dbg) and (intel_pcore_eff or intel_ecore_eff_dbg):
             wl(f"  CPU Architecture    : Intel (P-core / E-core naming)", 'ok')
-            wl(f"  Detection path      : Intel - P-core N Clock vs P-core N T0 Effective", 'ok')
+            wl(f"  Detection path      : Intel - P/E-core N Clock vs N Effective", 'ok')
         else:
             wl(f"  CPU Architecture    : Unknown / unsupported", 'warn')
             wl(f"  Detection path      : NONE - clock stretching will not fire", 'warn')
 
         wl(f"  AMD req cols  ({len(req_cols)}): {req_cols[:5] or MISS}", 'val')
         wl(f"  AMD eff cols  ({len(eff_cols)}): {eff_cols[:5] or MISS}", 'val')
-        wl(f"  Intel req cols ({len(intel_pcore_req)}): {intel_pcore_req[:3] or MISS}", 'val')
-        wl(f"  Intel eff cols ({len(intel_pcore_eff)}): {intel_pcore_eff[:3] or MISS}", 'val')
+        wl(f"  Intel P req cols ({len(intel_pcore_req)}): {intel_pcore_req[:3] or MISS}", 'val')
+        wl(f"  Intel P eff cols ({len(intel_pcore_eff)}): {intel_pcore_eff[:3] or MISS}", 'val')
+        wl(f"  Intel E req cols ({len(intel_ecore_req_dbg)}): {intel_ecore_req_dbg[:3] or MISS}", 'val')
+        wl(f"  Intel E eff cols ({len(intel_ecore_eff_dbg)}): {intel_ecore_eff_dbg[:3] or MISS}", 'val')
 
         section("DATA NORMALIZATION LOG")
         _normalized_cols = []
@@ -6848,39 +8490,51 @@ Min/Max Thresholds:
             wl(f"  ✗ Error running signatures: {str(_e)}", 'crit')
         wl()
 
-        section("CUSTOM SIGNATURE VALIDATION")
+        section("CUSTOM SIGNATURES")
         try:
             _custom_sigs = load_custom_signatures()
-            if _custom_sigs:
-                wl("Name                                | Status | Keywords Matched | Usable", 'section')
-                wl("─" * 72, 'section')
-                for sig_name, sig_def in sorted(_custom_sigs.items())[:15]:
-                    try:
-                        if isinstance(sig_def, dict) and 'keywords' in sig_def:
-                            _keywords = sig_def.get('keywords', [])
-                            if isinstance(_keywords, list):
-                                _matched = sum(1 for kw in _keywords if any(kw in col_name for col_name in df.columns))
-                                _match_pct = (_matched / len(_keywords) * 100) if _keywords else 0
-                                _usable = 'YES' if _match_pct >= 50 else 'NO' if _match_pct == 0 else 'PARTIAL'
-                                _tag = 'ok' if _match_pct == 100 else ('warn' if _match_pct > 0 else 'miss')
-                                wl(f"  {sig_name:35s} | {_usable:^6s} | {_matched:}/{len(_keywords):3d} ({_match_pct:.0f}%) | {'✓' if _match_pct >= 50 else '✗'}", _tag)
-                            else:
-                                wl(f"  {sig_name:35s} | ERROR  | Invalid format       | ✗", 'crit')
-                        else:
-                            wl(f"  {sig_name:35s} | ERROR  | Missing keywords      | ✗", 'crit')
-                    except Exception:
-                        wl(f"  {sig_name:35s} | ERROR  | Exception             | ✗", 'crit')
-                
-                if len(_custom_sigs) > 15:
-                    wl(f"  ... and {len(_custom_sigs) - 15} more custom signatures", 'muted')
-                wl()
-                _fully_matched = sum(1 for sig_def in _custom_sigs.values() 
-                                   if isinstance(sig_def, dict) and 'keywords' in sig_def and 
-                                   all(any(kw in col_name for col_name in df.columns) for kw in sig_def.get('keywords', [])))
-                wl(f"Loaded: {len(_custom_sigs)} | Fully Matched: {_fully_matched} | " +
-                   f"Partially Matched: {sum(1 for sig_def in _custom_sigs.values() if isinstance(sig_def, dict))}", 'val')
-            else:
+            if not _custom_sigs:
                 wl("  No custom signatures loaded.", 'muted')
+            else:
+                _legacy = sorted(n for n, d in _custom_sigs.items()
+                                 if not (isinstance(d, dict) and
+                                         (d.get('advanced') or
+                                          d.get('format') == 2)))
+                if _legacy:
+                    wl(f"  Skipped {len(_legacy)} legacy pre-1.7.17 signature(s): "
+                       f"{', '.join(_legacy[:5])}"
+                       f"{' ...' if len(_legacy) > 5 else ''} (recreate them in "
+                       "the new builder)", 'warn')
+                for sig_name, sig_def in sorted(_custom_sigs.items()):
+                    if not isinstance(sig_def, dict) or (
+                            not sig_def.get('advanced')
+                            and sig_def.get('format') != 2):
+                        continue
+                    if sig_name in self.disabled_sigs:
+                        wl(f"  {sig_name}: disabled", 'muted')
+                        continue
+                    if sig_def.get('advanced'):
+                        wl(f"  {sig_name}: advanced Python "
+                           f"({len(sig_def.get('code', ''))} chars)", 'val')
+                        continue
+                    try:
+                        _r = evaluate_custom_signature(df, sig_def, hints=(
+                            getattr(self, 'median_poll_sec', None),))
+                        if _r['fired']:
+                            wl(f"  {sig_name}: FIRES ({_r['severity']}) - "
+                               f"{_r['n_event']} readings", 'crit')
+                        elif _r['notes']:
+                            wl(f"  {sig_name}: not evaluable - {_r['notes'][0]}",
+                               'warn')
+                        else:
+                            wl(f"  {sig_name}: does not fire on this log", 'ok')
+                    except Exception as _e:
+                        wl(f"  {sig_name}: error - {_e}", 'crit')
+                _f2 = sum(1 for d in _custom_sigs.values()
+                          if isinstance(d, dict)
+                          and (d.get('advanced') or d.get('format') == 2))
+                wl(f"  Loaded: {len(_custom_sigs)} "
+                   f"({_f2} active, {len(_custom_sigs) - _f2} legacy)", 'val')
         except Exception as _e:
             wl(f"  ✗ Error loading custom signatures: {str(_e)}", 'crit')
         wl()
@@ -6898,7 +8552,7 @@ Min/Max Thresholds:
         _cpu_temp = self._col('TCTL') or self._col('TDIE') or self._col_excl(['CPU'], excl=['USAGE','UTIL','LOAD','THREAD','W]','%]','MHz','RPM'])
         _gpu_hotspot = self._col_excl(('GPU', 'HOT'), excl=('CPU', 'LIMIT')) or self._col_excl(('GPU', 'TEMP'), excl=('CPU', 'LIMIT', 'MEMORY'))
         _cpu_power = self._col_excl(['CPU','PACKAGE','W'], excl=['°C','TEMP','USAGE','LOAD','%']) or self._col_excl(['CPU','PPT'], excl=['°C','TEMP'])
-        _gpu_power = self._col_active(('GPU', 'POWER')) or self._col('BOARD', 'POWER') or self._col('TGP')
+        _gpu_power = resolve_gpu_power_column(df)
         _cpu_clock = self._col('KERN', 'TAKT') or self._col('CORE', 'CLOCK') or self._col_excl(('CLOCK',), excl=('GPU', 'MEMORY', 'PCIE', 'BUS'))
         _gpu_clock = self._col_active(('GPU', 'EFFECTIVE', 'CLOCK'), excl=('MEMORY', 'CROSSBAR'))
         
@@ -6942,75 +8596,67 @@ Min/Max Thresholds:
         wl(f"  Signatures That Fired              | {_metrics['signatures_fired']}", 'warn' if _metrics['signatures_fired'] > 0 else 'muted')
         wl()
 
-        section("INTEL P-CORE CLOCK STRETCHING DEBUG")
-        wl(f"  Condition: not req_cols={not req_cols}, intel_pcore_req={bool(intel_pcore_req)}, intel_pcore_eff={bool(intel_pcore_eff)}", 'val')
-        will_enter_intel = not req_cols and intel_pcore_req and intel_pcore_eff
+        section("INTEL CORE CLOCK STRETCHING DEBUG")
+        wl(f"  Condition: not req_cols={not req_cols}, "
+           f"p_req={bool(intel_pcore_req)}, p_eff={bool(intel_pcore_eff)}, "
+           f"e_req={bool(intel_ecore_req_dbg)}, e_eff={bool(intel_ecore_eff_dbg)}", 'val')
+        will_enter_intel = bool(not req_cols
+                                and (intel_pcore_req or intel_ecore_req_dbg))
         wl(f"  Will enter Intel block: {will_enter_intel}", 'val' if will_enter_intel else 'warn')
-        
+
         if will_enter_intel:
             wl(f"  [✓] ENTERING INTEL BLOCK", 'ok')
             per_core_ratios_debug = []
-            cores_processed_debug = []
-            
             for i, req_col in enumerate(intel_pcore_req):
-                req_data = pd.to_numeric(df[req_col], errors='coerce').replace(0, np.nan)
-                valid_req = req_data > 300
-                
-                core_num = None
-                for sep in ['P-Core ', 'P-core ', 'P-CORE ']:
-                    if sep in req_col:
-                        core_num = req_col.split(sep)[-1].split(' ')[0]
-                        break
-                if not core_num:
-                    core_num = str(i)
-                
-                eff_cols_for_core = [c for c in intel_pcore_eff
-                                     if f'P-CORE {core_num}' in c.upper() 
-                                     and 'EFFECTIVE' in c.upper()]
-                
+                core_num = intel_pcore_core_num(req_col, fallback=str(i))
+                eff_cols_for_core = intel_pcore_eff_cols_for(intel_pcore_eff, core_num)
                 if not eff_cols_for_core:
-                    wl(f"    Core {core_num}: NO EFFECTIVE COLS FOUND", 'warn')
+                    wl(f"    P-core {core_num}: NO EFFECTIVE COLS FOUND", 'warn')
                     continue
-                
-                core_ratios_temp = []
-                core_weights_temp = []
-                active_count = 0
-                                
-                for eff_col in eff_cols_for_core:
-                    if eff_col not in df.columns:
-                        continue
-                    eff_data = pd.to_numeric(df[eff_col], errors='coerce')
-                    active = valid_req & (eff_data > 50)
-                    active_count += active.sum()
-                    
-                    if not active.any():
-                        continue
-                    
-                    ratio = (eff_data / req_data).clip(0, 1.5).where(active)
-                    weight = req_data.where(active)
-                    core_ratios_temp.append(ratio)
-                    core_weights_temp.append(weight)
-                
-                if core_ratios_temp:
-                    ratio_series = pd.concat(core_ratios_temp, axis=0).groupby(level=0).mean()
-                    ratio_mean = ratio_series.mean()
-                    per_core_ratios_debug.append(ratio_series)
-                    cores_processed_debug.append((core_num, ratio_mean, active_count))
-                    wl(f"    Core {core_num}: ratio_mean={ratio_mean:.4f}, active_samples={active_count}", 'ok')
-                else:
-                    wl(f"    Core {core_num}: NO RATIOS COLLECTED", 'warn')
-            
+                dbg_ratio, dbg_active, dbg_has_use = stretch_core_ratio(
+                    df, req_col, eff_cols_for_core,
+                    intel_pcore_use_cols_for(df, core_num, eff_cols_for_core),
+                    STRETCH_MAJOR_USAGE_GATE, f"P-core {core_num}")
+                if dbg_ratio is None:
+                    wl(f"    P-core {core_num}: NO RATIOS COLLECTED", 'warn')
+                    continue
+                wl(f"    P-core {core_num}: eff cols={len(eff_cols_for_core)}, "
+                   f"usage sensor={'yes' if dbg_has_use else 'NO'}, "
+                   f"ratio_mean={dbg_ratio.mean():.4f}, "
+                   f"active_samples={int(dbg_active.sum())}", 'ok')
+                per_core_ratios_debug.append(dbg_ratio)
+            for i, req_col in enumerate(intel_ecore_req_dbg):
+                core_num = intel_ecore_core_num(req_col, fallback=str(i))
+                eff_cols_for_core = intel_ecore_eff_cols_for(intel_ecore_eff_dbg, core_num)
+                if not eff_cols_for_core:
+                    wl(f"    E-core {core_num}: NO EFFECTIVE COLS FOUND", 'warn')
+                    continue
+                dbg_ratio, dbg_active, dbg_has_use = stretch_core_ratio(
+                    df, req_col, eff_cols_for_core,
+                    intel_ecore_use_cols_for(df, core_num, eff_cols_for_core),
+                    STRETCH_MAJOR_USAGE_GATE, f"E-core {core_num}")
+                if dbg_ratio is None:
+                    wl(f"    E-core {core_num}: NO RATIOS COLLECTED", 'warn')
+                    continue
+                wl(f"    E-core {core_num}: eff cols={len(eff_cols_for_core)}, "
+                   f"usage sensor={'yes' if dbg_has_use else 'NO'}, "
+                   f"ratio_mean={dbg_ratio.mean():.4f}, "
+                   f"active_samples={int(dbg_active.sum())}", 'ok')
+                per_core_ratios_debug.append(dbg_ratio)
+
             wl(f"  Total cores processed: {len(per_core_ratios_debug)}", 'val')
-            
+
             if per_core_ratios_debug:
                 all_ratios_dbg = pd.concat(per_core_ratios_debug, axis=1)
-                weight_total_dbg = all_ratios_dbg.notna().sum(axis=1)
                 mean_ratio_dbg = all_ratios_dbg.mean(axis=1).dropna()
-                
-                wl(f"  Mean ratio: {mean_ratio_dbg.mean():.4f}", 'ok')
+
+                wl(f"  Mean ratio (usage >= {STRETCH_MAJOR_USAGE_GATE:g}%): {mean_ratio_dbg.mean():.4f}", 'ok')
                 wl(f"  Min ratio: {mean_ratio_dbg.min():.4f}", 'val')
                 wl(f"  Max ratio: {mean_ratio_dbg.max():.4f}", 'val')
                 wl(f"  Samples: {len(mean_ratio_dbg)}", 'val')
+                wl(f"  v1.7.9 detector also requires: a full 8-sample rolling", 'muted')
+                wl(f"  majority, the load gate and no load transition before", 'muted')
+                wl(f"  any event fires", 'muted')
             else:
                 wl(f"  [✗] per_core_ratios_debug is EMPTY", 'crit')
         else:
@@ -7026,7 +8672,7 @@ Min/Max Thresholds:
                 gpu_hotspot = max(_gpu_t_cands, key=lambda c: df[c].max())
         gpu_usage_col     = self._col_active(('GPU', 'USAGE')) or self._col_active(('GPU', 'LOAD'))
         gpu_clock         = self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col_active(('GPU', 'FREQUENCY'))
-        gpu_power         = self._col_active(('GPU', 'POWER'))
+        gpu_power         = resolve_gpu_power_column(df)
         gpu_throttle      = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
         gpu_pwr_limit     = self._col('Performance Limit - Power [Yes/No]') or self._col('PERFCAP', 'PWR')
         gpu_eff_clock     = self._col('GPU Effective Clock [MHz]')
@@ -8116,7 +9762,7 @@ Min/Max Thresholds:
         gpu_usage_col = _a('gpu_usage') or self._col_active(('GPU', 'USAGE')) or self._col_active(('GPU', 'LOAD')) or self._col_active(('GPU', 'AUSLASTUNG')) or self._col('GPU USAGE')
         gpu_clock     = _a('gpu_clock') or self._col_active(('GPU', 'EFFECTIVE', 'CLOCK'), excl=('MEMORY', 'CROSSBAR', 'VIDEO')) or self._col_active(('GPU', 'CLOCK', 'MEASURED'), excl=('MEMORY', 'CROSSBAR')) or self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col_active(('GPU', 'FREQUENCY')) or self._col_active(('GPU', 'TAKT'))
         gpu_throttle  = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
-        gpu_power     = _a('gpu_power') or self._col_active(('GPU', 'POWER')) or self._col('BOARD', 'POWER') or self._col('TOTAL', 'BOARD') or self._col('TGP') or self._col('TBP') or self._col('ASIC') or self._col('NVVDD') or self._col('PCIe') or self._col('LEISTUNG') or self._col('EINGANGSLEISTUNG') or self._col('POWER')
+        gpu_power     = resolve_gpu_power_column(df, _a('gpu_power'))
         gpu_clk_col   = self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col('GPU Clock [MHz]')
 
         gpu_12v_input_v = self._col('GPU 12VHPWR Voltage') or self._col('GPU PCIe +12V Input Voltage') or self._col('GPU 12V Input Voltage')
@@ -8163,16 +9809,18 @@ Min/Max Thresholds:
                                           n_samples=self.sig_cpu_thermal_samples)
             if not is_critical and peak_temp >= limit:
                 is_critical = True
-            elif not is_warning and peak_temp >= warn_threshold:
-                is_warning = True
 
             if is_critical or is_warning:
                 thr_active = throttle and mx(throttle) >= 1.0
                 severity = "CRITICAL" if is_critical else "WARNING"
                 _cpu_thresh = crit_threshold if is_critical else warn_threshold
                 _cpu_mask = df[cpu_temp] >= _cpu_thresh
+                _cpu_desc = (
+                    "CPU is hitting its thermal ceiling. ADVICE: Check CPU cooler mounting, re-apply thermal paste, or ensure your AIO pump hasn't failed."
+                    if is_critical else
+                    f"CPU ran hot for an extended period (above {warn_threshold:.0f}°C). No throttling flag was active, but sustained heat eats boost headroom. ADVICE: Check cooler mounting, fan curves and case airflow.")
                 add("CPU Thermal Throttling", severity,
-                    "CPU is hitting its thermal ceiling. ADVICE: Check CPU cooler mounting, re-apply thermal paste, or ensure your AIO pump hasn't failed.",
+                    _cpu_desc,
                     [f"Peak Temp: {mx(cpu_temp):.1f}°C",
                      f"Limit: {limit:.0f}°C",
                      f"Throttling Flag: {'Active' if thr_active else 'Inactive'}"],
@@ -8184,10 +9832,27 @@ Min/Max Thresholds:
 
             _gpu_t_all = [c for c in df.columns
                           if 'GPU' in c.upper() and 'TEMP' in c.upper()
-                          and not any(x in c.upper() for x in
+                          and c != gpu_hotspot
+                          and not any(x in c.upper().replace(' ', '') for x in
                                       ('HOTSPOT', 'MEMORY', 'CPU', 'VR', 'VRM', 'JUNCTION', 'SOC', 'LIMIT'))]
             if len(_gpu_t_all) >= 2:
-                gpu_edge = min(_gpu_t_all, key=lambda c: df[c].max())
+                try:
+                    _hot_s = pd.to_numeric(df[gpu_hotspot], errors='coerce')
+                except Exception:
+                    _hot_s = None
+
+                def _edge_corr(c):
+                    if _hot_s is None:
+                        return -2.0
+                    try:
+                        v = float(pd.to_numeric(df[c], errors='coerce').corr(_hot_s))
+                        return v if pd.notna(v) else -2.0
+                    except Exception:
+                        return -2.0
+
+                gpu_edge = max(_gpu_t_all, key=_edge_corr)
+                if _edge_corr(gpu_edge) < 0.30:
+                    gpu_edge = min(_gpu_t_all, key=lambda c: df[c].max())
                 if gpu_edge == gpu_hotspot:
                     gpu_edge = next((c for c in _gpu_t_all if c != gpu_hotspot), None)
             elif _gpu_t_all:
@@ -8414,17 +10079,55 @@ Min/Max Thresholds:
                 [f"Total Errors: {int(mx(whea))}"], cols=[whea])
 
         ppt_limit = self._col('CPU', 'PPT', 'LIMIT')
-        if cpu_power and ppt_limit and self._sustained(cpu_power, mx(ppt_limit)*self.sig_ppt_sat_pct,
-                                                        self.sig_ppt_sat_samples):
-            add("CPU Power Limit Reached", "WARNING",
-                "CPU performance is being capped by power limits. ADVICE: If temps are safe, you can increase 'PPT' or 'PL1/PL2' limits in BIOS.",
-                [f"Power Sustained at: {avg(cpu_power):.1f}W"], cols=[cpu_power])
+        if cpu_power and ppt_limit:
+            if '%]' in ppt_limit:
+                _ppt_w_col = next((c for c in df.columns
+                                   if c.upper().startswith('CPU PPT')
+                                   and '[W]' in c.upper()
+                                   and 'LIMIT' not in c.upper()), None)
+                _derived_limit = None
+                if _ppt_w_col:
+                    _g = pd.to_numeric(df[ppt_limit], errors='coerce')
+                    _w = pd.to_numeric(df[_ppt_w_col], errors='coerce')
+                    _ok = (_g > 10) & _g.notna() & _w.notna()
+                    if int(_ok.sum()) >= 5:
+                        _cand = float((_w[_ok] / (_g[_ok] / 100.0)).median())
+                        if 10.0 <= _cand <= 1000.0:
+                            _derived_limit = _cand
+                if _derived_limit is not None:
+                    _ppt_hit = self._sustained(cpu_power,
+                                               _derived_limit * self.sig_ppt_sat_pct,
+                                               self.sig_ppt_sat_samples)
+                    _ppt_ev = [f"Derived PPT Limit: ~{_derived_limit:.0f}W",
+                               f"Power Sustained at: {avg(cpu_power):.1f}W",
+                               f"Peak PPT Gauge: {mx(ppt_limit):.1f}% of limit"]
+                else:
+                    _ppt_hit = self._sustained(ppt_limit,
+                                               100.0 * self.sig_ppt_sat_pct,
+                                               self.sig_ppt_sat_samples)
+                    _ppt_ev = [f"PPT sustained above {100.0 * self.sig_ppt_sat_pct:.0f}% of limit",
+                               f"Peak PPT Gauge: {mx(ppt_limit):.1f}%"]
+            else:
+                _ppt_hit = self._sustained(cpu_power, mx(ppt_limit) * self.sig_ppt_sat_pct,
+                                           self.sig_ppt_sat_samples)
+                _ppt_ev = [f"Power Sustained at: {avg(cpu_power):.1f}W"]
+            if _ppt_hit:
+                add("CPU Power Limit Reached", "WARNING",
+                    "CPU performance is being capped by power limits. ADVICE: If temps are safe, you can increase 'PPT' or 'PL1/PL2' limits in BIOS.",
+                    _ppt_ev, cols=[cpu_power])
 
         for col in df.columns:
             if ('FAN' in col.upper() or 'RPM' in col.upper()) and '[%]' not in col:
                 fan_s = df[col].ffill().fillna(0)
                 if fan_s.max() > self.sig_fan_min_spinning:
-                    is_stalled = (fan_s < self.sig_fan_stall_rpm)
+                    _stall_arr = (fan_s < self.sig_fan_stall_rpm).values.copy()
+                    _spin_arr = (fan_s >= self.sig_fan_min_spinning).values
+                    if _spin_arr.any():
+                        _first_spin = int(np.flatnonzero(_spin_arr)[0])
+                        _stall_arr[:_first_spin + 1] = False
+                    else:
+                        _stall_arr[:] = False
+                    is_stalled = pd.Series(_stall_arr, index=df.index)
                     is_hot = pd.Series(False, index=df.index)
                     if 'GPU' in col.upper() and gpu_hotspot: is_hot = df[gpu_hotspot] > self.sig_fan_hot_gpu_c
                     elif 'CPU' in col.upper() and cpu_temp: is_hot = df[cpu_temp] > self.sig_fan_hot_cpu_c
@@ -8533,252 +10236,34 @@ Min/Max Thresholds:
                                    if 'P-CORE' in c.upper()
                                    and 'EFFECTIVE CLOCK' in c.upper()])
 
-        if not req_cols and intel_pcore_req and intel_pcore_eff:
-            n_cores       = len(intel_pcore_req)
-            per_core_ratios = []
-            per_core_active = []
+        cfg = StretchConfig(STRETCH_MAJOR_USAGE_GATE, STRETCH_MINOR_USAGE_GATE,
+                            STRETCH_MAJOR_RATIO, STRETCH_MINOR_RATIO)
+        common = dict(add=add, ratio_fn=stretch_core_ratios,
+                      usage_fn=_usage_series, col_lookup=self._col,
+                      temp_limits=self.temp_limits, cfg=cfg)
 
-            for i, req_col in enumerate(intel_pcore_req):
-                req = pd.to_numeric(df[req_col], errors='coerce').replace(0, np.nan)
-                valid_req = req > 300
-                core_num = None
-                for sep in ['P-Core ', 'P-core ', 'P-CORE ']:
-                    if sep in req_col:
-                        core_num = req_col.split(sep)[-1].split(' ')[0]
-                        break
-                if not core_num:
-                    core_num = str(i)
-                
-                eff_cols_for_core = [c for c in intel_pcore_eff
-                                     if f'P-CORE {core_num}' in c.upper() 
-                                     and 'EFFECTIVE' in c.upper()]
-                if not eff_cols_for_core:
-                    continue
-                core_ratios  = []
-                core_weights = []
-                for eff_col in eff_cols_for_core:
-                    if eff_col not in df.columns:
-                        continue
-                    eff = pd.to_numeric(df[eff_col], errors='coerce')
-                    active = valid_req & (eff > 50)
-                    if not active.any():
-                        continue
-                    ratio = (eff / req).clip(0, 1.5).where(active)
-                    weight = req.where(active)
-                    core_ratios.append(ratio)
-                    core_weights.append(weight)
-                if core_ratios:
-                    ratio_series = pd.concat(core_ratios, axis=0).groupby(level=0).mean()
-                    weight_series = pd.concat(core_weights, axis=0).groupby(level=0).mean()
-                    ratio_series.name = core_num
-                    weight_series.name = core_num
-                    per_core_ratios.append(ratio_series)
-                    per_core_active.append(weight_series)
+        ecore_req, ecore_eff = discover_ecore_columns(df)
+        if not req_cols and (intel_pcore_req or ecore_req):
+            detect_clock_stretching(
+                df,
+                {"P-cores": build_intel_specs(df, intel_pcore_req, intel_pcore_eff,
+                                              "P-core", intel_pcore_core_num,
+                                              intel_pcore_eff_cols_for,
+                                              intel_pcore_use_cols_for),
+                 "E-cores": build_intel_specs(df, ecore_req, ecore_eff,
+                                              "E-core", intel_ecore_core_num,
+                                              intel_ecore_eff_cols_for,
+                                              intel_ecore_use_cols_for)},
+                names=("CPU Clock Stretching (Major)",
+                       "CPU Clock Stretching (Minor)"),
+                describe=lambda c, t: INTEL_DESC[t].format(c=c), **common)
 
-            if per_core_ratios:
-                all_ratios   = pd.concat(per_core_ratios, axis=1)
-                all_weights  = pd.concat(per_core_active, axis=1)
-                weight_total = all_weights.sum(axis=1).replace(0, np.nan)
-                weighted_sum = (all_ratios * all_weights).sum(axis=1)
-                mean_ratio   = (weighted_sum / weight_total).replace([np.inf, -np.inf], np.nan)
-                core_weight  = all_ratios.notna().sum(axis=1)
-                active_cores = core_weight > 0
-                mean_ratio   = mean_ratio[active_cores].dropna()
-                major_event = mean_ratio < 0.60
-                minor_event = (mean_ratio >= 0.60) & (mean_ratio < 0.80)
-
-                if major_event.any():
-                        avg_r   = mean_ratio[major_event].mean()
-                        worst_r = mean_ratio[major_event].min()
-                        add(
-                            name="CPU Clock Stretching (Major)",
-                            severity="CRITICAL",
-                            description=(
-                                f"Intel P-cores are running at {avg_r*100:.1f}% of requested frequency "
-                                f"(worst: {worst_r*100:.1f}%). Severe thermal or power throttling "
-                                "is causing clock stretching - stutters even when FPS looks normal."
-                            ),
-                            evidence=[
-                                f"Avg ratio: {avg_r:.2f}  (target >0.90)",
-                                f"Worst: {worst_r:.2f}",
-                                f"Affected samples: {major_event.sum()}",
-                                "Check: CPU temps, PL1/PL2 limits, VRM temps"
-                            ],
-                            cols=intel_pcore_req[:4]
-                        )
-                elif minor_event.any():
-                        avg_r = mean_ratio[minor_event].mean()
-                        add(
-                            name="CPU Clock Stretching (Minor)",
-                            severity="WARNING",
-                            description=(
-                                f"Intel P-cores running at {avg_r*100:.1f}% of requested frequency. "
-                                "Mild clock stretching - may cause occasional micro-stutters."
-                            ),
-                            evidence=[
-                                f"Avg ratio: {avg_r:.2f}  (target >0.90)",
-                                f"Affected samples: {minor_event.sum()}",
-                            ],
-                            cols=intel_pcore_req[:4]
-                        )
         if req_cols:
-            n_cores        = len(req_cols)
-            per_core_ratios  = []
-            per_core_active  = []
-
-            for i, req_col in enumerate(req_cols):
-                t0_col = f"Core {i} T0 Effective Clock [MHz]"
-                t1_col = f"Core {i} T1 Effective Clock [MHz]"
-
-                req = df[req_col].replace(0, np.nan)
-
-                valid_req = req > 300
-
-                core_ratios  = []
-                core_weights = []
-                core_active  = pd.Series(False, index=df.index)
-
-                for eff_col in [t0_col, t1_col]:
-                    if eff_col not in df.columns:
-                        continue
-                    eff = df[eff_col]
-
-                    active = valid_req & (eff > (0.35 * req + 100))
-
-                    ratio  = (eff / req).where(active)
-                    weight = eff.where(active)
-
-                    core_ratios.append(ratio)
-                    core_weights.append(weight)
-                    core_active = core_active | active
-
-                if not core_ratios:
-                    continue
-
-                ratios  = pd.concat(core_ratios,  axis=1)
-                weights = pd.concat(core_weights, axis=1)
-
-                core_ratio  = ratios.median(axis=1)
-
-                core_weight = ratios.notna().astype(float).mean(axis=1)
-
-                stable_active = core_active.rolling(5, min_periods=3).sum() >= 3
-                core_ratio  = core_ratio.where(stable_active)
-                core_weight = core_weight.where(stable_active)
-
-                per_core_ratios.append(core_ratio)
-                per_core_active.append(core_active.astype(int))
-
-            if per_core_ratios:
-                all_ratios  = pd.concat(per_core_ratios, axis=1)
-                all_active  = pd.concat(per_core_active, axis=1)
-
-                weight_mat   = all_ratios.notna().astype(float)
-                weight_total = weight_mat.sum(axis=1).replace(0, np.nan)
-                weighted_sum = (all_ratios.fillna(0) * weight_mat).sum(axis=1)
-                mean_ratio   = (weighted_sum / weight_total).replace([np.inf, -np.inf], np.nan)
-
-                worst_core_ratio = all_ratios.min(axis=1)
-
-                active_count  = all_active.sum(axis=1)
-                core_pressure = (active_count / n_cores).rolling(5, min_periods=3).mean()
-
-                system_load = df.get(
-                    'Total CPU Usage [%]',
-                    pd.Series(0.0, index=df.index)
-                ).fillna(0)
-
-                sys_signal  = np.clip(system_load / 100.0, 0, 1)
-                core_signal = np.clip(core_pressure.fillna(0), 0, 1)
-                load_score  = 0.6 * sys_signal + 0.4 * core_signal
-                valid_load  = load_score > 0.55
-
-                load_std       = system_load.rolling(5, min_periods=3).std().fillna(0)
-                in_transition  = load_std > 15.0
-
-                major = (
-                    (mean_ratio < 0.60) &
-                    valid_load &
-                    ~in_transition
-                )
-                minor = (
-                    (mean_ratio >= 0.60) &
-                    (mean_ratio < 0.80) &
-                    valid_load &
-                    ~in_transition
-                )
-
-                major_event = major.rolling(8, min_periods=5).mean() > 0.55
-                minor_event = minor.rolling(8, min_periods=5).mean() > 0.50
-
-                core_avg_ratios = all_ratios.mean()
-                worst_cores     = core_avg_ratios.nsmallest(3)
-
-                if major_event.any():
-                    avg_r     = mean_ratio[major_event].mean()
-                    worst_r   = mean_ratio[major_event].min()
-                    peak_load = system_load[major_event].max()
-                    peak_pressure = core_pressure[major_event].max()
-
-                    cause_hints = []
-                    cpu_temp_col = self._col('CPU', 'TEMP') or self._col('TDIE') or self._col('TCTL')
-                    if cpu_temp_col:
-                        peak_temp = df[cpu_temp_col][major_event].max()
-                        t_limit   = self.temp_limits.get('TDIE', self.temp_limits.get('CORE', 95.0))
-                        if peak_temp >= t_limit * 0.92:
-                            cause_hints.append(f"CPU temp {peak_temp:.1f}°C near limit - likely thermal throttle")
-                    ppt_col = self._col('CPU', 'PPT') or self._col('CPU', 'POWER')
-                    ppt_lim_col = self._col('CPU', 'PPT', 'LIMIT') or self._col('CPU', 'POWER', 'LIMIT')
-                    if ppt_col and ppt_lim_col:
-                        ppt_ratio = df[ppt_col].mean() / (df[ppt_lim_col].mean() + 1e-9)
-                        if ppt_ratio >= 0.95:
-                            cause_hints.append("CPU PPT at limit - power throttling")
-                    if not cause_hints:
-                        cause_hints.append("No obvious thermal/power cause found - check for OS scheduler issues or BIOS power limits")
-
-                    worst_core_strs = [
-                        f"Core {c.split()[1] if 'Core' in str(c) else c}: avg ratio {v:.2f}"
-                        for c, v in worst_cores.items() if not np.isnan(v)
-                    ]
-
-                    add(
-                        name="CPU Clock Stretching - Major",
-                        severity="CRITICAL",
-                        description=(
-                            "The CPU is consistently running well below its requested frequency "
-                            "under load. This means the CPU is not delivering the performance "
-                            "it should be. Causes include thermal throttling, power limit "
-                            "throttling, or a BIOS/OS scheduling misconfiguration. "
-                            "ADVICE: Check CPU temperatures, power limits in BIOS, and whether "
-                            "Windows power plan is set to Balanced instead of High Performance."
-                        ),
-                        evidence=[
-                            f"Average eff/req ratio under load: {avg_r:.2f} (target >0.90)",
-                            f"Worst ratio recorded: {worst_r:.2f}",
-                            f"Peak system load during event: {peak_load:.1f}%",
-                            f"Peak core pressure: {peak_pressure:.2f}",
-                        ] + worst_core_strs + cause_hints
-                    )
-
-                if minor_event.any() and not major_event.any():
-                    avg_r     = mean_ratio[minor_event].mean()
-                    peak_load = system_load[minor_event].max()
-
-                    add(
-                        name="CPU Clock Stretching - Minor",
-                        severity="WARNING",
-                        description=(
-                            "The CPU is running moderately below its requested frequency under "
-                            "load. This is often a sign of a soft power or thermal limit being "
-                            "reached. Performance impact is mild but consistent. "
-                            "ADVICE: Monitor CPU temperatures and check BIOS power limits. "
-                            "If on a laptop, try a cooling pad or update the BIOS."
-                        ),
-                        evidence=[
-                            f"Average eff/req ratio under load: {avg_r:.2f} (target >0.90)",
-                            f"Peak system load during event: {peak_load:.1f}%",
-                        ]
-                    )
+            detect_clock_stretching(
+                df, {"CPU cores": build_amd_specs(req_cols)},
+                names=("CPU Clock Stretching - Major",
+                       "CPU Clock Stretching - Minor"),
+                describe=lambda c, t: AMD_DESC[t], **common)
 
         _has_atx_rails = any(resolve_psu_rail_column(df, _r)
                              for _r in ('+12V', '+5V', '+3.3V'))
@@ -8939,11 +10424,18 @@ Min/Max Thresholds:
                 else:
                     desc += " ADVICE: If temps are safe, you can increase the Power Limit in Afterburner."
 
+                _lim_avg = (df.loc[pwr_limit_active, gpu_power].mean()
+                            if gpu_power in df.columns and int(pwr_limit_active.sum()) else None)
+                _sat_ev = [f"Average Load: {avg_watts:.1f}W",
+                           f"Limit Duration: {hit_pct:.1f}%"]
+                if _lim_avg is not None and pd.notna(_lim_avg):
+                    _sat_ev.insert(1, f"Avg while at limit: {_lim_avg:.1f}W")
+
                 add(
                     name="GPU Power Limit Saturated",
                     severity="INFO",
                     description=desc,
-                    evidence=[f"Average Load: {avg_watts:.1f}W", f"Limit Duration: {hit_pct:.1f}%"]
+                    evidence=_sat_ev
                 )
 
         pcie_width = self._col('GPU', 'PCIE', 'WIDTH')
@@ -9007,7 +10499,7 @@ Min/Max Thresholds:
 
                 bus_activity = df.loc[stutter_indices, gpu_bus_col].max() if gpu_bus_col else 0
 
-                if (avg_gpu_load < 92) or (bus_activity > 5.0):
+                if avg_gpu_load >= 50 and ((avg_gpu_load < 92) or (bus_activity > 5.0)):
                     usage_gap = 100 - avg_gpu_load
                     add(
                         name="GPU Priority Conflict (Background App)",
@@ -9019,6 +10511,7 @@ Min/Max Thresholds:
                         ),
                         evidence=[
                             f"Micro-Stutters: {stutter_count} instances",
+                            f"Avg GPU Load during stutters: {avg_gpu_load:.1f}%",
                             f"GPU Bus Activity: {bus_activity:.1f}%",
                             "ADVICE: Disable 'Hardware Acceleration' in Discord (Advanced) and your browser."
                         ]
@@ -9274,23 +10767,26 @@ Min/Max Thresholds:
 
         if pcie_errors:
             pcie_series = pd.to_numeric(df[pcie_errors], errors='coerce').dropna()
-            is_live_gauge = '(AVG' in pcie_errors.upper()
-            if is_live_gauge:
-                total_pcie_errors = pcie_series.max() if not pcie_series.empty else 0
-                pcie_label = "Peak PCIe Errors (per-sample gauge)"
-            else:
-                total_pcie_errors = pcie_series.sum() if not pcie_series.empty else 0
-                pcie_label = "Total PCIe Errors (lifetime counter)"
-            if total_pcie_errors > 0:
-                add(
-                    name="PCIe Bus Signal Instability",
-                    severity="CRITICAL",
-                    description=(
-                        "Detected hardware-level PCIe errors. This is usually caused by a "
-                        "faulty PCIe Riser cable, a loose GPU seating, or an unstable PCIe Gen 4/5 link."
-                    ),
-                    evidence=[f"{pcie_label}: {total_pcie_errors:g}", "ADVICE: Reseat GPU or replace Riser."]
-                )
+            if not pcie_series.empty:
+                _pcie_growth = float(pcie_series.max() - pcie_series.min())
+                if _pcie_growth > 0.5:
+                    _is_counter = bool((pcie_series.diff().dropna() >= 0).all())
+                    if _is_counter:
+                        _pcie_ev = [f"PCIe error counter rose by {_pcie_growth:g} during the session "
+                                    f"({pcie_series.iloc[0]:g} -> {pcie_series.iloc[-1]:g})",
+                                    "ADVICE: Reseat GPU or replace Riser."]
+                    else:
+                        _pcie_ev = [f"Peak PCIe Errors (per-sample gauge): {pcie_series.max():g}",
+                                    "ADVICE: Reseat GPU or replace Riser."]
+                    add(
+                        name="PCIe Bus Signal Instability",
+                        severity="CRITICAL",
+                        description=(
+                            "Detected hardware-level PCIe errors. This is usually caused by a "
+                            "faulty PCIe Riser cable, a loose GPU seating, or an unstable PCIe Gen 4/5 link."
+                        ),
+                        evidence=_pcie_ev
+                    )
 
         if gpu_wait_ms and ft_col:
             active = (df[ft_col] > 5.0)
@@ -9301,20 +10797,22 @@ Min/Max Thresholds:
                 gw_active  = df.loc[active, gpu_wait_ms]
                 wait_ratio = gw_active / ft_active
                 is_waiting = wait_ratio > 0.25
-                if is_waiting.any():
+                _wait_frac = float(is_waiting.mean()) if len(is_waiting) else 0.0
+                if is_waiting.any() and _wait_frac >= 0.20:
                     max_wait  = gw_active.max()
-                    avg_ratio = wait_ratio[is_waiting].mean() * 100
+                    avg_ratio = wait_ratio.mean() * 100
                     add(
                         name="GPU Engine Wait Bottleneck",
                         severity="WARNING" if avg_ratio < 40 else "CRITICAL",
                         description=(
-                            f"The GPU is idle for {avg_ratio:.1f}% of the frame duration. "
-                            "Even if wait times are low (e.g., 1-2ms), this ratio indicates the "
-                            "GPU is being 'starved' by the CPU or background app priority."
+                            f"The GPU is idle for {avg_ratio:.1f}% of the frame duration on average "
+                            f"(in {_wait_frac*100:.0f}% of active samples the wait exceeds 25% of frame time). "
+                            "This ratio indicates the GPU is being 'starved' by the CPU or background app priority."
                         ),
                         evidence=[
                             f"Max Wait: {max_wait:.2f} ms",
-                            f"Idle Ratio: {avg_ratio:.1f}% of frame",
+                            f"Avg Idle Ratio: {avg_ratio:.1f}% of frame (all active samples)",
+                            f"Samples > 25% wait: {_wait_frac*100:.1f}%",
                             "ADVICE: Disable Discord/Browser Hardware Acceleration."
                         ]
                     )
@@ -9472,42 +10970,49 @@ Min/Max Thresholds:
                         _on_m, _off_m = _on_m & _loaded, _off_m & _loaded
                 _clk_on  = _reg_clk[_on_m]
                 _clk_off = _reg_clk[_off_m]
-                clk_std  = _reg_clk.std()
+                _std_series = _reg_clk
+                if gpu_usage_col and gpu_usage_col in df.columns:
+                    _reg_loaded = df[gpu_usage_col].iloc[_r0:_r1] > 50
+                    if int(_reg_loaded.sum()) >= 10:
+                        _std_series = _reg_clk[_reg_loaded]
+                clk_std  = _std_series.std()
                 clk_std  = float(clk_std) if pd.notna(clk_std) else 0.0
                 _swing   = (float(_clk_off.median() - _clk_on.median())
                             if (len(_clk_on) and len(_clk_off)) else 0.0)
-                add(
-                    name="GPU Power Limit Oscillation",
-                    severity="WARNING",
-                    description=(
-                        "The GPU is rapidly 'ping-ponging' against its power limit. "
-                        "This causes clock speed fluctuations and uneven frame delivery."
-                    ),
-                    evidence=[
-                        f"Power Limit Toggles: {toggles} ({rate_min:.1f} per minute)",
-                        f"Limit Active: {duty_pct:.1f}% of session",
-                        f"Clock Std Dev: {clk_std:.1f} MHz",
-                        (f"Clock Drop at Limit: {_swing:.0f} MHz average"
-                         if _swing > 0 else "Clock Drop at Limit: n/a"),
-                        "ADVICE: Increase Power Limit in Afterburner or undervolt the GPU."
-                    ],
-                    mask=(limit_active == 1),
-                    cols=[gpu_pwr_limit, gpu_clk_col]
-                )
-        if cpu_utility:
+                if _swing >= 100.0:
+                    add(
+                        name="GPU Power Limit Oscillation",
+                        severity="WARNING",
+                        description=(
+                            "The GPU is rapidly 'ping-ponging' against its power limit. "
+                            "This causes clock speed fluctuations and uneven frame delivery."
+                        ),
+                        evidence=[
+                            f"Power Limit Toggles: {toggles} ({rate_min:.1f} per minute)",
+                            f"Limit Active: {duty_pct:.1f}% of session",
+                            f"Clock Std Dev: {clk_std:.1f} MHz",
+                            (f"Clock Drop at Limit: {_swing:.0f} MHz average"
+                             if _swing > 0 else "Clock Drop at Limit: n/a"),
+                            "ADVICE: Increase Power Limit in Afterburner or undervolt the GPU."
+                        ],
+                        mask=(limit_active == 1),
+                        cols=[gpu_pwr_limit, gpu_clk_col]
+                    )
 
-            usage_std = df[cpu_utility].std()
-
-            if usage_std > 15:
+        _dpc_col = self._col('DPC LATENCY')
+        if _dpc_col:
+            _dpc_s = pd.to_numeric(df[_dpc_col], errors='coerce').dropna()
+            if len(_dpc_s) >= 10 and _dpc_s.max() > 500:
                 add(
                     name="Kernel Driver Latency (DPC/ISR)",
                     severity="INFO",
                     description=(
-                        "Detected high volatility in system utility. This usually indicates "
-                        "a background driver (Wi-Fi, Audio, or USB) is causing micro-stutters."
+                        "Measured DPC latency is high. A driver (Wi-Fi, Audio, or USB) "
+                        "is spending too long at elevated IRQL, which causes micro-stutters."
                     ),
                     evidence=[
-                        f"System Load Variance: {usage_std:.2f}%",
+                        f"Peak DPC Latency: {_dpc_s.max():.0f} µs",
+                        f"Threshold: 500 µs",
                         "ADVICE: Update network/audio drivers or disable unused USB controllers."
                     ]
                 )
@@ -9535,15 +11040,42 @@ Min/Max Thresholds:
 
         is_pinned, pinned_ev = False, None
         if drive_activity_cols:
-            counts = {c: int((pd.to_numeric(df[c], errors='coerce')
-                              > self.sig_disk_busy_pct).sum())
-                      for c in drive_activity_cols}
-            worst = max(counts, key=counts.get)
-            if counts[worst] >= self.sig_disk_busy_samples:
+            def _longest_pegged_run(mask_vals):
+                best = cur = 0
+                for v in mask_vals:
+                    cur = cur + 1 if v else 0
+                    if cur > best:
+                        best = cur
+                return best
+
+            _sustained_needed = max(5, int(self.sig_disk_busy_samples))
+            _best_col, _best_run, _best_cnt, _best_peak = None, 0, 0, 0.0
+            for c in drive_activity_cols:
+                _s = pd.to_numeric(df[c], errors='coerce')
+                _peg = (_s > self.sig_disk_busy_pct).values
+                _cnt = int(_peg.sum())
+                if _cnt == 0:
+                    continue
+                _run = _longest_pegged_run(_peg)
+                if _run > _best_run:
+                    _best_col, _best_run, _best_cnt = c, _run, _cnt
+                    _best_peak = float(_s.max())
+            if _best_col is not None and _best_run >= _sustained_needed:
                 is_pinned = True
                 pinned_ev = (f"Drive activity >{self.sig_disk_busy_pct:.1f}% in "
-                             f"{counts[worst]} samples of '{worst}' "
-                             f"(peak {pd.to_numeric(df[worst], errors='coerce').max():.0f}%)")
+                             f"{_best_cnt} samples of '{_best_col}' "
+                             f"(peak {_best_peak:.0f}%)")
+            elif _best_col is not None and _best_cnt >= 3 and ft_col:
+                _s = pd.to_numeric(df[_best_col], errors='coerce')
+                _peg = (_s > self.sig_disk_busy_pct)
+                _ft_med = float(pd.to_numeric(df[ft_col], errors='coerce').median())
+                if _ft_med and _ft_med > 0:
+                    _hitched = _peg & (pd.to_numeric(df[ft_col], errors='coerce') > 3 * _ft_med)
+                    if int(_hitched.sum()) >= 3:
+                        is_pinned = True
+                        pinned_ev = (f"Drive '{_best_col}' at 100% during "
+                                     f"{int(_hitched.sum())} frame-time spikes "
+                                     f"(>{3 * _ft_med:.0f} ms)")
 
         if is_pinned or warned_drive_col or failed_drive_col:   # flags no longer gated
             severity = ("CRITICAL" if failed_drive_col
@@ -9590,143 +11122,55 @@ Min/Max Thresholds:
         return hits
 
     def _evaluate_custom_signatures(self, df, add_func):
-        """Evaluate custom signatures and add results to the signature list."""
         custom_sigs = load_custom_signatures()
         if not custom_sigs:
             return
-        
+        hints = (getattr(self, 'median_poll_sec', None),
+                 getattr(getattr(self, 'analyzer', None), 'time_series', None))
         for sig_name, sig_data in custom_sigs.items():
-            if sig_data.get('disabled', False):
+            if not isinstance(sig_data, dict):
                 continue
-            
+            if sig_name in self.disabled_sigs:
+                continue
             if sig_data.get('advanced', False):
+                code = str(sig_data.get('code', '') or '')
+                if not code.strip():
+                    continue
                 try:
-                    code = sig_data.get('code', '')
-                    local_env = {'df': df, 'add': add_func, 'pd': pd}
-                    exec(code, {'pd': pd, 'add': add_func, 'df': df})
+                    exec(code, build_advanced_env(df, add_func, hints))
                 except Exception as e:
+                    where = advanced_error_line(e)
+                    loc = f" at {where}" if where else ""
                     add_func(
                         name=f"Error in '{sig_name}'",
                         severity="WARNING",
-                        description=f"Advanced signature failed: {type(e).__name__}",
-                        evidence=[str(e)]
-                    )
+                        description=(f"Advanced signature failed{loc}: "
+                                     f"{type(e).__name__}"),
+                        evidence=[str(e),
+                                  "Open Custom Signatures, edit this "
+                                  "signature and press Test to debug."])
                 continue
-            
+            if sig_data.get('format') != CUSTOM_SIG_FORMAT:
+                log.warning("custom signature '%s': legacy pre-1.7.17 "
+                            "format skipped", sig_name)
+                continue
             try:
-                tracked = sig_data.get('tracked_sensors', [])
-                excluded = sig_data.get('excluded_sensors', [])
-                mins_dict = sig_data.get('sensor_mins', {})
-                maxs_dict = sig_data.get('sensor_maxs', {})
-                trigger_mode = sig_data.get('trigger', {}).get('mode', 'always')
-                default_sev = sig_data.get('default_severity', 'WARNING')
-                
-                if not tracked:
-                    continue
-                
-                sensor_to_col = {}
-                for sensor_name in tracked:
-                    sensor_upper = sensor_name.upper()
-                    
-                    if sensor_name in df.columns:
-                        sensor_to_col[sensor_name] = sensor_name
-                    else:
-                        for col in df.columns:
-                            if sensor_upper in col.upper():
-                                sensor_to_col[sensor_name] = col
-                                break
-                
-                excluded_upper_set = set(e.upper() for e in excluded)
-                filtered_mapping = {}
-                for sensor_name, col in sensor_to_col.items():
-                    if not any(exc_upper in col.upper() for exc_upper in excluded_upper_set):
-                        filtered_mapping[sensor_name] = col
-                
-                if not filtered_mapping:
-                    continue
-                
-                violation_count = 0
-                evidence = []
-                violated_cols = set()
-                
-                for sensor_name, col in filtered_mapping.items():
-                    if col not in df.columns:
-                        continue
-                    
-                    try:
-                        col_data = pd.to_numeric(df[col], errors='coerce')
-                        col_violations = 0
-                        
-                        if sensor_name in mins_dict:
-                            min_val = float(mins_dict[sensor_name])
-                            min_viols = (col_data < min_val).sum()
-                            if min_viols > 0:
-                                col_violations += min_viols
-                                violation_count += min_viols
-                                violated_cols.add(col)
-                                evidence.append(f"{col}: {min_viols} below {min_val}")
-                        
-                        if sensor_name in maxs_dict:
-                            max_val = float(maxs_dict[sensor_name])
-                            max_viols = (col_data > max_val).sum()
-                            if max_viols > 0:
-                                col_violations += max_viols
-                                violation_count += max_viols
-                                violated_cols.add(col)
-                                evidence.append(f"{col}: {max_viols} above {max_val}")
-                    except Exception:
-                        pass
-                
-                if violation_count == 0:
-                    continue
-                
-                if trigger_mode == 'always':
-                    severity = default_sev
-                else:
-                    trigger_conf = sig_data.get('trigger', {})
-                    info_threshold = trigger_conf.get('info_count', 5)
-                    warn_threshold = trigger_conf.get('warn_count', 10)
-                    crit_threshold = trigger_conf.get('crit_count', 15)
-                    
-                    if violation_count >= crit_threshold:
-                        severity = 'CRITICAL'
-                    elif violation_count >= warn_threshold:
-                        severity = 'WARNING'
-                    elif violation_count >= info_threshold:
-                        severity = 'INFO'
-                    else:
-                        continue
-                
-                violation_mask = None
-                try:
-                    mask = pd.Series([False] * len(df))
-                    for sensor_name, col in filtered_mapping.items():
-                        if col in df.columns:
-                            col_data = pd.to_numeric(df[col], errors='coerce')
-                            col_violated = pd.Series([False] * len(df))
-                            if sensor_name in mins_dict:
-                                col_violated |= col_data < float(mins_dict[sensor_name])
-                            if sensor_name in maxs_dict:
-                                col_violated |= col_data > float(maxs_dict[sensor_name])
-                            mask |= col_violated
-                    violation_mask = mask
-                except Exception:
-                    pass
-                
-                desc = sig_data.get('description', f"Custom signature detected violations in tracked sensors ({violation_count} total).")
-                adv = sig_data.get('advice', None)
-                
-                add_func(
-                    name=sig_name,
-                    severity=severity,
-                    description=desc,
-                    evidence=evidence[:5] if evidence else ["Sensor violations detected"],
-                    mask=violation_mask,
-                    cols=list(violated_cols),
-                    advice=adv
-                )
+                res = evaluate_custom_signature(df, sig_data, hints=hints)
             except Exception as e:
-                pass
+                log.warning("custom signature '%s' failed: %s", sig_name, e)
+                continue
+            if not res['fired']:
+                continue
+            desc = sig_data.get('description') or (
+                "Custom signature: " + describe_signature(sig_data))
+            adv = sig_data.get('advice') or None
+            add_func(name=sig_name,
+                     severity=res['severity'],
+                     description=desc,
+                     evidence=res['evidence'][:8],
+                     mask=res['mask'],
+                     cols=res['cols'][:4],
+                     advice=adv)
 
     def _build_narrative(self, results: list) -> str:
         """Build a hedged plain-English summary paragraph from signature results."""
@@ -11134,7 +12578,20 @@ Min/Max Thresholds:
                 cols = list(df.columns)
                 sel  = [c for c, v in self.vars.items() if v.get() and c in df.columns]
                 x_vals, ts, use_time = self._get_x_axis()
-                _RC = REPORT_CHART_PALETTE
+                _RC = {
+                    'fig_bg': '#13132b',   # --bg2 (card tone)
+                    'ax_bg':  '#0d0d1a',   # --bg  (page tone)
+                    'title':  '#4f8ef7',   # --accent
+                    'ticks':  '#94a3b8',
+                    'grid':   '#2a2a4a',
+                    'spine':  '#1e1e3a',   # --border
+                    'legend': '#e2e8f0',   # --text
+                    'line_cycle': ['#4f8ef7', '#22c55e', '#f59e0b',
+                                   '#ef4444', '#a78bfa', '#06b6d4',
+                                   '#f472b6', '#84cc16'],
+                }
+                assert _RC == REPORT_CHART_PALETTE, \
+                    'report chart palettes drifted apart'
 
                 def _fig_to_b64(fig) -> str:
                     FigureCanvasAgg(fig)
