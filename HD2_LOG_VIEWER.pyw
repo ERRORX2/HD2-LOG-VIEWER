@@ -2181,7 +2181,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.2"
+CURRENT_VERSION = "1.8.2.1"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -3225,6 +3225,177 @@ def _shell_openwith_refresh():
         return True, "Open-with entry re-pointed at this exe."
     except OSError:
         return False, ""
+
+
+_SINGLE_INSTANCE_MAGIC = b"HD2LOGVIEWER-SINGLE-INSTANCE-V1"
+_SINGLE_INSTANCE_OK    = b"OK"
+_DEFAULT_SI_PORT       = 27122
+_SI_HANDSHAKE_TIMEOUT  = 2.0
+_SI_ACCEPT_POLL        = 1.0
+
+_FORWARD_STATE = {"root": None, "app": None, "pending": None}
+
+
+def _single_instance_port() -> int:
+
+    raw = (os.environ.get("HD2LV_SINGLE_INSTANCE_PORT") or "").strip()
+    if not raw:
+        return _DEFAULT_SI_PORT
+    try:
+        return int(raw)
+    except ValueError:
+        return _DEFAULT_SI_PORT
+
+
+def _parse_cli_args(argv=None):
+
+    if argv is None:
+        try:
+            argv = sys.argv
+        except Exception:
+            argv = []
+    csv_path = None
+    force_new = False
+    for a in (list(argv or [''])[1:]):
+        s = (a or "").strip()
+        if not s:
+            continue
+        if s.lower() in ("--new-instance", "--new", "--multi", "-n"):
+            force_new = True
+            continue
+        cand = s.strip('"').strip("'").strip()
+        if cand and csv_path is None:
+            csv_path = cand
+    return csv_path, force_new
+
+
+def _try_bind_single_instance():
+    import socket
+    port = _single_instance_port()
+    if port <= 0:
+        return None
+    try:
+        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if os.name != 'nt':
+            srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        srv.bind(("127.0.0.1", port))
+        srv.listen(8)
+        return srv
+    except OSError:
+        return None
+
+
+def _forward_to_running_instance(csv_path=""):
+    import socket
+    port = _single_instance_port()
+    if port <= 0:
+        return False
+    try:
+        sock = socket.create_connection(("127.0.0.1", port),
+                                        timeout=_SI_HANDSHAKE_TIMEOUT)
+    except OSError:
+        return False
+    try:
+        sock.settimeout(_SI_HANDSHAKE_TIMEOUT)
+        payload = (_SINGLE_INSTANCE_MAGIC + b"\n"
+                   + (csv_path or "").encode("utf-8", "replace") + b"\n")
+        sock.sendall(payload)
+        reply = b""
+        while len(reply) < len(_SINGLE_INSTANCE_OK):
+            chunk = sock.recv(len(_SINGLE_INSTANCE_OK) - len(reply))
+            if not chunk:
+                break
+            reply += chunk
+        return reply == _SINGLE_INSTANCE_OK
+    except OSError:
+        return False
+    finally:
+        try:
+            sock.close()
+        except Exception:
+            pass
+
+
+def _bring_window_to_front(root):
+    try:
+        root.deiconify()
+        root.lift()
+        root.attributes("-topmost", True)
+        root.focus_force()
+        root.after(250, lambda: root.attributes("-topmost", False))
+    except Exception:
+        pass
+
+
+def _shell_forward_handle(path):
+    root = _FORWARD_STATE.get("root")
+    app = _FORWARD_STATE.get("app")
+    if root is not None:
+        _bring_window_to_front(root)
+    if not path:
+        return
+    if app is None:
+        _FORWARD_STATE["pending"] = path
+        return
+    try:
+        app._open_path_from_shell(path)
+        _FORWARD_STATE["pending"] = None    # handled: nothing left to replay
+    except Exception:
+        pass
+
+
+def _single_instance_server_loop(srv):
+    import socket
+    try:
+        srv.settimeout(_SI_ACCEPT_POLL)
+    except Exception:
+        pass
+    while True:
+        conn = None
+        f = None
+        try:
+            try:
+                conn, _addr = srv.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                return
+            try:
+                conn.settimeout(_SI_HANDSHAKE_TIMEOUT)
+                f = conn.makefile("rb")
+                magic = f.readline(256)
+                if not magic or magic.strip() != _SINGLE_INSTANCE_MAGIC:
+                    continue
+                conn.sendall(_SINGLE_INSTANCE_OK)
+                raw = f.readline(4096)
+                path = raw.decode("utf-8", "replace").strip("\r\n") if raw else ""
+                root = _FORWARD_STATE.get("root")
+                if root is None:
+                    _FORWARD_STATE["pending"] = path
+                    continue
+                if not _post_ui(root, lambda p=path: _shell_forward_handle(p)):
+                    _FORWARD_STATE["pending"] = path
+            finally:
+                if f is not None:
+                    try:
+                        f.close()
+                    except Exception:
+                        pass
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+        except Exception:
+            continue
+
+
+def _start_single_instance_server(srv):
+    t = threading.Thread(target=_single_instance_server_loop,
+                          args=(srv,), daemon=True,
+                          name="SingleInstanceServer")
+    t.start()
+    return t
 
 
 class TelemetryApp:
@@ -14911,11 +15082,22 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.canvas_checklist.configure(scrollregion=self.canvas_checklist.bbox("all"))
         self.canvas_checklist.yview_moveto(0)
 
+    def _open_path_from_shell(self, path: str):
+        if not path or not os.path.isfile(path):
+            messagebox.showwarning(
+                "RESYNC.ERR",
+                "Could not find the file passed by the shell:\n\n%s" % (path or ""))
+            return
+        self._load_csv_threaded(
+            path,
+            on_success=self._apply_new_csv,
+            on_error=lambda exc: messagebox.showerror("Load Error", str(exc)))
+
     def _import_new_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
         if not path:
             return
-        self._load_csv_threaded(path, on_success=self._apply_new_csv)
+        self._open_path_from_shell(path)
 
     def _teardown(self):
         if self._sig_watcher_id:
@@ -17014,8 +17196,18 @@ if __name__ == "__main__":
     except Exception:
         pass
 
+    _cli_csv, _cli_force_new = _parse_cli_args()
+    _si_srv = None
+    if not _cli_force_new:
+        _si_srv = _try_bind_single_instance()
+        if _si_srv is None:
+            if _forward_to_running_instance(_cli_csv or ""):
+                sys.exit(0)     # the running window takes over from here
     root = tk.Tk()
     root.withdraw()
+    _FORWARD_STATE["root"] = root
+    if _si_srv is not None:
+        _start_single_instance_server(_si_srv)
 
     try:
         if getattr(sys, 'frozen', False):
@@ -17057,15 +17249,7 @@ if __name__ == "__main__":
     except Exception:
         pass
 
-    _cli_file = None
-    try:
-        for _arg in sys.argv[1:]:
-            _a = _arg.strip().strip('"').strip("'")
-            if _a:
-                _cli_file = _a
-                break
-    except Exception:
-        _cli_file = None
+    _cli_file = _cli_csv
 
     if _cli_file and os.path.isfile(_cli_file):
         path = os.path.abspath(_cli_file)
@@ -17145,6 +17329,11 @@ if __name__ == "__main__":
                 def _done():
                     try:
                         app = TelemetryApp(root, a)
+                        _FORWARD_STATE["app"] = app
+                        _si_pend = _FORWARD_STATE.get("pending")
+                        if _si_pend is not None:
+                            _FORWARD_STATE["pending"] = None
+                            root.after(200, lambda p=_si_pend: _shell_forward_handle(p))
                         app.canvas_widget.draw()                            
                         root.update()                                                   
                     finally:
