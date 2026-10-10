@@ -91,6 +91,7 @@ _ERROR_KW      = ('ECC', 'BAD SECTOR', 'REALLOCATED', 'PENDING SECTOR',
                   'UNCORRECTABLE', 'CRC ERROR')
 _RAIL_SKIP     = ('GPU PCIE', 'PCIE', '12VHPWR', 'INPUT')
 _TEMP_TRIGGERS = frozenset(['TEMP', '°C', 'HOTSPOT', 'TDIE', 'TCTL'])
+_VID_RE        = re.compile(r'\bVID\b')
 
 _PSU_RAIL_SPECS = {
 
@@ -2166,7 +2167,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.0"
+CURRENT_VERSION = "1.8.1"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -2424,6 +2425,12 @@ class TelemetryAnalyzer:
     TIME_FORMATS = ['%H:%M:%S', '%H:%M:%S.%f', '%Y-%m-%d %H:%M:%S',
                     '%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S', '%H:%M']
 
+    DATETIME_COMBINED_FORMATS = [
+        '%d.%m.%Y %H:%M:%S.%f', '%d.%m.%Y %H:%M:%S', '%d.%m.%Y %H:%M',
+        '%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M',
+        '%d/%m/%Y %H:%M:%S.%f', '%d/%m/%Y %H:%M:%S', '%d/%m/%Y %H:%M',
+        '%m/%d/%Y %H:%M:%S.%f', '%m/%d/%Y %H:%M:%S', '%m/%d/%Y %H:%M',
+    ]
 
     MANGOHUD_COL_MAP = {
         'fps':              'FPS [FPS]',
@@ -3026,9 +3033,41 @@ class TelemetryAnalyzer:
 
         return ordered
 
+    def _parse_dt_column(self, raw, formats):
+        attempts = []
+        for fmt in formats:
+            try:
+                attempts.append(pd.to_datetime(raw, format=fmt, errors='coerce'))
+            except Exception:
+                continue
+        if not attempts:
+            return pd.Series(pd.NaT, index=raw.index, dtype='datetime64[ns]')
+        if len(attempts) == 1:
+            return attempts[0]
+        merged = pd.concat(attempts, axis=1)
+        return merged.bfill(axis=1).iloc[:, 0]
+
     def _detect_time_column(self):
         """Find the best time column and parse it into self.time_series."""
         cols_lower = {c.lower().strip(): c for c in self.df.columns}
+
+        date_col = cols_lower.get('date')
+        time_col = cols_lower.get('time')
+        if date_col is not None and time_col is not None:
+            combined = (self.df[date_col].astype(str).str.strip() + ' ' +
+                        self.df[time_col].astype(str).str.strip())
+            parsed = self._parse_dt_column(combined, self.DATETIME_COMBINED_FORMATS)
+            if parsed.notna().sum() <= len(parsed) * 0.8:
+                try:
+                    parsed = pd.to_datetime(combined, errors='coerce', format='mixed')
+                except Exception:
+                    parsed = None
+            if parsed is not None and parsed.notna().sum() > len(parsed) * 0.8:
+                if parsed.dropna().is_monotonic_increasing:
+                    first = parsed.dropna().iloc[0]
+                    self.time_col = time_col
+                    self.time_series = parsed - first
+                    return
 
         found_col = None
         for candidate in self.TIME_COLUMN_CANDIDATES:
@@ -3040,26 +3079,27 @@ class TelemetryAnalyzer:
             return
 
         raw = self.df[found_col].astype(str).str.strip()
-
-        for fmt in self.TIME_FORMATS:
+        parsed = self._parse_dt_column(raw, self.TIME_FORMATS)
+        if parsed.notna().sum() <= len(parsed) * 0.8:
             try:
-                parsed = pd.to_datetime(raw, format=fmt, errors='coerce')
-                if parsed.notna().sum() > len(parsed) * 0.8:
-                    self.time_col = found_col
-                    first = parsed.dropna().iloc[0]
-                    self.time_series = parsed - first
-                    return
+                parsed = pd.to_datetime(raw, errors='coerce', format='mixed')
             except Exception:
-                continue
+                parsed = None
+        if parsed is None or parsed.notna().sum() <= len(parsed) * 0.8:
+            return
 
-        try:
-            parsed = pd.to_datetime(raw, errors='coerce', format='mixed')
-            if parsed.notna().sum() > len(parsed) * 0.8:
-                self.time_col = found_col
-                first = parsed.dropna().iloc[0]
-                self.time_series = parsed - first
-        except Exception:
-            pass
+        first = parsed.dropna().iloc[0]
+        elapsed = parsed - first
+        secs = elapsed.dt.total_seconds()
+        if len(secs) >= 2:
+            prev = secs.shift(1)
+            jumps = (secs < prev) & secs.notna() & prev.notna()
+            if bool(jumps.any()):
+                secs = secs + jumps.cumsum() * 86400.0
+                elapsed = pd.to_timedelta(secs, unit='s')
+
+        self.time_col = found_col
+        self.time_series = elapsed
 
 class TelemetryApp:
     def __init__(self, root: tk.Tk, analyzer: TelemetryAnalyzer):
@@ -7491,8 +7531,9 @@ class TelemetryApp:
         if series.empty:
             return False
 
-        if any(x in raw for x in _EXCLUDE_RAW) or any(x in name for x in _EXCLUDE_NAME):
-            return False
+        if 'EXCEEDED' not in raw and 'RUNNING AVERAGE' not in raw:
+            if any(x in raw for x in _EXCLUDE_RAW) or any(x in name for x in _EXCLUDE_NAME):
+                return False
 
         if 'FRAME TIME' in raw or 'FRAMETIME' in raw:
             if '1% HIGH' in raw and '0.1%' not in raw:
@@ -7545,7 +7586,6 @@ class TelemetryApp:
                 'IA: MAX TURBO LIMIT',
                 'IA: TURBO ATTENUATION',
                 'IA: THERMAL VELOCITY BOOST',
-                'IA LIMIT REASONS',
 
                 'GT: PROCHOT',
                 'GT: THERMAL EVENT',
@@ -7559,7 +7599,6 @@ class TelemetryApp:
                 'GT: PACKAGE-LEVEL RAPL',
                 'GT: INEFFICIENT OPERATION',
                 'GT: FUSES LIMIT',
-                'GT LIMIT REASONS',
 
                 'RING: PROCHOT',
                 'RING: THERMAL EVENT',
@@ -7570,7 +7609,6 @@ class TelemetryApp:
                 'RING: VR TDC',
                 'RING: MAX VR VOLTAGE',
                 'RING: PACKAGE-LEVEL RAPL',
-                'RING LIMIT REASONS',
 
                 'PERFORMANCE LIMIT - POWER',
                 'PERFORMANCE LIMIT - THERMAL',
@@ -7578,7 +7616,6 @@ class TelemetryApp:
                 'PERFORMANCE LIMIT - MAX OPERATING VOLTAGE',
                 'PERFORMANCE LIMIT - UTILIZATION',
                 'PERFORMANCE LIMIT - SLI',
-                'GPU PERFORMANCE LIMITERS',
 
                 'AVG. POWER (PL1)',
                 'BURST POWER (PL2)',
@@ -7613,7 +7650,8 @@ class TelemetryApp:
             if 'LIMIT' in raw:
                 return False
             if ('MEMORY' in raw or 'RAM' in raw) and ('USAGE' in raw or 'LOAD' in raw):
-                return series.max() >= self.memory_load_max
+                if 'GPU' not in raw:
+                    return series.max() >= self.memory_load_max
             if 'DECODE' in raw or 'ENCODE' in raw or 'VIDEO' in raw or 'MEDIA' in raw:
                 return False
 
@@ -7622,6 +7660,10 @@ class TelemetryApp:
 
         if any(x in raw for x in _ERROR_KW):
             return series.max() > 0
+
+        if 'ERROR' in raw and ('PCIE' in raw or 'PCI EXPRESS' in raw
+                               or 'PCIEXPRESS' in name):
+            return (series.max() - series.min()) > 0.5
 
         if '[W]' in raw and 'STATIC' not in raw and 'LIMIT' not in raw and 'PPT' not in raw:
             if 'CPU' in raw and self._sustained(col, self.cpu_power_max, n_samples=5):
@@ -7651,14 +7693,13 @@ class TelemetryApp:
 
         if 'VCORE' in raw or 'CPU CORE VOLTAGE' in raw:
             lo, hi = self.cpu_volt_range
-            out_of_range = series.min() < lo or series.max() > hi
-            drooping = series.max() - series.min() > self.vcore_droop_max
-            if out_of_range or drooping:
+            if series.max() > hi:
                 return True
+            return self._sustained(col, 0.4, n_samples=3, above=False)
 
-        if 'VID' in raw and 'GPU' not in raw and 'VIDEO' not in raw:
-            lo, hi = self.cpu_volt_range
-            return series.min() < lo or series.max() > hi
+        if _VID_RE.search(raw) and 'GPU' not in raw and 'VIDEO' not in raw:
+            _, hi = self.cpu_volt_range
+            return series.max() > hi
 
         if ('DRAM VOLTAGE' in raw or 'DIMM VOLTAGE' in raw or 'MEMORY VOLTAGE' in raw
                 or 'VDIMM' in raw or 'VDDQ' in raw):
@@ -7674,7 +7715,14 @@ class TelemetryApp:
             if 'EFFECTIVE' not in raw and 'REQUESTED' not in raw\
                     and 'CORE #' not in raw and 'LIMIT' not in raw:
                 if series.mean() > 100 and (series.std() / series.mean()) > self.clock_instability:
-                    return True
+                    _d = series.diff().dropna()
+                    _big = _d[_d.abs() > 100]
+                    if len(_big) >= 2:
+                        _prev = _big.shift()
+                        _flips = int((((_big > 0) & (_prev < 0))
+                                      | ((_big < 0) & (_prev > 0))).sum())
+                        if _flips / max(len(series), 1) > 0.08:
+                            return True
 
         if 'RPM' in raw or 'FAN SPEED' in raw:
             if 'GPU' in raw:
@@ -7696,8 +7744,9 @@ class TelemetryApp:
                     matched_limit = limit
                     matched_len   = len(key_norm)
             if matched_limit is not None and matched_len == len('TEMPERATURE'):
-                for specific in ('CORE', 'GPU', 'HOTSPOT', 'TDIE', 'TCTL', 'CCD',
-                                 'SSD', 'NVME', 'HDD', 'VRM', 'CHIPSET', 'SOCKET'):
+                for specific in ('HOTSPOT', 'VRAM', 'MEMORY', 'SSD', 'NVME', 'HDD',
+                                 'CHIPSET', 'PCH', 'SOCKET', 'VRM', 'TDIE', 'TCTL',
+                                 'CCD', 'CCX', 'IOD', 'CORE', 'GPU'):
                     if specific.replace(' ', '') in name:
                         matched_limit = self.temp_limits.get(specific, matched_limit)
                         break
