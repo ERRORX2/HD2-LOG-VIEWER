@@ -22,6 +22,7 @@ import numpy as np
 import csv
 import json
 import os
+import sys
 import threading
 import urllib.request
 import urllib.error
@@ -857,10 +858,23 @@ AMD_DESC = {
 }
 
 
-GROUPS_FILE         = "groups.json"
-SENSOR_ALIASES_FILE = "sensor_aliases.json"
-THEME_FILE          = "theme.json"
-CUSTOM_SIG_FILE     = "custom_sig.json"
+def _app_dir() -> str:
+    try:
+        if getattr(sys, 'frozen', False):
+            return os.path.dirname(os.path.abspath(sys.executable))
+    except Exception:
+        pass
+    try:
+        return os.path.dirname(os.path.abspath(__file__))
+    except Exception:
+        return os.getcwd()
+
+
+_APP_DIR            = _app_dir()
+GROUPS_FILE         = os.path.join(_APP_DIR, "groups.json")
+SENSOR_ALIASES_FILE = os.path.join(_APP_DIR, "sensor_aliases.json")
+THEME_FILE          = os.path.join(_APP_DIR, "theme.json")
+CUSTOM_SIG_FILE     = os.path.join(_APP_DIR, "custom_sig.json")
 
 _DEFAULT_DARK_THEME = {
     "bg":      "#121212",
@@ -2167,7 +2181,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.1"
+CURRENT_VERSION = "1.8.2"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -2211,6 +2225,7 @@ SIGNATURE_REGISTRY = [
     ("GPU Priority Conflict (Background App)",         "WARNING",          "System & OS"),
     ("GPU Engine Wait Bottleneck",                     "CRITICAL/WARNING", "System & OS"),
     ("Micro-Stuttering Detected",                      "WARNING",          "System & OS"),
+    ("GPU Starvation (CPU-Chain Bound)",               "WARNING/INFO",     "System & OS"),
     ("Kernel Driver Latency (DPC/ISR)",                "INFO",             "System & OS"),
     # -- Storage & I/O -------------------------------------------------------
     ("Storage I/O Bottleneck / Hitching",              "CRITICAL/WARNING", "Storage & I/O"),
@@ -3100,6 +3115,117 @@ class TelemetryAnalyzer:
 
         self.time_col = found_col
         self.time_series = elapsed
+
+_SHELL_OPENWITH_KEY = r"Software\Classes\SystemFileAssociations\.csv\shell\OpenWithResync"
+_SHELL_OPENWITH_LABEL = "Open with Resync"
+
+
+def _shell_openwith_supported() -> bool:
+    if os.name != 'nt':
+        return False
+    try:
+        import winreg  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def _shell_openwith_command() -> str:
+    import sys
+    if getattr(sys, 'frozen', False):
+        return '"%s" "%%1"' % sys.executable
+    pyw = sys.executable
+    try:
+        d, b = os.path.split(pyw)
+        cand = os.path.join(d, 'pythonw.exe')
+        if b.lower() == 'python.exe' and os.path.isfile(cand):
+            pyw = cand
+    except Exception:
+        pass
+    return '"%s" "%s" "%%1"' % (pyw, os.path.abspath(__file__))
+
+
+def _shell_openwith_icon() -> str:
+    import sys
+    try:
+        if getattr(sys, 'frozen', False):
+            return sys.executable
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'icon.ico')
+        if os.path.isfile(p):
+            return p
+        return sys.executable
+    except Exception:
+        return ''
+
+
+def _shell_openwith_registered() -> bool:
+    try:
+        import winreg
+    except ImportError:
+        return False
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _SHELL_OPENWITH_KEY + r"\command") as k:
+            winreg.QueryValueEx(k, None)
+            return True
+    except OSError:
+        return False
+
+
+def _shell_openwith_register():
+    try:
+        import winreg
+    except ImportError:
+        return False, "Shell integration is Windows-only."
+    try:
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, _SHELL_OPENWITH_KEY) as k:
+            winreg.SetValueEx(k, None, 0, winreg.REG_SZ, _SHELL_OPENWITH_LABEL)
+            icon = _shell_openwith_icon()
+            if icon:
+                winreg.SetValueEx(k, "Icon", 0, winreg.REG_SZ, icon)
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER,
+                              _SHELL_OPENWITH_KEY + r"\command") as k:
+            winreg.SetValueEx(k, None, 0, winreg.REG_SZ, _shell_openwith_command())
+        return True, "'Open with Resync' added to the .csv right-click menu."
+    except OSError as exc:
+        return False, "Could not write the registry entry: %s" % exc
+
+
+def _shell_openwith_unregister():
+    try:
+        import winreg
+    except ImportError:
+        return False, "Shell integration is Windows-only."
+    for sub in (r"\command", ""):
+        try:
+            winreg.DeleteKey(winreg.HKEY_CURRENT_USER, _SHELL_OPENWITH_KEY + sub)
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            return False, "Could not remove the registry entry: %s" % exc
+    return True, "'Open with Resync' removed from the .csv right-click menu."
+
+
+def _shell_openwith_refresh():
+    if not getattr(sys, 'frozen', False):
+        return False, ""
+    try:
+        import winreg
+    except ImportError:
+        return False, ""
+    try:
+        want = _shell_openwith_command()
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                            _SHELL_OPENWITH_KEY + r"\command") as k:
+            have = (winreg.QueryValueEx(k, None)[0] or "").strip()
+        if have == want.strip():
+            return False, ""
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER,
+                              _SHELL_OPENWITH_KEY + r"\command") as k:
+            winreg.SetValueEx(k, None, 0, winreg.REG_SZ, want)
+        return True, "Open-with entry re-pointed at this exe."
+    except OSError:
+        return False, ""
+
 
 class TelemetryApp:
     def __init__(self, root: tk.Tk, analyzer: TelemetryAnalyzer):
@@ -4864,6 +4990,32 @@ class TelemetryApp:
                        selectcolor="#1f6aa5" if is_dark else "#ffffff",
                        fg=fg, font=('Segoe UI', 9)).pack(side=tk.LEFT)
 
+        section("Open With (Shell Integration)")
+        tk.Label(body, text="Adds 'Open with Resync' to the Windows right-click menu for .csv "
+                            "files - right-click a sensor log and it opens straight in the viewer, "
+                            "no file picker. In the released EXE build the menu launches the EXE "
+                            "itself, re-pointed automatically if it moves; from source it "
+                            "registers this script (for testing). Current user only; no admin "
+                            "rights needed.",
+                 bg=bg, fg="#888", font=('Segoe UI', 8), wraplength=480,
+                 justify='left').pack(anchor='w', padx=8, pady=(2, 4))
+        openwith_frame = tk.Frame(body, bg=bg)
+        openwith_frame.pack(fill=tk.X, padx=8, pady=(0, 2))
+        _openwith_supported = _shell_openwith_supported()
+        openwith_var = tk.BooleanVar(value=_shell_openwith_registered())
+        openwith_cb = tk.Checkbutton(openwith_frame,
+                       text="Show 'Open with Resync' in the .csv right-click menu",
+                       variable=openwith_var, bg=bg, activebackground=bg,
+                       selectcolor="#1f6aa5" if is_dark else "#ffffff",
+                       fg=fg, font=('Segoe UI', 9))
+        openwith_cb.pack(side=tk.LEFT)
+        openwith_status = tk.Label(body, text="", bg=bg, fg="#888",
+                                   font=('Segoe UI', 8), wraplength=480, justify='left')
+        openwith_status.pack(anchor='w', padx=8, pady=(0, 4))
+        if not _openwith_supported:
+            openwith_cb.config(state=tk.DISABLED)
+            openwith_status.config(text="Windows only - not available on this system.")
+
         section("Signature Enable / Disable")
         tk.Label(body, text="Uncheck a signature to exclude it from detection and reports.",
                  bg=bg, fg="#888", font=('Segoe UI', 8), wraplength=480,
@@ -5016,6 +5168,14 @@ class TelemetryApp:
                 self.disabled_sigs = {name for name, var in sig_vars.items() if not var.get()}
                 self.sig_timeline_enabled = tl_enabled_var.get()
                 self.csv_gap_check_enabled = gap_enabled_var.get()
+
+                if _openwith_supported and openwith_var.get() != _shell_openwith_registered():
+                    if openwith_var.get():
+                        _ow_ok, _ow_msg = _shell_openwith_register()
+                    else:
+                        _ow_ok, _ow_msg = _shell_openwith_unregister()
+                    openwith_status.config(text=_ow_msg,
+                                           fg="#2ecc71" if _ow_ok else "#e74c3c")
 
                 self._save_config()
                 self._build_checklist()
@@ -10416,6 +10576,68 @@ class TelemetryApp:
                     [f"Worst Spike: {stutters.max():.1f}ms",
                      f"Events above {self.sig_stutter_mult}× median: {len(stutters)}"])
 
+        # ---- GPU Starvation (CPU-Chain Bound) --------------------------------
+        try:
+            _gpu_load_col = (
+                self._col_excl(('GPU', 'LOAD'), excl=('MEMORY', 'CONTROLLER', 'VIDEO', 'BUS', 'D3D', 'USAGE'))
+                or self._col_excl(('GPU', 'USAGE'), excl=('MEMORY', 'D3D', 'VIDEO', 'VR', 'MEM'))
+                or gpu_usage_col)
+            if ft_col and _gpu_load_col:
+                _ft_s = pd.to_numeric(df[ft_col], errors='coerce')
+                _gl_s = pd.to_numeric(df[_gpu_load_col], errors='coerce')
+                if pd.notna(_gl_s.max()) and float(_gl_s.max()) <= 100.5:
+                    _act = (_ft_s.notna() & _gl_s.notna()
+                            & (_ft_s >= 1.0) & (_ft_s <= 1000.0) & (_gl_s > 10))
+                    if int(_act.sum()) >= 30:
+                        _ft_avg = float(_ft_s[_act].mean())
+                        _gl_avg = float(_gl_s[_act].mean())
+                        _gl_max = float(_gl_s[_act].max())
+                        _gpu_work = _ft_avg * _gl_avg / 100.0
+                        if _gpu_work > 0 and _ft_avg > 0:
+                            _ceiling = 1000.0 / _gpu_work
+                            _actual = 1000.0 / _ft_avg
+                            _gap = (1.0 - _actual / _ceiling) * 100.0
+                            _gap_thr = float(getattr(self, 'sig_starve_gap_pct', 15.0))
+                            if _gap >= _gap_thr and _gl_avg < 90.0 and _gl_max < 97.0:
+                                _idle_ms = _ft_avg - _gpu_work
+                                _ev = [
+                                    f"Actual: {_actual:.0f} FPS (avg frame {_ft_avg:.1f} ms)",
+                                    f"GPU-Bound Ceiling: ~{_ceiling:.0f} FPS ({_gpu_work:.1f} ms GPU work per frame)",
+                                    f"GPU idle per frame: {_idle_ms:.1f} ms ({100.0 * _idle_ms / _ft_avg:.0f}% of frame)",
+                                ]
+                                _hot_pegged = False
+                                try:
+                                    import re as _re
+                                    _tcands = [c for c in df.columns
+                                               if 'USAGE' in c.upper()
+                                               and not any(x in c.upper() for x in ('MAX', 'TOTAL', 'AVG'))
+                                               and (_re.search(r'\bT[01]\b', c.upper()) or 'THREAD' in c.upper())]
+                                    if _tcands:
+                                        _tsub = df.loc[_act, _tcands]
+                                        if not _tsub.empty:
+                                            _hot = _tsub.mean().idxmax()
+                                            _hot_avg = float(_tsub[_hot].mean())
+                                            _hot_max = float(_tsub[_hot].max())
+                                            if _hot_avg > 40:
+                                                _hot_pegged = _hot_max >= 95
+                                                _ev.append(f"Busiest CPU thread: {_hot} (avg {_hot_avg:.0f}%, peak {_hot_max:.0f}%)")
+                                except Exception:
+                                    pass
+                                _sev = "WARNING" if (_gap >= 25.0 or _hot_pegged) else "INFO"
+                                add(
+                                    "GPU Starvation (CPU-Chain Bound)", _sev,
+                                    f"The GPU could sustain roughly {_ceiling:.0f} FPS at this workload "
+                                    f"(busy only {_gl_avg:.0f}% of each frame) but the session averaged "
+                                    f"{_actual:.0f} FPS. Neither chip is saturated, so the frame chain is "
+                                    "limited by CPU-side serialization - the game (or hosting) threads cannot "
+                                    "feed the GPU fast enough. Low 'GPU load' together with low FPS is "
+                                    "starvation, not headroom.",
+                                    _ev + ["ADVICE: Cap the framerate slightly below the current average to "
+                                           "absorb spikes, and reduce background CPU load (browser, overlays, streaming)."],
+                                    cols=[ft_col, _gpu_load_col])
+        except Exception:
+            pass
+
         disk_busy = self._col('TOTAL', 'ACTIVE', 'TIME') or self._col('DISK', 'BUSY')
         if disk_busy and (df[disk_busy] >= self.sig_disk_busy_pct).rolling(
                 window=self.sig_disk_busy_samples).sum().max() >= self.sig_disk_busy_samples:
@@ -15748,6 +15970,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             "SSD Lifespan Critical": _any("REMAINING LIFE","DRIVE HEALTH","WEAR LEVEL","AVAILABLE SPARE","DRIVE REMAINING","NAND ENDURANCE","MEDIA WEAROUT","PERCENT USED","PERCENT LIFETIME","TOTAL BYTES WRITTEN","TOTAL HOST WRITES","HOST WRITES","NAND WRITES","DRIVE REMAINING LIFE","SSD HEALTH","ENDURANCE REMAINING"),
             "SSD Wear Warning": _any("REMAINING LIFE","DRIVE HEALTH","WEAR LEVEL","AVAILABLE SPARE","NAND ENDURANCE","PERCENT USED","PERCENT LIFETIME","TOTAL HOST WRITES","HOST WRITES","DRIVE REMAINING LIFE","SSD HEALTH","ENDURANCE REMAINING"),
             "Micro-Stuttering Detected": _any("FRAME TIME","FRAMETIME","FPS","FRAME RATE","GPU BUSY","CPU BUSY","GPU WAIT","CPU WAIT","PRESENTED","DISPLAYED","ANIMATION ERROR","FRAME TIME PRESENTED","FRAME TIME DISPLAYED","FRAMERATE PRESENTED","FRAMERATE DISPLAYED","1% LOW","0.1% LOW","99TH","1ST PERCENTILE","LATENCY","RENDER TIME"),
+            "GPU Starvation (CPU-Chain Bound)": _any("FRAME TIME","FRAMETIME","FPS","FRAME RATE","GPU USAGE","GPU LOAD","GPU CORE LOAD","GPU BUSY","GPU AUSLASTUNG","GPU D3D USAGE","TOTAL CPU USAGE","CORE USAGE","THREAD USAGE"),
             "Background Process Interference": _any("CPU USAGE","TOTAL CPU","CPU LOAD","CPU UTIL","GPU USAGE","GPU LOAD","GPU CORE LOAD","FRAME TIME","FRAMETIME","MAX CPU","CPU THREAD","THREAD USAGE","PROCESS CPU","CPU AUSLASTUNG"),
             "GPU Priority Conflict (Background App)": _any("FRAME TIME","FRAMETIME","GPU USAGE","GPU LOAD","GPU BUS","BUS LOAD","GPU WAIT","GPU BUSY","GPU CLOCK","FPS","GPU CORE LOAD","GPU D3D USAGE","GPU GRAPHICS USAGE","GPU COMPUTE USAGE","GPU VIDEO USAGE"),
             "GPU Engine Wait Bottleneck": _any("GPU WAIT","GPU BUSY","GPU WAIT (AVG)","GPU BUSY (AVG)","FRAME TIME","FRAMETIME","CPU WAIT","CPU BUSY","FPS","GPU WAIT [MS]","GPU BUSY [MS]","CPU WAIT [MS]","CPU BUSY [MS]","ANIMATION ERROR"),
@@ -16829,7 +17052,30 @@ if __name__ == "__main__":
             self.after(10, _maybe_apply)
         tk.Toplevel.__init__ = _patched_toplevel_init
 
-    path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
+    try:
+        _shell_openwith_refresh()
+    except Exception:
+        pass
+
+    _cli_file = None
+    try:
+        for _arg in sys.argv[1:]:
+            _a = _arg.strip().strip('"').strip("'")
+            if _a:
+                _cli_file = _a
+                break
+    except Exception:
+        _cli_file = None
+
+    if _cli_file and os.path.isfile(_cli_file):
+        path = os.path.abspath(_cli_file)
+    else:
+        if _cli_file:
+            messagebox.showwarning(
+                "RESYNC.ERR",
+                "Could not find the file passed on the command line:\n\n"
+                "%s\n\nFalling back to the file picker." % _cli_file)
+        path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
     if not path:
         root.destroy()
     else:
