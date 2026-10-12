@@ -2181,7 +2181,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.2.1"
+CURRENT_VERSION = "1.8.3"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -3397,6 +3397,152 @@ def _start_single_instance_server(srv):
     t.start()
     return t
 
+_DND_WM_DROPFILES = 0x0233
+_DND_WM_DESTROY   = 0x0002
+_DND_GWL_WNDPROC  = -4
+_DND_QUERY_LIMIT  = 64
+_DND_MAX_FILES    = 1
+
+_DND_STATE = {"proc": None, "old_proc": 0, "hwnd": 0, "pump": False}
+import collections as _collections
+_DND_QUEUE = _collections.deque()
+
+
+def _dnd_query_files(hdrop):
+    """Decode one WM_DROPFILES HDROP into a list of absolute paths."""
+    import ctypes
+    from ctypes import wintypes
+    sh32 = ctypes.windll.shell32
+    sh32.DragQueryFileW.argtypes = [wintypes.HANDLE, wintypes.UINT,
+                                    wintypes.LPWSTR, wintypes.UINT]
+    sh32.DragQueryFileW.restype  = wintypes.UINT
+    sh32.DragFinish.argtypes     = [wintypes.HANDLE]
+    count = sh32.DragQueryFileW(hdrop, 0xFFFFFFFF, None, 0)
+    paths = []
+    for i in range(min(count, _DND_QUERY_LIMIT)):
+        size = sh32.DragQueryFileW(hdrop, i, None, 0)
+        buf  = ctypes.create_unicode_buffer(size + 1)
+        sh32.DragQueryFileW(hdrop, i, buf, size + 1)
+        paths.append(buf.value)
+    return paths
+
+
+def _dnd_enable(root, on_files):
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        u32  = ctypes.windll.user32
+        sh32 = ctypes.windll.shell32
+        get_wndproc = getattr(u32, "GetWindowLongPtrW", None) or u32.GetWindowLongW
+        set_wndproc = getattr(u32, "SetWindowLongPtrW", None) or u32.SetWindowLongW
+        get_wndproc.argtypes = [wintypes.HWND, ctypes.c_int]
+        get_wndproc.restype  = ctypes.c_ssize_t
+        set_wndproc.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_void_p]
+        set_wndproc.restype  = ctypes.c_ssize_t
+        u32.CallWindowProcW.argtypes = [ctypes.c_void_p, wintypes.HWND,
+                                        wintypes.UINT, wintypes.WPARAM,
+                                        wintypes.LPARAM]
+        u32.CallWindowProcW.restype  = ctypes.c_ssize_t
+        sh32.DragAcceptFiles.argtypes = [wintypes.HWND, wintypes.BOOL]
+        u32.GetParent.argtypes       = [wintypes.HWND]
+        u32.GetParent.restype        = wintypes.HWND
+
+        hwnd = u32.GetParent(root.winfo_id())
+        if not hwnd:
+            return False
+        if _DND_STATE["proc"] is not None and _DND_STATE["hwnd"] == hwnd:
+            return True
+        if _DND_STATE["proc"] is not None:
+            _dnd_restore()
+        old_proc = get_wndproc(hwnd, _DND_GWL_WNDPROC)
+        if not old_proc:
+            return False
+
+        WNDPROC = ctypes.WINFUNCTYPE(ctypes.c_ssize_t, wintypes.HWND,
+                                     wintypes.UINT, wintypes.WPARAM,
+                                     wintypes.LPARAM)
+
+        def _wnd_proc(h, msg, wparam, lparam):
+            if msg == _DND_WM_DROPFILES:
+                try:
+                    paths = _dnd_query_files(wintypes.HANDLE(wparam))
+                finally:
+                    sh32.DragFinish(wintypes.HANDLE(wparam))
+                if paths:
+                    _DND_QUEUE.append(paths)
+                return 0
+            if msg == _DND_WM_DESTROY:
+                _dnd_restore()
+            return u32.CallWindowProcW(old_proc, h, msg, wparam, lparam)
+
+        _DND_STATE["proc"]     = WNDPROC(_wnd_proc)
+        _DND_STATE["old_proc"] = old_proc
+        _DND_STATE["hwnd"]     = hwnd
+        set_wndproc(hwnd, _DND_GWL_WNDPROC,
+                    ctypes.cast(_DND_STATE["proc"], ctypes.c_void_p))
+        sh32.DragAcceptFiles(hwnd, True)
+        try:
+            _filter = getattr(u32, "ChangeWindowMessageFilterEx", None)
+            if _filter is not None:
+                _filter.argtypes = [wintypes.HWND, wintypes.UINT,
+                                    wintypes.DWORD, ctypes.c_void_p]
+                _filter.restype  = wintypes.BOOL
+                for _m in (_DND_WM_DROPFILES, 0x004A, 0x0049):
+                    _filter(hwnd, _m, 1, None)
+        except Exception:
+            pass
+        return True
+    except Exception:
+        _DND_STATE["proc"] = None
+        return False
+
+
+def _dnd_restore():
+    if not _DND_STATE["proc"]:
+        return
+    try:
+        import ctypes
+        u32 = ctypes.windll.user32
+        set_wndproc = getattr(u32, "SetWindowLongPtrW", None) or u32.SetWindowLongW
+        set_wndproc(_DND_STATE["hwnd"], _DND_GWL_WNDPROC,
+                    ctypes.c_void_p(_DND_STATE["old_proc"]))
+    except Exception:
+        pass
+    finally:
+        _DND_STATE["proc"] = None
+
+
+def _dnd_pump(root, on_files):
+    try:
+        while _DND_QUEUE:
+            paths = _DND_QUEUE.popleft()
+            try:
+                on_files(paths)
+            except Exception:
+                import traceback
+                traceback.print_exc()
+        root.after(100, lambda: _dnd_pump(root, on_files))
+    except Exception:
+        _DND_STATE["pump"] = False
+
+
+def _dnd_arm(root, on_files, tries=0):
+    if _dnd_enable(root, on_files):
+        if not _DND_STATE["pump"]:
+            _DND_STATE["pump"] = True
+            _dnd_pump(root, on_files)
+        return True
+    if tries >= 150:
+        return False
+    try:
+        root.after(200, lambda: _dnd_arm(root, on_files, tries + 1))
+    except Exception:
+        return False
+    return False
+
 
 class TelemetryApp:
     def __init__(self, root: tk.Tk, analyzer: TelemetryAnalyzer):
@@ -3581,6 +3727,8 @@ class TelemetryApp:
             on_disable=self._on_disable_updates,
             silent=True
         )
+
+        _dnd_arm(self.root, self._on_files_dropped)
 
     def _on_close(self):
         self._teardown()
@@ -15083,6 +15231,9 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.canvas_checklist.yview_moveto(0)
 
     def _open_path_from_shell(self, path: str):
+        if getattr(self, "_loading", False):
+            self.show_toast("⏳  A file is already loading - please wait")
+            return
         if not path or not os.path.isfile(path):
             messagebox.showwarning(
                 "RESYNC.ERR",
@@ -15092,6 +15243,23 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             path,
             on_success=self._apply_new_csv,
             on_error=lambda exc: messagebox.showerror("Load Error", str(exc)))
+
+    def _on_files_dropped(self, paths):
+        csvs = [p for p in (paths or [])
+                if p.lower().endswith(".csv") and os.path.isfile(p)]
+        if not csvs:
+            if paths:
+                self.show_toast("⚠️  Drag & drop: only .csv files can be opened")
+            return
+        if getattr(self, "_loading", False):
+            self.show_toast("⏳  A file is already loading - drop ignored")
+            return
+        extra = len(paths) - 1
+        note = ("  ·  %d other file%s ignored" % (extra, "s" if extra != 1 else "")) \
+            if extra > 0 else ""
+        self.show_toast("📂  Drag & drop: loading %s%s"
+                        % (os.path.basename(csvs[0]), note))
+        self._open_path_from_shell(csvs[0])
 
     def _import_new_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
@@ -15249,13 +15417,20 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 def _done():
                     try:
                         on_success(analyzer)
+                        try:
+                            self.root.update_idletasks()
+                            self.root.update_idletasks()
+                        except Exception:
+                            pass
                     finally:
+                        self._loading = False
                         _close()
                         _release_tk_refs()
                 _post_ui(self.root, _done)
             except Exception as exc:
                 _captured_exc = exc
                 def _fail():
+                    self._loading = False
                     _close()
                     _release_tk_refs()
                     if on_error:
@@ -15264,6 +15439,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         messagebox.showerror("Load Error", str(_captured_exc))
                 _post_ui(self.root, _fail)
 
+        self._loading = True
         threading.Thread(target=_worker, daemon=True).start()
 
     def _clear_all(self):
