@@ -875,6 +875,7 @@ GROUPS_FILE         = os.path.join(_APP_DIR, "groups.json")
 SENSOR_ALIASES_FILE = os.path.join(_APP_DIR, "sensor_aliases.json")
 THEME_FILE          = os.path.join(_APP_DIR, "theme.json")
 CUSTOM_SIG_FILE     = os.path.join(_APP_DIR, "custom_sig.json")
+HISTORY_FILE        = os.path.join(_APP_DIR, "problem_history.resync")
 
 _DEFAULT_DARK_THEME = {
     "bg":      "#121212",
@@ -2181,7 +2182,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.3"
+CURRENT_VERSION = "1.8.4"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -3397,6 +3398,7 @@ def _start_single_instance_server(srv):
     t.start()
     return t
 
+
 _DND_WM_DROPFILES = 0x0233
 _DND_WM_DESTROY   = 0x0002
 _DND_GWL_WNDPROC  = -4
@@ -3543,6 +3545,720 @@ def _dnd_arm(root, on_files, tries=0):
         return False
     return False
 
+
+from datetime import datetime as _dt
+
+_HISTORY_VERSION      = 1
+_HISTORY_MAX_SESSIONS = 50000
+_HW_CACHE             = {}
+_HIST_LOCK            = _threading.Lock()
+
+
+def _history_load():
+    data = {"version": _HISTORY_VERSION, "sessions": []}
+    try:
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        if isinstance(raw, dict) and isinstance(raw.get("sessions"), list):
+            data["version"]  = raw.get("version") or _HISTORY_VERSION
+            data["sessions"] = [s for s in raw["sessions"] if isinstance(s, dict)]
+    except Exception:
+        pass
+    return data
+
+
+def _history_save(data):
+    try:
+        sessions = data.get("sessions") or []
+        if len(sessions) > _HISTORY_MAX_SESSIONS:
+            sessions = sorted(sessions, key=lambda s: str(s.get("first_seen") or ""))[-_HISTORY_MAX_SESSIONS:]
+            data["sessions"] = sessions
+        tmp = HISTORY_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, HISTORY_FILE)
+        return True
+    except Exception:
+        return False
+
+
+def _csv_fingerprint(path):
+    import hashlib
+    try:
+        size = os.path.getsize(path)
+        h = hashlib.sha256()
+        h.update(b"size=%d" % size)
+        with open(path, "rb") as f:
+            h.update(f.read(262144))
+            if size > 262144:
+                f.seek(max(0, size - 262144))
+                h.update(f.read())
+        return h.hexdigest()
+    except Exception:
+        return None
+
+
+def _hw_profile_from(analyzer, df, fingerprint=None):
+    try:
+        if fingerprint and fingerprint in _HW_CACHE:
+            return _HW_CACHE[fingerprint]
+        prof = {"cpu": None, "gpu": None, "ram": None, "vram_mb": None,
+                "drives": None, "storage": [], "system": None}
+        try:
+            hw = analyzer.extract_hardware_names() or {}
+            cpus = hw.get("CPU") or []
+            prof["cpu"]    = next((c for c in cpus if c), None)
+            gpus = [g for g in (hw.get("GPU") or hw.get("iGPU (Integrated Graphics)") or [])
+                    if g and not g.startswith(("Driver:", "Kernel:"))]
+            prof["gpu"]    = gpus[0] if gpus else None
+            rams           = [r for r in (hw.get("Memory (RAM)") or []) if r]
+            prof["ram"]    = rams[0] if rams else None
+            prof["storage"] = sorted({s for s in (hw.get("Storage") or []) if s})[:6]
+            sysf           = [s for s in (hw.get("System / Motherboard") or []) if s]
+            prof["system"] = sysf[0] if sysf else None
+        except Exception:
+            pass
+        try:
+            cols = [str(c) for c in df.columns]
+            if not prof["ram"]:
+                uc, ac = "Physical Memory Used [MB]", "Physical Memory Available [MB]"
+                if uc in cols and ac in cols:
+                    tot = (df[uc].fillna(0) + df[ac].fillna(0)).max()
+                    if tot and tot > 512:
+                        gb = float(tot) / 1024.0
+                        if gb >= 6:
+                            prof["ram"] = "%d GB" % int(-(-gb // 4.0) * 4)
+                        else:
+                            prof["ram"] = "%d GB" % int(round(gb))
+            vc = "GPU D3D Memory Dedicated [MB]"
+            if vc in cols:
+                v = float(df[vc].max())
+                if v > 256:
+                    try:
+                        pc = "GPU Memory Usage [%]"
+                        if pc in cols:
+                            pct = float(df[pc].max())
+                            if 5.0 < pct < 99.0:
+                                v = v * 100.0 / pct
+                    except Exception:
+                        pass
+                    prof["vram_mb"] = int(round(v / 1024.0) * 1024)
+            if not prof["gpu"]:
+                u = " | ".join(cols).upper()
+                if "CUDA" in u or "NVIDIA" in u:
+                    prof["gpu"] = "NVIDIA GPU"
+                elif "RADEON" in u:
+                    prof["gpu"] = "AMD GPU"
+                elif "INTEL" in u and ("GRAPHICS" in u or "IGPU" in u):
+                    prof["gpu"] = "Intel iGPU"
+            fam = {}
+            for c in cols:
+                if c.startswith("Drive ") and "Temperature" in c:
+                    base = re.sub(r"\.\d+$", "", c).strip()
+                    fam[base] = fam.get(base, 0) + 1
+            if fam:
+                prof["drives"] = max(fam.values())
+        except Exception:
+            pass
+        if fingerprint:
+            _HW_CACHE[fingerprint] = prof
+        return prof
+    except Exception:
+        return {"cpu": None, "gpu": None, "ram": None, "vram_mb": None,
+                "drives": None, "storage": [], "system": None}
+
+
+def _history_record(path, analyzer, df, results, sensors_for=None):
+    try:
+        fp = _csv_fingerprint(path)
+        if not fp:
+            return None
+        order = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
+        agg = {}
+        for r in (results or []):
+            name = str(r.get("name") or "").strip()
+            if not name:
+                continue
+            sev  = str(r.get("severity") or "INFO").upper()
+            e = agg.setdefault(name, {"severity": "INFO", "times": 0,
+                                      "peak": None})
+            e["times"] += 1
+            if order.get(sev, 0) > order.get(e["severity"], 0):
+                e["severity"] = sev
+            cols = r.get("cols")
+            if not cols and sensors_for is not None:
+                try:
+                    cols = sorted(sensors_for(name))[:10]
+                except Exception:
+                    cols = []
+            if cols:
+                e["peak"] = _worse_peak(e["peak"], _hit_peak(name, cols, df))
+        hits = []
+        for n, v in sorted(agg.items()):
+            h = {"name": n, "severity": v["severity"], "times": v["times"]}
+            if v["peak"]:
+                h["peak"] = v["peak"]
+            hits.append(h)
+        now = _dt.now().strftime("%Y-%m-%d %H:%M")
+        with _HIST_LOCK:
+            data   = _history_load()
+            status = "refresh" if any(s.get("csv_hash") == fp
+                                      for s in data["sessions"]) else "new"
+            rec  = next((s for s in data["sessions"] if s.get("csv_hash") == fp), None)
+            if rec is None:
+                rec = {"csv_hash": fp, "first_seen": now}
+                data["sessions"].append(rec)
+                if len(data["sessions"]) == 1:
+                    status = "first"
+            hw_new = _hw_profile_from(analyzer, df, fp)
+            hw_old = rec.get("hardware") \
+                if isinstance(rec.get("hardware"), dict) else {}
+            for k, v in list(hw_new.items()):
+                if v in (None, "", [], 0) and hw_old.get(k) not in (None, "", [], 0):
+                    hw_new[k] = hw_old[k]
+            rec.update({
+                "file":      os.path.basename(str(path)),
+                "last_seen": now,
+                "opens":     int(rec.get("opens") or 0) + 1,
+                "rows":      int(getattr(df, "shape", (0, 0))[0] or 0),
+                "hardware":  hw_new,
+                "hits":      hits,
+            })
+            _history_save(data)
+        return status
+    except Exception:
+        return None
+
+
+def _history_merge(incoming_sessions):
+    with _HIST_LOCK:
+        data  = _history_load()
+        known = {s.get("csv_hash") for s in data["sessions"]}
+        added = skipped = 0
+        for s in list(incoming_sessions or [])[:_HISTORY_MAX_SESSIONS]:
+            try:
+                if not isinstance(s, dict):
+                    continue
+                fp = s.get("csv_hash")
+                if not isinstance(fp, str) or not fp or len(fp) < 8:
+                    continue
+                if fp in known:
+                    skipped += 1
+                    continue
+                rec = {
+                    "csv_hash":   fp,
+                    "first_seen": str(s.get("first_seen") or s.get("last_seen") or "imported"),
+                    "last_seen":  str(s.get("last_seen") or s.get("first_seen") or "imported"),
+                    "opens":      1,
+                    "file":       str(s.get("file") or "imported log")[:120],
+                    "rows":       int(s.get("rows") or 0),
+                    "hardware":   s.get("hardware") if isinstance(s.get("hardware"), dict) else {},
+                    "hits":       [h for h in (s.get("hits") or [])
+                                   if isinstance(h, dict) and h.get("name")][:200],
+                }
+                data["sessions"].append(rec)
+                known.add(fp)
+                added += 1
+            except Exception:
+                continue
+        if added:
+            _history_save(data)
+    return added, skipped
+
+
+def _history_export_payload():
+    data = _history_load()
+    return {
+        "format":       "HD2-LOG-VIEWER problem history",
+        "version":      _HISTORY_VERSION,
+        "app":          CURRENT_VERSION,
+        "exported_at":  _dt.now().strftime("%Y-%m-%d %H:%M"),
+        "sessions":     data["sessions"],
+    }
+
+
+_BACKFILL_METHODS = ("_col", "_col_any", "_col_excl", "_col_candidates",
+                     "_col_active", "_sustained", "_sensors_for_sig",
+                     "_evaluate_custom_signatures")
+
+
+class _BackfillCtx:
+    pass
+
+
+def _backfill_context(analyzer, template):
+    import types as _types
+    ctx = _BackfillCtx()
+    ctx.analyzer = analyzer
+    ctx.df = getattr(analyzer, "df", None)
+    if template is not None:
+        for name in dir(template):
+            if name.startswith("_"):
+                continue
+            if name.startswith("sig_") or name in ("disabled_sigs",
+                                                   "temp_limits",
+                                                   "median_poll_sec"):
+                try:
+                    setattr(ctx, name, getattr(template, name))
+                except Exception:
+                    pass
+    for name in _BACKFILL_METHODS:
+        fn = getattr(TelemetryApp, name, None)
+        if fn is not None:
+            setattr(ctx, name, _types.MethodType(fn, ctx))
+    return ctx
+
+
+def _history_backfill_file(path, template):
+    analyzer = TelemetryAnalyzer(path)
+    analyzer.load()
+    ctx = _backfill_context(analyzer, template)
+    hits = TelemetryApp._run_signatures(ctx)
+    return _history_record(path, analyzer, ctx.df, hits,
+                           sensors_for=ctx._sensors_for_sig)
+
+
+def _stats_sig_missing_peaks(data, sig_name):
+    n = 0
+    for s in (data or {}).get("sessions") or []:
+        for h in (s.get("hits") or []):
+            if str(h.get("name") or "") == sig_name and not h.get("peak"):
+                n += 1
+    return n
+
+
+
+_HISTORY_GROUPS = ("CPU", "GPU", "RAM", "Storage", "Power / System")
+
+_SIG_GROUP_EXPLICIT = {
+    "GPU Driver TDR (Timeout)":                       "GPU",
+    "GPU Engine Wait Bottleneck":                     "GPU",
+    "GPU Overheating (Hotspot)":                      "GPU",
+    "GPU Power Connector Safety Risk (Melting/Fire)": "GPU",
+    "GPU Starvation (CPU-Chain Bound)":              "GPU",
+    "GPU Power Limit Oscillation":                    "GPU",
+    "GPU Power Limit Saturated":                      "GPU",
+    "GPU Priority Conflict (Background App)":         "GPU",
+    "GPU Thermal Warning":                            "GPU",
+    "Unverified GPU Stall at Log Start":              "GPU",
+    "VRAM Swapping / System Memory Spillover":        "GPU",
+    "VRAM Thermal Throttling":                        "GPU",
+    "CPU Bottleneck":                                 "CPU",
+    "CPU Clock Stretching (Major)":                   "CPU",
+    "CPU Clock Stretching (Minor)":                   "CPU",
+    "CPU Clock Stretching - Major":                   "CPU",
+    "CPU Clock Stretching - Minor":                   "CPU",
+    "CPU Clock Stretching - Not Assessed":            "CPU",
+    "CPU Power Limit Reached":                        "CPU",
+    "CPU Thermal Throttling":                         "CPU",
+    "Fan Stall Detected":                             "CPU",
+    "Phantom Clock Cap":                              "CPU",
+    "Memory Controller Desync":                       "RAM",
+    "Memory XMP/EXPO Profile Disabled":               "RAM",
+    "Ryzen Fabric Desync":                            "RAM",
+    "System RAM Exhaustion":                          "RAM",
+    "Virtual Memory Limit":                           "RAM",
+    "S.M.A.R.T. Hardware Failure":                    "Storage",
+    "SSD Lifespan Critical":                          "Storage",
+    "SSD Wear Warning":                               "Storage",
+    "Storage Congestion":                             "Storage",
+    "Storage I/O Bottleneck / Hitching":              "Storage",
+    "Storage Overheating":                            "Storage",
+    "Storage Thermal Critical":                       "Storage",
+    "Background Process Interference":                "Power / System",
+    "Chipset Thermal Throttling":                     "Power / System",
+    "Hardware (WHEA) Errors":                         "Power / System",
+    "Kernel Driver Latency (DPC/ISR)":                "Power / System",
+    "Laptop Power Delivery Failure (Limp Mode)":      "Power / System",
+    "Micro-Stuttering Detected":                      "Power / System",
+    "PCIe Bus Interface Chokepoint":                  "Power / System",
+    "PCIe Bus Signal Instability":                    "Power / System",
+    "PSU +12V Rail Sag":                              "Power / System",
+    "PSU +3.3V Rail Unstable":                        "Power / System",
+    "PSU +5V Rail Unstable":                          "Power / System",
+    "PSU Hardware Failure Indicators":                "Power / System",
+    "USB Rail Voltage Sag":                           "Power / System",
+    "VRM Overheating":                                "Power / System",
+}
+
+_SIG_GROUP_KEYWORDS = (
+    ("GPU",     ("GPU", "VRAM", "GRAPHIC", "DISPLAY", "SHADER")),
+    ("Storage", ("SSD", "STORAGE", "DRIVE", "DISK", "S.M.A.R.T", "NVME")),
+    ("RAM",     ("RAM", "MEMORY", "XMP", "EXPO", "FABRIC", "PAGEFILE", "SWAP")),
+    ("CPU",     ("CPU", "CORE", "FAN", "CLOCK", "PPT")),
+)
+
+
+def _sig_group(name):
+    n = str(name or "").strip()
+    if n in _SIG_GROUP_EXPLICIT:
+        return _SIG_GROUP_EXPLICIT[n]
+    u = n.upper()
+    for grp, keys in _SIG_GROUP_KEYWORDS:
+        for k in keys:
+            if k in u:
+                if k == "DRIVE" and "DRIVER" in u:
+                    continue
+                return grp
+    return "Power / System"
+
+
+def _hw_short(name, limit=26):
+    s = str(name or "").strip()
+    _generic = {"GPU", "CPU", "RAM", "APU", "IGPU", "GFX", "VGA",
+                "UNKNOWN", "GRAPHICS", "MEMORY", "STORAGE"}
+    for pre in ("NVIDIA GeForce ", "NVIDIA ", "AMD Radeon ", "AMD ",
+                "Intel(R) ", "Intel ", "GeForce "):
+        if s.startswith(pre):
+            cut = s[len(pre):].strip()
+            if cut.upper() not in _generic:
+                s = cut
+            break
+    if len(s) > limit:
+        s = s[:limit - 1] + "…"
+    return s or "Unknown"
+
+
+_SIG_PEAK_METRIC = {
+    "GPU Overheating (Hotspot)":                      (("HOT SPOT", "HOTSPOT", "HOT"), "max"),
+    "GPU Thermal Warning":                            (("HOT SPOT", "HOTSPOT", "HOT"), "max"),
+    "VRAM Thermal Throttling":                        (("JUNCTION", "MEMORY"), "max"),
+    "VRM Overheating":                                (("VRM",), "max"),
+    "Chipset Thermal Throttling":                     (("CHIPSET",), "max"),
+    "CPU Thermal Throttling":                         (("TCTL", "TDIE", "PACKAGE TEMP", "PACKAGE [", "CORE MAX"), "max"),
+    "Storage Thermal Critical":                       (("TEMP",), "max"),
+    "Storage Overheating":                            (("TEMP",), "max"),
+    "Fan Stall Detected":                             (("FAN", "RPM"), "min"),
+    "PSU +12V Rail Sag":                              (("12V",), "min"),
+    "PSU +5V Rail Unstable":                          (("5V",), "min"),
+    "PSU +3.3V Rail Unstable":                        (("3.3V", "3V3"), "min"),
+    "USB Rail Voltage Sag":                           (("USB",), "min"),
+    "GPU Power Connector Safety Risk (Melting/Fire)": (("12VHPWR", "PCIE", "12V", "POWER"), "max"),
+    "GPU Power Limit Saturated":                      (("POWER",), "max"),
+    "GPU Power Limit Oscillation":                    (("POWER",), "max"),
+    "CPU Power Limit Reached":                        (("PACKAGE POWER", "PPT", "POWER"), "max"),
+    "Laptop Power Delivery Failure (Limp Mode)":      (("BATTERY", "CHARGE", "POWER"), "min"),
+    "Phantom Clock Cap":                              (("CLOCK", "TAKT"), "max"),
+    "CPU Clock Stretching (Major)":                   (("EFFECTIVE", "CLOCK", "TAKT"), "min"),
+    "CPU Clock Stretching (Minor)":                   (("EFFECTIVE", "CLOCK", "TAKT"), "min"),
+    "System RAM Exhaustion":                          (("MEMORY USED", "PHYSICAL MEMORY USED", "MEMORY LOAD", "USAGE"), "max"),
+    "Virtual Memory Limit":                           (("VIRTUAL", "COMMIT", "PAGE"), "max"),
+    "VRAM Swapping / System Memory Spillover":        (("MEMORY USAGE", "D3D", "DEDICATED", "SHARED"), "max"),
+    "Ryzen Fabric Desync":                            (("FCLK",), "max"),
+    "Memory Controller Desync":                       (("UCLK", "MCLK"), "max"),
+    "Micro-Stuttering Detected":                      (("FRAMETIME", "FRAME TIME"), "max"),
+    "Storage I/O Bottleneck / Hitching":              (("RESPONSE", "ACTIVITY", "READ", "WRITE"), "max"),
+    "Storage Congestion":                             (("ACTIVITY", "READ", "WRITE"), "max"),
+    "SSD Lifespan Critical":                          (("REMAINING LIFE", "WEAR", "HOST WRITES", "PERCENT"), "max"),
+    "SSD Wear Warning":                               (("REMAINING LIFE", "WEAR", "HOST WRITES", "PERCENT"), "max"),
+}
+
+_SIG_PEAK_FALLBACK_MIN = ("VOLT", "SAG", "RAIL")
+
+
+def _col_unit(col):
+    m = re.search(r"\[([^\]]+)\]\s*$", str(col or ""))
+    if not m:
+        return None
+    u = m.group(1).strip()
+    if not u or "/" in u and u.upper() in ("YES/NO", "NO/YES") or len(u) > 6:
+        return None
+    return u
+
+
+def _peak_fmt(p):
+    if not p or not isinstance(p, dict) or p.get("v") is None:
+        return ""
+    v = float(p["v"]); u = str(p.get("u") or "")
+    try:
+        if u in ("V",):
+            s = "%.2f" % v
+        elif u in ("ms",):
+            s = "%.1f" % v
+        elif float(v).is_integer() or abs(v) >= 100:
+            s = "%d" % round(v)
+        else:
+            s = "%.1f" % v
+    except Exception:
+        s = str(v)
+    return (s + (" " + u if u else "")).strip()
+
+
+def _worse_peak(a, b):
+    if not b:
+        return a
+    if not a:
+        return b
+    try:
+        lo = (a.get("r") == "min") or (b.get("r") == "min")
+        pick = b if ((b["v"] < a["v"]) if lo else (b["v"] > a["v"])) else a
+    except Exception:
+        pick = a
+    return pick
+
+
+def _hit_peak(name, cols, df):
+    try:
+        cols = [c for c in (cols or []) if c is not None
+                and c in getattr(df, "columns", [])]
+        if not cols:
+            return None
+        n  = str(name or "").upper()
+        kws, red = _SIG_PEAK_METRIC.get(str(name or "").strip(), ((), None))
+        if kws:
+            for c in cols:
+                cu = c.upper()
+                if any(k in cu for k in kws):
+                    v = pd.to_numeric(df[c], errors="coerce")
+                    if v.notna().any():
+                        val = float(v.min() if red == "min" else v.max())
+                        return {"v": round(val, 2), "u": _col_unit(c) or "",
+                                "r": red or "max", "c": str(c)}
+        want = None
+        if any(t in n for t in ("THERMAL", "OVERHEAT", "THROTTL", "TEMP", "HOT")):
+            want = "°C"
+        elif any(t in n for t in ("VOLT", "SAG", "RAIL")):
+            want = "V"
+        elif "POWER" in n:
+            want = "W"
+        elif any(t in n for t in ("USAGE", "LOAD", "UTIL", "BOTTLENECK",
+                                  "EXHAUST", "SATUR", "CONGEST", "ACTIVITY",
+                                  "STALL", "SPILL")):
+            want = "%"
+        elif any(t in n for t in ("STUTTER", "LATENCY", "WAIT", "HITCH",
+                                  "TIMEOUT", "TDR")):
+            want = "ms"
+        best = None
+        for c in cols:
+            u = _col_unit(c)
+            if not u:
+                continue
+            v = pd.to_numeric(df[c], errors="coerce")
+            if not v.notna().any():
+                continue
+            red2 = "min" if (u == "V" and want == "V") else "max"
+            val = float(v.min() if red2 == "min" else v.max())
+            cand = {"v": round(val, 2), "u": u, "r": red2, "c": str(c),
+                    "_pref": (u == want)}
+            if best is None or (cand["_pref"] and not best["_pref"]):
+                best = cand
+        if best:
+            best.pop("_pref", None)
+            return best
+        return None
+    except Exception:
+        return None
+
+
+def _stats_group_data(data, group):
+    g = group if group in _HISTORY_GROUPS else "Power / System"
+    seen, issues = {}, {}
+    for s in (data or {}).get("sessions") or []:
+        hw = s.get("hardware") or {}
+        if g == "Storage":
+            models = [str(d).strip() for d in (hw.get("storage") or [])
+                      if str(d).strip()]
+        else:
+            key = {"CPU": "cpu", "GPU": "gpu", "RAM": "ram"}.get(g, "system")
+            m = str(hw.get(key) or "").strip()
+            models = [m] if m else []
+        if not models:
+            continue
+        fired = any(_sig_group(h.get("name")) == g
+                    for h in (s.get("hits") or []) if h.get("name"))
+        for m in models:
+            seen[m] = seen.get(m, 0) + 1
+            if fired:
+                issues[m] = issues.get(m, 0) + 1
+    rows = [(m, n, issues.get(m, 0)) for m, n in seen.items()]
+    rows.sort(key=lambda r: (-r[1], -r[2], r[0].lower()))
+    return rows
+
+
+def _stats_signature_data(data, sig_name):
+    g = _sig_group(sig_name)
+    hits, peaks = {}, {}
+    for s in (data or {}).get("sessions") or []:
+        for h in (s.get("hits") or []):
+            if str(h.get("name") or "") != sig_name:
+                continue
+            hw = s.get("hardware") or {}
+            if g == "Storage":
+                models = [str(d).strip() for d in (hw.get("storage") or [])
+                          if str(d).strip()]
+            else:
+                key = {"CPU": "cpu", "GPU": "gpu", "RAM": "ram"}.get(g, "system")
+                m = str(hw.get(key) or "").strip()
+                models = [m] if m else []
+            if not models:
+                models = ["Unknown"]
+            for m in models:
+                hits[m] = hits.get(m, 0) + 1
+                peaks[m] = _worse_peak(peaks.get(m), h.get("peak"))
+    rows = [(m, n, peaks.get(m)) for m, n in hits.items()]
+    rows.sort(key=lambda r: (-r[1], r[0].lower()))
+    return rows
+
+
+def _stats_signature_severity(data, sig_name):
+    order = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
+    worst = 0
+    for s in (data or {}).get("sessions") or []:
+        for h in (s.get("hits") or []):
+            if str(h.get("name") or "") == sig_name:
+                worst = max(worst, order.get(
+                    str(h.get("severity") or "INFO").upper(), 0))
+    return ("INFO", "WARNING", "CRITICAL")[worst]
+
+
+def _stats_severity_counts(data):
+    crit = warn = info = clean = 0
+    for s in (data or {}).get("sessions") or []:
+        order = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
+        worst = -1
+        for h in (s.get("hits") or []):
+            if not h.get("name"):
+                continue
+            worst = max(worst, order.get(
+                str(h.get("severity") or "INFO").upper(), 0))
+        if worst < 0:
+            clean += 1
+        elif worst == 2:
+            crit += 1
+        elif worst == 1:
+            warn += 1
+        else:
+            info += 1
+    return crit, warn, info, clean
+
+
+def _stats_date_range(data):
+    dates = sorted(str(s.get("first_seen") or "")[:10]
+                   for s in (data or {}).get("sessions") or []
+                   if s.get("first_seen"))
+    return (dates[0], dates[-1]) if dates else ("", "")
+
+
+def _stats_group_models(data, group):
+    g = group if group in _HISTORY_GROUPS else "Power / System"
+    order = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
+    seen, iss, worst = {}, {}, {}
+    for s in (data or {}).get("sessions") or []:
+        hw = s.get("hardware") or {}
+        if g == "Storage":
+            models = [str(d).strip() for d in (hw.get("storage") or [])
+                      if str(d).strip()]
+        else:
+            key = {"CPU": "cpu", "GPU": "gpu", "RAM": "ram"}.get(g, "system")
+            m = str(hw.get(key) or "").strip()
+            models = [m] if m else []
+        if not models:
+            continue
+        w = -1
+        for h in (s.get("hits") or []):
+            nm = str(h.get("name") or "").strip()
+            if nm and _sig_group(nm) == g:
+                w = max(w, order.get(str(h.get("severity") or "INFO").upper(), 0))
+        for m in models:
+            seen[m] = seen.get(m, 0) + 1
+            if w >= 0:
+                iss[m] = iss.get(m, 0) + 1
+                worst[m] = max(worst.get(m, -1), w)
+    rows = [(m, n, iss.get(m, 0),
+             ("INFO", "WARNING", "CRITICAL")[worst[m]] if m in worst else "INFO")
+            for m, n in seen.items()]
+    rows.sort(key=lambda r: (-r[2], -r[1], r[0].lower()))
+    return rows
+
+
+def _stats_model_signatures(data, group, model):
+    g = group if group in _HISTORY_GROUPS else "Power / System"
+    order = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
+    agg = {}
+    for s in (data or {}).get("sessions") or []:
+        hw = s.get("hardware") or {}
+        if g == "Storage":
+            models = [str(d).strip() for d in (hw.get("storage") or [])
+                      if str(d).strip()]
+        else:
+            key = {"CPU": "cpu", "GPU": "gpu", "RAM": "ram"}.get(g, "system")
+            m = str(hw.get(key) or "").strip()
+            models = [m] if m else []
+        if model not in models:
+            continue
+        for h in (s.get("hits") or []):
+            nm = str(h.get("name") or "").strip()
+            if not nm or _sig_group(nm) != g:
+                continue
+            e = agg.setdefault(nm, {"logs": 0, "times": 0, "sev": 0,
+                                    "peak": None})
+            e["logs"] += 1
+            e["times"] += int(h.get("times") or 1)
+            e["sev"] = max(e["sev"], order.get(
+                str(h.get("severity") or "INFO").upper(), 0))
+            e["peak"] = _worse_peak(e["peak"], h.get("peak"))
+    rows = [(nm, e["logs"], ("INFO", "WARNING", "CRITICAL")[e["sev"]],
+             e["times"], e["peak"])
+            for nm, e in agg.items()]
+    rows.sort(key=lambda r: (-r[1], r[0].lower()))
+    return rows
+
+
+def _stats_signature_files(data, sig_name, limit=12):
+    out = []
+    for s in (data or {}).get("sessions") or []:
+        for h in (s.get("hits") or []):
+            if str(h.get("name") or "") == sig_name:
+                out.append((str(s.get("file") or "imported log"),
+                            str(s.get("last_seen") or s.get("first_seen")
+                                or "imported"),
+                            int(h.get("times") or 1),
+                            str(h.get("severity") or "INFO").upper(),
+                            h.get("peak")))
+                break
+    out.sort(key=lambda r: r[1], reverse=True)
+    return out[:max(1, limit)]
+
+
+def _stats_log_view(data, group, model):
+    g = group if group in _HISTORY_GROUPS else "Power / System"
+    out = []
+    for s in (data or {}).get("sessions") or []:
+        hw = s.get("hardware") or {}
+        if g == "Storage":
+            models = [str(d).strip() for d in (hw.get("storage") or [])
+                      if str(d).strip()]
+        else:
+            key = {"CPU": "cpu", "GPU": "gpu", "RAM": "ram"}.get(g, "system")
+            m = str(hw.get(key) or "").strip()
+            models = [m] if m else []
+        if model not in models:
+            continue
+        k = sum(1 for h in (s.get("hits") or [])
+                if h.get("name") and _sig_group(h.get("name")) == g)
+        out.append((str(s.get("file") or "imported log"),
+                    str(s.get("last_seen") or s.get("first_seen") or ""),
+                    k))
+    out.sort(key=lambda r: r[1], reverse=True)
+    return out
+
+def _is_resync_path(path):
+    return str(path or "").lower().endswith(".resync")
+
+
+def _history_read_file(path):
+    with open(path, "r", encoding="utf-8") as f:
+        raw = json.load(f)
+    if isinstance(raw, dict):
+        fmt = str(raw.get("format") or "")
+        if fmt and "problem history" not in fmt.lower():
+            raise ValueError("wrong format marker: %s" % fmt[:60])
+        sessions = raw.get("sessions")
+    else:
+        sessions = raw
+    if not isinstance(sessions, list):
+        raise ValueError("no 'sessions' list found in this file")
+    return sessions
 
 class TelemetryApp:
     def __init__(self, root: tk.Tk, analyzer: TelemetryAnalyzer):
@@ -10147,14 +10863,28 @@ class TelemetryApp:
         import threading
 
         def _worker():
+            rec_state = None
+            my_epoch = getattr(self, "_hist_epoch", 0)
             try:
                 hits = self._run_signatures()
             except Exception:
                 hits = []
+            if my_epoch == getattr(self, "_hist_epoch", 0):
+                try:
+                    rec_state = _history_record(self.analyzer.path, self.analyzer,
+                                                self.df, hits,
+                                                sensors_for=self._sensors_for_sig)
+                except Exception:
+                    pass
             def _done():
                 self._sig_hits    = hits
                 self._sig_running = False
                 self._update_sig_badge()
+                self._refresh_history_viewer()
+                if rec_state == "first":
+                    self.show_toast("📊 Problem history started - drop "
+                                    "problem_history.resync on the window "
+                                    "to view statistics")
                 if getattr(self, 'sig_timeline_enabled', True):
                     sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
 
@@ -14331,6 +15061,16 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     self._sig_running = False
                     self._update_sig_badge()
                     _show(results)
+                    try:
+                        if _history_record(self.analyzer.path, self.analyzer,
+                                           self.df, results,
+                                           sensors_for=self._sensors_for_sig) == "first":
+                            self.show_toast("📊 Problem history started - "
+                                            "drop problem_history.resync on "
+                                            "the window to view statistics")
+                    except Exception:
+                        pass
+                self._refresh_history_viewer()
                 if not _post_ui(self.root, _done):
                     self._sig_running = False
             threading.Thread(target=_run, daemon=True).start()
@@ -15231,42 +15971,978 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.canvas_checklist.yview_moveto(0)
 
     def _open_path_from_shell(self, path: str):
-        if getattr(self, "_loading", False):
-            self.show_toast("⏳  A file is already loading - please wait")
+        if _is_resync_path(path) and os.path.isfile(path):
+            self._load_history_files([path])
             return
         if not path or not os.path.isfile(path):
             messagebox.showwarning(
                 "RESYNC.ERR",
                 "Could not find the file passed by the shell:\n\n%s" % (path or ""))
             return
-        self._load_csv_threaded(
-            path,
-            on_success=self._apply_new_csv,
-            on_error=lambda exc: messagebox.showerror("Load Error", str(exc)))
+        self._enqueue_csvs([path])
 
     def _on_files_dropped(self, paths):
-        csvs = [p for p in (paths or [])
-                if p.lower().endswith(".csv") and os.path.isfile(p)]
+        paths = list(paths or [])
+        resyncs = [p for p in paths
+                   if _is_resync_path(p) and os.path.isfile(p)]
+        if resyncs:
+            self._load_history_files(resyncs)
+        csvs = [p for p in paths
+                if str(p).lower().endswith(".csv") and os.path.isfile(p)]
         if not csvs:
-            if paths:
-                self.show_toast("⚠️  Drag & drop: only .csv files can be opened")
+            if paths and not resyncs:
+                self.show_toast("⚠️  Drag & drop: drop .csv logs or a "
+                                ".resync history file")
             return
-        if getattr(self, "_loading", False):
-            self.show_toast("⏳  A file is already loading - drop ignored")
+        n = self._enqueue_csvs(csvs)
+        if n:
+            self.show_toast("📂  Drag & drop: %d csv%s queued"
+                            % (n, "" if n == 1 else "s"))
+
+    def _load_history_files(self, paths):
+        paths = list(paths or [])
+        if not paths:
             return
-        extra = len(paths) - 1
-        note = ("  ·  %d other file%s ignored" % (extra, "s" if extra != 1 else "")) \
-            if extra > 0 else ""
-        self.show_toast("📂  Drag & drop: loading %s%s"
-                        % (os.path.basename(csvs[0]), note))
-        self._open_path_from_shell(csvs[0])
+        added = skipped = 0
+        bad = []
+        for p in paths:
+            try:
+                incoming = _history_read_file(p)
+            except Exception as e:
+                bad.append("%s (%s)" % (os.path.basename(p), e))
+                continue
+            a, s = _history_merge(incoming)
+            added += a
+            skipped += s
+        if bad:
+            messagebox.showwarning(
+                "Problem History",
+                "Could not read %d file%s:\n\n%s"
+                % (len(bad), "" if len(bad) == 1 else "s",
+                   "\n".join(bad[:6])))
+        if not (added or skipped) and bad:
+            return
+        if added or skipped:
+            self.show_toast("📊 History loaded: %d new · %d duplicate%s skipped"
+                            % (added, skipped, "" if skipped == 1 else "s"))
+            self._history_progress("Merged +%d · skipped %d" % (added, skipped))
+        self._open_history_viewer()
+
+    def _history_progress(self, text):
+        v = getattr(self, "_stats_status_var", None)
+        if v is not None:
+            try:
+                v.set(text or "")
+            except Exception:
+                pass
+
+    def _refresh_history_viewer(self):
+        cb = getattr(self, "_stats_refresh_cb", None)
+        if cb is not None:
+            try:
+                cb()
+            except Exception:
+                pass
+    def _open_history_viewer(self):
+        _t = self._get_theme()
+        bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]; fg = _t["fg"]; accent = _t["accent"]
+        accent2 = _t.get("accent2") or accent
+        dim = _dim_color(_t)
+        sev_colors = {"CRITICAL": "#ff4d4d", "WARNING": "#f59e0b", "INFO": "#38bdf8"}
+
+        if getattr(self, "_stats_window", None) and self._stats_window.winfo_exists():
+            self._stats_window.deiconify(); self._stats_window.lift()
+            self._refresh_history_viewer()
+            return
+
+        state = {"data": _history_load()}
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Problem History")
+        dialog.configure(bg=bg)
+        self._stats_window = dialog
+        dialog.protocol("WM_DELETE_WINDOW",
+                        lambda: (setattr(self, '_stats_window', None),
+                                 setattr(self, '_stats_refresh_cb', None),
+                                 setattr(self, '_stats_status_var', None),
+                                 dialog.destroy()))
+        dialog.geometry("1180x720")
+        dialog.minsize(880, 560)
+
+        def _close():
+            setattr(self, '_stats_window', None)
+            setattr(self, '_stats_refresh_cb', None)
+            setattr(self, '_stats_status_var', None)
+            dialog.destroy()
+        dialog.bind('<Escape>', lambda _e: _close())
+
+        footer = tk.Frame(dialog, bg=bg)
+        footer.pack(side=tk.BOTTOM, fill=tk.X, padx=16, pady=(6, 12))
+
+        header = tk.Frame(dialog, bg=bg)
+        header.pack(side=tk.TOP, fill=tk.X, padx=16, pady=(12, 2))
+        hrow1 = tk.Frame(header, bg=bg)
+        hrow1.pack(fill=tk.X)
+        tk.Label(hrow1, text="📊 Problem History",
+                 font=('Segoe UI', 14, 'bold'), bg=bg, fg=fg).pack(side=tk.LEFT)
+        status_var = tk.StringVar(value="")
+        tk.Label(hrow1, textvariable=status_var, font=('Segoe UI', 8),
+                 bg=bg, fg=accent).pack(side=tk.RIGHT, pady=(4, 0))
+
+        chips = tk.Frame(header, bg=bg)
+        chips.pack(fill=tk.X, pady=(6, 0))
+        chip_lbls = {}
+        for key, icon, col in (("crit", "🔴", sev_colors["CRITICAL"]),
+                               ("warn", "🟡", sev_colors["WARNING"]),
+                               ("info", "🔵", sev_colors["INFO"]),
+                               ("clean", "✅", "#34d399"),
+                               ("meta", "🗓", dim)):
+            l = tk.Label(chips, text="", font=('Segoe UI', 9, 'bold'),
+                         bg=bg, fg=col, anchor='w')
+            l.pack(side=tk.LEFT, padx=(0, 18))
+            chip_lbls[key] = l
+
+        body = tk.Frame(dialog, bg=bg)
+        body.pack(fill=tk.BOTH, expand=True)
+
+        note = tk.Frame(body, bg=bg)
+        note_lbl = tk.Label(note, justify=tk.LEFT, anchor='n', bg=bg, fg=dim,
+                            font=('Segoe UI', 10), text=(
+                                "No statistics yet\n\n"
+                                "Every csv you analyse is recorded automatically "
+                                "- one entry per unique file.\n"
+                                "Analyse a log first, or drop a "
+                                "problem_history.resync file onto the window.\n\n"
+                                "Merge a friend's .resync here with "
+                                "'Merge .resync…' - their logs join yours;\n"
+                                "duplicates are skipped, so shared logs are "
+                                "never counted twice.\n\n"
+                                "'Add CSVs…' analyses many logs in one go "
+                                "and fills the charts below.\n\n"
+                                "'Backfill Peaks…' re-reads older csvs so "
+                                "their worst values appear too."))
+        note_lbl.pack(pady=30)
+        body.bind('<Configure>',
+                  lambda e: note_lbl.configure(wraplength=max(260, e.width - 60)))
+
+        panes = tk.PanedWindow(body, orient='horizontal', sashrelief='flat',
+                               sashwidth=6, bd=0, bg=bg3, showhandle=False)
+
+        left = tk.Frame(panes, bg=bg)
+        tree = ttk.Treeview(left, show='tree', columns=('a', 'b'),
+                            style="Hist.Treeview", selectmode='browse',
+                            displaycolumns=(0, 1))
+        tree.column('#0', stretch=True, minwidth=240, width=320)
+        tree.column('a', width=54, minwidth=40, anchor='e', stretch=False)
+        tree.column('b', width=78, minwidth=52, anchor='e', stretch=False)
+        sb = tk.Scrollbar(left, orient="vertical", command=tree.yview,
+                          bg=bg3, troughcolor=bg, activebackground=accent,
+                          bd=0, relief='flat')
+        tree.configure(yscrollcommand=sb.set)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        sb.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.tag_configure('zeb', background=bg2)
+        tree.tag_configure('dim', foreground=dim)
+        tree.tag_configure('sect', font=('Segoe UI', 9, 'bold'), foreground=fg)
+        for sev, col in sev_colors.items():
+            tree.tag_configure(sev, foreground=col)
+
+        right = tk.Frame(panes, bg=bg)
+        chart_holder = tk.Frame(right, bg=bg)
+        chart_holder.pack(fill=tk.BOTH, expand=True)
+        fig = Figure(figsize=(7.0, 4.4), dpi=100)
+        fig.patch.set_facecolor(bg)
+        canvas = FigureCanvasTkAgg(fig, master=chart_holder)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        detail_txt = tk.Text(right, height=8, wrap='word', bg=bg2, fg=fg,
+                             relief='flat', bd=0, highlightthickness=0,
+                             font=('Segoe UI', 9), state='disabled',
+                             padx=12, pady=8)
+        detail_sb = tk.Scrollbar(right, orient="vertical",
+                                 command=detail_txt.yview, bg=bg3,
+                                 troughcolor=bg, activebackground=accent,
+                                 bd=0, relief='flat')
+        detail_txt.configure(yscrollcommand=detail_sb.set)
+        detail_sb.pack(side=tk.RIGHT, fill=tk.Y, pady=(8, 0))
+        detail_txt.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, pady=(8, 0))
+        detail_txt.tag_configure('dim', foreground=dim)
+        detail_txt.tag_configure('h', font=('Segoe UI', 9, 'bold'))
+        detail_txt.tag_configure('crit', foreground=sev_colors["CRITICAL"])
+        detail_txt.tag_configure('warn', foreground=sev_colors["WARNING"])
+        detail_txt.tag_configure('info', foreground=sev_colors["INFO"])
+        detail_txt.tag_configure('peak', foreground=accent2,
+                                 font=('Segoe UI', 9, 'bold'))
+
+        panes.add(left, minsize=330, width=440, stretch='never')
+        panes.add(right, minsize=380, stretch='always')
+
+        try:
+            self.style.configure("Hist.Treeview", background=bg, foreground=fg,
+                                 fieldbackground=bg, rowheight=26, borderwidth=0,
+                                 font=('Segoe UI', 9))
+            self.style.configure("Hist.Treeview.Heading", background=bg3,
+                                 foreground=fg, font=('Segoe UI', 9, 'bold'),
+                                 relief='flat', borderwidth=0)
+            self.style.map("Hist.Treeview",
+                           background=[('selected', accent)],
+                           foreground=[('selected', '#ffffff')])
+        except Exception:
+            pass
+
+        def _style_axes(ax):
+            ax.set_facecolor(bg2)
+            ax.tick_params(colors=fg, labelsize=8.5)
+            for name, sp in ax.spines.items():
+                sp.set_visible(name == 'bottom')
+                sp.set_color(bg3)
+            ax.xaxis.label.set_color(fg)
+            ax.yaxis.label.set_color(fg)
+            ax.title.set_color(fg)
+            ax.title.set_fontsize(11)
+            ax.grid(axis='x', color=bg3, lw=0.6, alpha=0.8)
+            ax.set_axisbelow(True)
+
+        def _wrap2(s, width=20):
+            s = str(s or "")
+            if len(s) <= width:
+                return s
+            cut = s.rfind(' ', 0, width + 1)
+            l1 = s[:cut] if cut > 0 else s[:width]
+            l2 = s[len(l1):].strip()
+            if len(l2) > width:
+                l2 = l2[:width - 1] + "…"
+            return l1 + "\n" + (l2 or "…")
+
+        def _peak_lbl(p):
+            s = _peak_fmt(p)
+            return (" · " + s) if s else ""
+
+        def _val_lbl(p, any_peak):
+            if p:
+                return _peak_lbl(p)
+            return " · -" if any_peak else "  "
+
+        def _empty_chart(msg):
+            fig.clear()
+            ax = fig.add_subplot(111)
+            _style_axes(ax)
+            ax.grid(False)
+            ax.text(0.5, 0.5, msg, ha='center', va='center', color=dim,
+                    fontsize=11, transform=ax.transAxes, wrap=True)
+            ax.set_xticks([]); ax.set_yticks([])
+            _set_detail([])
+            canvas.draw()
+
+        def _set_detail(lines):
+            detail_txt.config(state='normal')
+            detail_txt.delete('1.0', 'end')
+            for text, tag in (lines or []):
+                detail_txt.insert('end', str(text) + "\n", tag or ())
+            detail_txt.config(state='disabled')
+
+        def _update_header():
+            d = state["data"]
+            sessions = d.get("sessions") or []
+            total = len(sessions)
+            clean = sum(1 for s in sessions if not (s.get("hits") or []))
+            crit, warn, info, _c = _stats_severity_counts(d)
+            a, b = _stats_date_range(d)
+            opens = sum(int(s.get("opens") or 0) for s in sessions)
+            chip_lbls["crit"].configure(
+                text="🔴 %d critical" % crit)
+            chip_lbls["warn"].configure(
+                text="🟡 %d warning" % warn)
+            chip_lbls["info"].configure(
+                text="🔵 %d info" % info)
+            chip_lbls["clean"].configure(
+                text="✅ %d clean (%d%%)" % (clean,
+                                             int(round(100.0 * clean / max(total, 1)))))
+            chip_lbls["meta"].configure(
+                text="🗓 %d logs · %s" % (total,
+                                         ("%s → %s" % (a, b)) if a else "no dates")
+                + ("  ·  %d opens" % opens if opens else ""))
+
+        hw_group_nodes = {}
+        model_nodes = {}
+        sig_nodes = {}
+        log_nodes = {}
+        node_key = {}
+        key_node = {}
+
+        def _build_tree():
+            hw_group_nodes.clear(); model_nodes.clear(); sig_nodes.clear()
+            log_nodes.clear(); node_key.clear(); key_node.clear()
+            tree.delete(*tree.get_children(""))
+            d = state["data"]
+            sessions = d.get("sessions") or []
+
+            hw_root = tree.insert('', 'end', open=True,
+                                  text="🖥 Hardware",
+                                  tags=('sect',))
+            for g in _HISTORY_GROUPS:
+                rows = _stats_group_models(d, g)
+                g_issues = sum(r[2] for r in rows)
+                gnode = tree.insert(hw_root, 'end', open=len(rows) <= 8,
+                                    text="%s  ·  %d model%s" % (g, len(rows),
+                                                                "" if len(rows) == 1 else "s"),
+                                    values=("%d" % g_issues if g_issues else "",
+                                            "issue%s" % ("s" if g_issues != 1 else "")
+                                            if g_issues else ""),
+                                    tags=('sect',))
+                hw_group_nodes[gnode] = g
+                node_key[gnode] = ("group", g)
+                key_node[("group", g)] = gnode
+                zeb = False
+                for model, n, k, sv in rows[:40]:
+                    nm = _hw_short(model, 34)
+                    tags = ['zeb'] if zeb else []
+                    zeb = not zeb
+                    if k:
+                        tags.append(sv)
+                    mnode = tree.insert(
+                        gnode, 'end', text=nm,
+                        values=("%d" % n, "%d" % k if k else "-"),
+                        tags=tuple(tags))
+                    model_nodes[mnode] = (g, model)
+                    node_key[mnode] = ("model", (g, model))
+                    key_node[("model", (g, model))] = mnode
+                if len(rows) > 40:
+                    tree.insert(gnode, 'end',
+                                text="… and %d more" % (len(rows) - 40),
+                                values=("", ""), tags=('dim',))
+
+            sig_by_group = {}
+            for s in sessions:
+                for h in (s.get("hits") or []):
+                    nm = str(h.get("name") or "").strip()
+                    if not nm:
+                        continue
+                    e = sig_by_group.setdefault(_sig_group(nm), {}) \
+                                    .setdefault(nm, {"logs": 0, "severity": "INFO",
+                                                     "peak": None})
+                    e["logs"] += 1
+                    e["peak"] = _worse_peak(e["peak"], h.get("peak"))
+                    sv = str(h.get("severity") or "INFO").upper()
+                    if {"INFO": 0, "WARNING": 1, "CRITICAL": 2}.get(sv, 0) > \
+                       {"INFO": 0, "WARNING": 1, "CRITICAL": 2}.get(e["severity"], 0):
+                        e["severity"] = sv
+            sig_root = tree.insert('', 'end', open=True,
+                                   text="⚠ Signatures - most hit", tags=('sect',))
+            for g in _HISTORY_GROUPS:
+                sigs = sig_by_group.get(g)
+                if not sigs:
+                    continue
+                gnode = tree.insert(sig_root, 'end',
+                                    text="%s  ·  %d" % (g, len(sigs)),
+                                    tags=('sect',))
+                hw_group_nodes[gnode] = g
+                node_key[gnode] = ("group", g)
+                key_node[("group", g)] = gnode
+                zeb = False
+                for nm, e in sorted(sigs.items(),
+                                    key=lambda kv: (-kv[1]["logs"], kv[0])):
+                    tags = ['zeb'] if zeb else []
+                    zeb = not zeb
+                    tags.append(e["severity"])
+                    node = tree.insert(gnode, 'end', text=nm,
+                                       values=("%d" % e["logs"],
+                                               _peak_fmt(e["peak"]) or ""),
+                                       tags=tuple(tags))
+                    sig_nodes[node] = nm
+                    node_key[node] = ("sig", nm)
+                    key_node[("sig", nm)] = node
+
+            log_root = tree.insert('', 'end', open=False,
+                                   text="📅 Logs (%d)" % len(sessions),
+                                   tags=('sect',))
+            order = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
+            recent = sorted(sessions,
+                            key=lambda s: str(s.get("last_seen") or
+                                              s.get("first_seen") or ""),
+                            reverse=True)
+            for s in recent[:200]:
+                hits = [h for h in (s.get("hits") or []) if h.get("name")]
+                worst = "INFO"
+                for h in hits:
+                    sv = str(h.get("severity") or "INFO").upper()
+                    if order.get(sv, 0) > order.get(worst, 0):
+                        worst = sv
+                k = len({str(h.get("name")) for h in hits})
+                fname = str(s.get("file") or "imported log")
+                if len(fname) > 38:
+                    fname = fname[:37] + "…"
+                date = str(s.get("last_seen") or
+                           s.get("first_seen") or "")[:10]
+                tags = []
+                if k:
+                    tags.append(worst)
+                node = tree.insert(log_root, 'end', text=fname,
+                                   values=(date or "-",
+                                           "%d" % k if k else "clean"),
+                                   tags=tuple(tags))
+                log_nodes[node] = s.get("csv_hash")
+                node_key[node] = ("log", s.get("csv_hash"))
+                key_node[("log", s.get("csv_hash"))] = node
+
+        def _draw_group(g):
+            d = state["data"]
+            rows = _stats_group_models(d, g)[:14]
+            if not rows:
+                _empty_chart("No %s recorded yet" % g.lower())
+                return
+            fig.clear()
+            ax = fig.add_subplot(111)
+            _style_axes(ax)
+            models = [_wrap2(_hw_short(m, 30)) for m, _, _, _ in rows]
+            seen = [r[1] for r in rows]
+            iss = [r[2] for r in rows]
+            cols = [sev_colors.get(r[3], sev_colors["CRITICAL"])
+                    if r[2] else dim for r in rows]
+            y = list(range(len(rows)))
+            ax.barh([v + 0.21 for v in y], seen, height=0.38, color=dim,
+                    label="logs seen")
+            ax.barh([v - 0.21 for v in y], iss, height=0.38, color=cols,
+                    label="logs with %s issues" % g.lower())
+            ax.set_yticks(y); ax.set_yticklabels(models, fontsize=8.5)
+            ax.invert_yaxis()
+            mx = max(seen) or 1
+            for yy, v in zip([v + 0.21 for v in y], seen):
+                ax.text(v + mx * 0.012, yy, str(v), va='center',
+                        ha='left', color=fg, fontsize=8)
+            for yy, v, r in zip([v - 0.21 for v in y], iss, rows):
+                if v:
+                    ax.text(v + mx * 0.012, yy,
+                            "%d (%d%%)" % (v, int(round(100.0 * v / max(r[1], 1)))),
+                            va='center', ha='left', color=fg, fontsize=8)
+            ax.set_title("%s - logs seen vs logs with issues" % g, pad=10)
+            ax.set_xlim(0, mx * 1.16)
+            ax.legend(facecolor=bg2, edgecolor=bg3, fontsize=8,
+                      labelcolor=fg, loc='lower right', framealpha=0.9)
+            fig.tight_layout(pad=2.0)
+            _set_detail(_detail_group(g, rows))
+            canvas.draw()
+
+        def _detail_group(g, rows):
+            d = state["data"]
+            L = [("%s - models, most problematic first" % g, 'h')]
+            for m, n, k, sv in rows[:12]:
+                tag = sv.lower() if k else 'dim'
+                L.append(("• %s:  %d seen · %d with issues (%d%%)"
+                          % (_hw_short(m, 34), n, k,
+                             int(round(100.0 * k / max(n, 1)))), tag))
+            agg = {}
+            for s in (d.get("sessions") or []):
+                for h in (s.get("hits") or []):
+                    nm = str(h.get("name") or "").strip()
+                    if nm and _sig_group(nm) == g:
+                        e = agg.setdefault(nm, {"logs": 0, "peak": None})
+                        e["logs"] += 1
+                        e["peak"] = _worse_peak(e["peak"], h.get("peak"))
+            if agg:
+                L.append(("", ''))
+                L.append(("Top %s signatures" % g, 'h'))
+                for nm, e in sorted(agg.items(),
+                                    key=lambda kv: (-kv[1]["logs"], kv[0]))[:8]:
+                    L.append(("• %s - %d log%s%s" % (nm, e["logs"],
+                                                     "" if e["logs"] == 1 else "s",
+                                                     _peak_lbl(e["peak"])), 'dim'))
+            return L
+
+        def _draw_sig(name):
+            d = state["data"]
+            rows = _stats_signature_data(d, name)[:14]
+            sev = _stats_signature_severity(d, name)
+            if not rows:
+                _empty_chart("No hardware recorded for this signature")
+                return
+            fig.clear()
+            ax = fig.add_subplot(111)
+            _style_axes(ax)
+            models = [_wrap2(_hw_short(m, 28)) for m, _, _ in rows]
+            hits = [h for _, h, _ in rows]
+            peaks = [p for _, _, p in rows]
+            worst = None
+            for p in peaks:
+                worst = _worse_peak(worst, p)
+            missing = _stats_sig_missing_peaks(d, name)
+            y = list(range(len(rows)))
+            ax.barh(y, hits, height=0.62, color=sev_colors.get(sev, dim))
+            ax.set_yticks(y); ax.set_yticklabels(models, fontsize=8.5)
+            ax.invert_yaxis()
+            mx = max(hits) or 1
+            for yy, v, p in zip(y, hits, peaks):
+                ax.text(v + mx * 0.012, yy,
+                        ("%d" % v) + _val_lbl(p, worst),
+                        va='center', ha='left', fontsize=8.5,
+                        color=(accent2 if (worst is not None and p is worst)
+                               else fg))
+            title = name if len(name) <= 52 else name[:51] + "…"
+            if worst:
+                title += "\nworst recorded: %s" % _peak_fmt(worst)
+                ax.title.set_fontsize(10.5)
+            ax.set_title(title, pad=10)
+            ax.set_xlabel("logs hit"
+                          + ("  ·  labels show the worst on each model"
+                             if worst else "")
+                          + ("  ·  - = old record, no peak data"
+                             if (worst and missing) else ""))
+            ax.set_xlim(0, mx * 1.30)
+            fig.tight_layout(pad=2.0)
+            _set_detail(_detail_sig(name, rows))
+            canvas.draw()
+
+        def _detail_sig(name, rows):
+            d = state["data"]
+            any_p = any(p for _m, _h, p in rows)
+            L = [("%s - hardware hit, worst value per model" % name, 'h')]
+            for m, h, p in rows[:12]:
+                L.append(("• %s:  %d hit%s%s" % (_hw_short(m, 34), h,
+                                                 "" if h == 1 else "s",
+                                                 _val_lbl(p, any_p).rstrip()),
+                          'peak' if p else 'dim'))
+            files = _stats_signature_files(d, name)
+            if files:
+                L.append(("", ''))
+                L.append(("Logs that fired it (newest first)", 'h'))
+                for f, dt, t, sv, p in files[:14]:
+                    L.append(("• %s (%s) ×%d%s  [%s]" % (f[:40], dt[:10], t,
+                                                         _val_lbl(p, any_p).rstrip(),
+                                                         sv.lower()),
+                              'dim'))
+            missing = _stats_sig_missing_peaks(d, name)
+            if missing:
+                L.append(("", ''))
+                L.append(("%d firing%s without peak data - recorded by "
+                          "an older version.  '🔄 Backfill Peaks…' re-reads "
+                          "those csvs and fills the values in."
+                          % (missing, "" if missing == 1 else "s"), 'dim'))
+            return L
+
+        def _draw_model(g, model):
+            d = state["data"]
+            rows = _stats_model_signatures(d, g, model)[:14]
+            if not rows:
+                _empty_chart("No %s issues recorded for %s"
+                             % (g.lower(), _hw_short(model)))
+                return
+            fig.clear()
+            ax = fig.add_subplot(111)
+            _style_axes(ax)
+            names = [_wrap2(r[0][:40], 22) for r in rows]
+            logs = [r[3] for r in rows]
+            cols = [sev_colors.get(r[2], dim) for r in rows]
+            peaks = [r[4] for r in rows]
+            any_pk = any(peaks)
+            y = list(range(len(rows)))
+            ax.barh(y, logs, height=0.62, color=cols)
+            ax.set_yticks(y)
+            ax.set_yticklabels(names, fontsize=8.5)
+            ax.invert_yaxis()
+            mx = max(logs) or 1
+            for yy, v, p in zip(y, logs, peaks):
+                ax.text(v + mx * 0.012, yy,
+                        ("%d×" % v) + _val_lbl(p, any_pk),
+                        va='center', ha='left', color=fg, fontsize=8.5)
+            ax.set_title("%s - %s" % (_hw_short(model, 30), g), pad=10)
+            ax.set_xlabel("times fired"
+                          + ("  ·  labels show the worst value" if any_pk else "")
+                          + ("  ·  - = old record, no peak data"
+                             if (any_pk and any(p is None for p in peaks))
+                             else ""))
+            ax.set_xlim(0, mx * 1.30)
+            fig.tight_layout(pad=2.0)
+            _set_detail(_detail_model(g, model, rows))
+            canvas.draw()
+
+        def _detail_model(g, model, rows):
+            d = state["data"]
+            logs = _stats_log_view(d, g, model)
+            with_iss = sum(1 for f, dt, k in logs if k)
+            L = [("%s - %s" % (_hw_short(model, 34), g), 'h')]
+            L.append(("%d log%s seen · %d with %s issues"
+                      % (len(logs), "" if len(logs) == 1 else "s",
+                         with_iss, g.lower()), 'dim'))
+            if rows:
+                L.append(("", ''))
+                L.append(("Signatures fired on this hardware", 'h'))
+                any_pk = any(r[4] for r in rows)
+                for nm, l, sv, t, p in rows[:12]:
+                    L.append(("• %s - %d log%s · %d×%s  [%s]"
+                              % (nm, l, "" if l == 1 else "s", t,
+                                 _val_lbl(p, any_pk).rstrip(), sv.lower()),
+                              'peak' if p else 'dim'))
+            if logs:
+                L.append(("", ''))
+                L.append(("Recent logs (newest first)", 'h'))
+                for f, dt, k in logs[:14]:
+                    L.append(("• %s (%s) - %s" % (f[:40], dt[:10],
+                                "%d issue%s" % (k, "" if k == 1 else "s")
+                                if k else "clean"), 'dim'))
+            return L
+
+        def _draw_log(fp):
+            d = state["data"]
+            s = next((x for x in (d.get("sessions") or [])
+                      if x.get("csv_hash") == fp), None)
+            if s is None:
+                _empty_chart("This log is no longer in the history")
+                return
+            hits = [h for h in (s.get("hits") or []) if h.get("name")][:14]
+            if not hits:
+                _empty_chart("Clean log - no issues recorded")
+                _set_detail(_detail_log(s))
+                canvas.draw()
+                return
+            fig.clear()
+            ax = fig.add_subplot(111)
+            _style_axes(ax)
+            names = [_wrap2(str(h.get("name"))[:42], 22) for h in hits]
+            times = [int(h.get("times") or 1) for h in hits]
+            cols = [sev_colors.get(str(h.get("severity") or "INFO").upper(), dim)
+                    for h in hits]
+            peaks = [h.get("peak") for h in hits]
+            any_pk = any(peaks)
+            y = list(range(len(hits)))
+            ax.barh(y, times, height=0.62, color=cols)
+            ax.set_yticks(y)
+            ax.set_yticklabels(names, fontsize=8.5)
+            ax.invert_yaxis()
+            mx = max(times) or 1
+            for yy, v, p in zip(y, times, peaks):
+                ax.text(v + mx * 0.012, yy,
+                        ("%d×" % v) + _val_lbl(p, any_pk),
+                        va='center', ha='left', color=fg, fontsize=8.5)
+            fname = str(s.get("file") or "log")
+            ax.set_title(_wrap2(fname, 46) + " - issues in this log", pad=10)
+            ax.set_xlabel("times fired"
+                          + ("  ·  labels show the worst value" if any_pk else "")
+                          + ("  ·  - = old record, no peak data"
+                             if (any_pk and any(p is None for p in peaks))
+                             else ""))
+            ax.set_xlim(0, mx * 1.30)
+            fig.tight_layout(pad=2.0)
+            _set_detail(_detail_log(s))
+            canvas.draw()
+
+        def _detail_log(s):
+            hw = s.get("hardware") or {}
+            hits = [h for h in (s.get("hits") or []) if h.get("name")]
+            opens = int(s.get("opens") or 0)
+            L = [("File: %s" % s.get("file"), 'h')]
+            L.append(("First seen %s · last seen %s · %d open%s · %s rows"
+                      % (s.get("first_seen"), s.get("last_seen"),
+                         opens, "" if opens == 1 else "s", s.get("rows")),
+                      'dim'))
+            parts = []
+            if hw.get("cpu"):
+                parts.append("• CPU: %s" % hw["cpu"])
+            if hw.get("gpu"):
+                parts.append("• GPU: %s" % hw["gpu"])
+            if hw.get("ram"):
+                parts.append("• RAM: %s" % hw["ram"])
+            if hw.get("vram_mb"):
+                parts.append("• VRAM: ~%d GB" % (int(hw["vram_mb"]) // 1024))
+            if hw.get("storage"):
+                parts.append("• Drives: %s" % ", ".join(map(str, hw["storage"][:3])))
+            if hw.get("system"):
+                parts.append("• System: %s" % hw["system"])
+            if parts:
+                L.append(("", ''))
+                L.append(("Hardware", 'h'))
+                L.extend((p, 'dim') for p in parts)
+            L.append(("", ''))
+            if hits:
+                L.append(("Issues found", 'h'))
+                any_pk = any(h.get("peak") for h in hits)
+                for h in hits[:16]:
+                    L.append(("• %s  [%s] · fired %d×%s"
+                              % (h.get("name"),
+                                 str(h.get("severity") or "INFO").lower(),
+                                 int(h.get("times") or 1),
+                                 _val_lbl(h.get("peak"), any_pk).rstrip()),
+                              'peak' if h.get("peak") else 'dim'))
+            else:
+                L.append(("No issues - this log was clean.", 'dim'))
+            return L
+
+        def _on_select(_ev):
+            sel = tree.selection()
+            if not sel:
+                return
+            node = sel[0]
+            if node in log_nodes:
+                _draw_log(log_nodes[node])
+            elif node in model_nodes:
+                g, m = model_nodes[node]
+                _draw_model(g, m)
+            elif node in sig_nodes:
+                _draw_sig(sig_nodes[node])
+            elif node in hw_group_nodes:
+                _draw_group(hw_group_nodes[node])
+        tree.bind('<<TreeviewSelect>>', _on_select)
+
+        def _rebuild(restore=True):
+            sel = tree.selection()
+            saved = node_key.get(sel[0]) if sel else None
+            state["data"] = _history_load()
+            sessions = state["data"].get("sessions") or []
+            _update_header()
+            if not sessions:
+                panes.pack_forget()
+                note.pack(fill=tk.BOTH, expand=True)
+                return
+            note.pack_forget()
+            panes.pack(fill=tk.BOTH, expand=True)
+            _build_tree()
+            node = key_node.get(saved) if (restore and saved) else None
+            if node is None:
+                node = key_node.get(("group", "GPU"))
+            if node is None:
+                node = next(iter(key_node.values()), None)
+            if node is None:
+                _empty_chart("Nothing recorded yet")
+                return
+            tree.selection_set(node)
+            tree.see(node)
+            _on_select(None)
+
+        def _merge_dialog():
+            paths = filedialog.askopenfilenames(
+                parent=dialog, title="Merge problem-history files",
+                filetypes=[("HD2 Problem History", "*.resync"),
+                           ("Legacy JSON history", "*.json")])
+            if not paths:
+                return
+            added = skipped = 0
+            bad = []
+            for p in paths:
+                try:
+                    incoming = _history_read_file(p)
+                except Exception as e:
+                    bad.append("%s (%s)" % (os.path.basename(p), e))
+                    continue
+                a, s = _history_merge(incoming)
+                added += a
+                skipped += s
+            if bad:
+                messagebox.showwarning(
+                    "Merge", "Could not read %d file%s:\n\n%s"
+                    % (len(bad), "" if len(bad) == 1 else "s",
+                       "\n".join(bad[:6])), parent=dialog)
+            if not (added or skipped):
+                if not bad:
+                    self.show_toast("📊 Nothing new - history is up to date")
+                return
+            self.show_toast("📊 Merged: %d new · %d duplicate%s skipped"
+                            % (added, skipped, "" if skipped == 1 else "s"))
+            self._history_progress("Merged +%d · skipped %d" % (added, skipped))
+            _rebuild(restore=True)
+
+        def _add_csvs():
+            paths = filedialog.askopenfilenames(
+                parent=dialog, title="Add CSV logs to the problem history",
+                filetypes=[("CSV", "*.csv")])
+            if not paths:
+                return
+            n = self._enqueue_csvs(list(paths))
+            if not n:
+                self.show_toast("No CSV files in the selection")
+
+        def _backfill():
+            paths = filedialog.askopenfilenames(
+                parent=dialog,
+                title="Backfill peak values - select the csv logs to re-read",
+                filetypes=[("CSV", "*.csv")])
+            if not paths:
+                return
+            paths = [p for p in paths
+                     if p.lower().endswith(".csv") and os.path.isfile(p)]
+            if not paths:
+                return
+            if not messagebox.askyesno(
+                    "Backfill peaks",
+                    "Re-read %d csv%s and refresh the worst values they "
+                    "recorded?\n\nLogs are matched by content - existing "
+                    "records are updated, new ones are added.\n"
+                    "The currently open log is not changed."
+                    % (len(paths), "" if len(paths) == 1 else "s"),
+                    parent=dialog):
+                return
+            btn_backfill.config(state='disabled')
+            my_epoch = getattr(self, "_hist_epoch", 0)
+
+            def _worker():
+                updated = added = failed = 0
+                cancelled = False
+                for i, p in enumerate(paths):
+                    if my_epoch != getattr(self, "_hist_epoch", 0):
+                        cancelled = True
+                        break
+                    _post_ui(self.root,
+                             lambda m=("Backfilling %d/%d: %s"
+                                       % (i + 1, len(paths),
+                                          os.path.basename(p))):
+                             self._history_progress(m))
+                    try:
+                        st = _history_backfill_file(p, self)
+                        if st in ("refresh", "first"):
+                            updated += 1
+                        elif st:
+                            added += 1
+                        else:
+                            failed += 1
+                    except Exception:
+                        failed += 1
+
+                def _done():
+                    btn_backfill.config(state='normal')
+                    if cancelled or my_epoch != getattr(self, "_hist_epoch", 0):
+                        self._history_progress(
+                            "Backfill cancelled - history was cleared")
+                        return
+                    n = updated + added
+                    self._history_progress(
+                        "Backfilled %d log%s" % (n, "" if n == 1 else "s"))
+                    self.show_toast("📊 Worst values updated on %d log%s "
+                                    "· %d added · %d failed"
+                                    % (updated, "" if updated == 1 else "s",
+                                       added, failed))
+                    _rebuild(restore=True)
+                _post_ui(self.root, _done)
+
+            threading.Thread(target=_worker, daemon=True).start()
+
+        def _export():
+            payload = _history_export_payload()
+            if not payload["sessions"]:
+                self.show_toast("History is empty - analyse some logs first")
+                return
+            fname = "HD2_problem_history_%s.resync" % _dt.now().strftime("%Y%m%d")
+            out = filedialog.asksaveasfilename(
+                parent=dialog, defaultextension=".resync", initialfile=fname,
+                filetypes=[("HD2 Problem History", "*.resync")],
+                title="Export problem history")
+            if not out:
+                return
+            try:
+                with open(out, "w", encoding="utf-8") as f:
+                    json.dump(payload, f, ensure_ascii=False, indent=1)
+                self.show_toast("Exported %d log%s - share the .resync file"
+                                % (len(payload["sessions"]),
+                                   "" if len(payload["sessions"]) == 1 else "s"))
+            except Exception as e:
+                messagebox.showerror("Export failed", str(e), parent=dialog)
+
+        def _clear():
+            if not messagebox.askyesno(
+                    "Clear history",
+                    "Delete ALL recorded statistics?\n"
+                    "Queued CSV analyses will be cancelled.\n"
+                    "This cannot be undone.", parent=dialog):
+                return
+            self._csv_queue = []
+            self._hist_epoch = getattr(self, "_hist_epoch", 0) + 1
+            self._sig_dirty  = False
+            for victim in (HISTORY_FILE,
+                           HISTORY_FILE + ".tmp",
+                           os.path.join(_APP_DIR, "signature_history.json")):
+                try:
+                    os.remove(victim)
+                except Exception:
+                    pass
+            _rebuild(restore=False)
+            self._history_progress("History cleared")
+
+        ttk.Button(footer, text="📥 Merge .resync…", style="Action.TButton",
+                   command=_merge_dialog).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(footer, text="➕ Add CSVs…", style="Action.TButton",
+                   command=_add_csvs).pack(side=tk.LEFT, padx=(0, 6))
+        btn_backfill = ttk.Button(footer, text="🔄 Backfill Peaks…",
+                                  style="Action.TButton",
+                                  command=_backfill)
+        btn_backfill.pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(footer, text="📤 Export .resync…", style="Action.TButton",
+                   command=_export).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(footer, text="🗑 Clear History", style="Delete.TButton",
+                   command=_clear).pack(side=tk.RIGHT, padx=(0, 6))
+        ttk.Button(footer, text="Close", command=_close).pack(side=tk.RIGHT)
+
+        self._stats_refresh_cb = _rebuild
+        self._stats_status_var = status_var
+        _rebuild(restore=False)
 
     def _import_new_csv(self):
-        path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
-        if not path:
+        paths = filedialog.askopenfilenames(filetypes=[("CSV", "*.csv")])
+        if not paths:
             return
-        self._open_path_from_shell(path)
+        self._enqueue_csvs(list(paths))
 
+    def _enqueue_csvs(self, paths):
+        csvs = []
+        for p in (paths or []):
+            try:
+                p = str(p)
+            except Exception:
+                continue
+            if p.lower().endswith(".csv") and os.path.isfile(p):
+                ap = os.path.abspath(p)
+                if ap not in csvs:
+                    csvs.append(ap)
+        if not csvs:
+            return 0
+        q = getattr(self, "_csv_queue", None)
+        if q is None:
+            q = self._csv_queue = []
+        have = set(q)
+        for p in csvs:
+            if p not in have:
+                q.append(p)
+                have.add(p)
+        self._pump_csv_queue()
+        return len(csvs)
+
+    def _pump_csv_queue(self):
+        q = getattr(self, "_csv_queue", None)
+        if not q:
+            self._history_progress("")
+            return
+        if getattr(self, "_loading", False):
+            return
+        path = q.pop(0)
+        left = len(q)
+        my_epoch = getattr(self, "_hist_epoch", 0)
+        self._history_progress("Analysing %s%s"
+                               % (os.path.basename(path),
+                                  " · %d more queued" % left if left else ""))
+
+        def _ok(analyzer):
+            def _apply_when_idle(_t0=None):
+                import time as _time
+                if _t0 is None:
+                    _t0 = _time.time()
+                if getattr(self, "_sig_running", False) \
+                        and (_time.time() - _t0) < 30:
+                    self.root.after(150, lambda: _apply_when_idle(_t0))
+                    return
+                if my_epoch != getattr(self, "_hist_epoch", 0):
+                    return
+                try:
+                    self._apply_new_csv(analyzer)
+                finally:
+                    if left:
+                        self.show_toast("📊 %s recorded · %d left"
+                                        % (os.path.basename(path), left))
+                    self.root.after(80, self._pump_csv_queue)
+            _apply_when_idle()
+
+        def _err(exc):
+            if my_epoch != getattr(self, "_hist_epoch", 0):
+                return
+            messagebox.showerror("Load Error", "%s\n\n%s"
+                                  % (os.path.basename(path), exc))
+            self.root.after(80, self._pump_csv_queue)
+
+        self._load_csv_threaded(path, on_success=_ok, on_error=_err)
     def _teardown(self):
         if self._sig_watcher_id:
             self.root.after_cancel(self._sig_watcher_id)
