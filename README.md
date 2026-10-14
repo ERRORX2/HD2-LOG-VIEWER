@@ -18,9 +18,9 @@
 ### 📦 Option 1: Latest Windows Release (Recommended for Most Users)
 
 <!-- LATEST_RELEASE_START -->
-### 🚀 Latest Windows Release: v1.8.4 (2026-10-13)
+### 🚀 Latest Windows Release: v1.8.4.1 (2026-10-14)
 
-- Download: [release_release_v1.8.4.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.8.4/release_v1.8.4.zip)
+- Download: [release_release_v1.8.4.1.zip](https://github.com/ERRORX2/HD2-LOG-VIEWER/releases/download/v1.8.4.1/release_v1.8.4.1.zip)
 
 ### 🔐 Integrity
 
@@ -28,10 +28,10 @@
 
 <summary>Cryptographic Hashes</summary>
 
-* EXE SHA256: `51D2DD1F51C2BB40AE2BCE0563C8815EDC6C93F2AB45AA5C83BD671D3CF5DC60`
+* EXE SHA256: `74C87B2AAB09E503C1228571CF632AD7F2D4B44BA70AD4F1C9991CD2DF2FEEDC`
 * Groups JSON SHA256: `A119ACEEDD9D0CAF5907415C63314D6A4C841AA2E2469091F53C55A230EF1264`
-* Manifest SHA256: `8718EF49B6DFA2BDB934E8D465CEA6BCEC6FDE510993AF40D6A3DCD7AACB9F7D`
-* ZIP SHA256: `F86BF0D2ECB58F611F3A4FF671F5CDE31671737EA312CC6C6BB7DAD01AA16474`
+* Manifest SHA256: `9E015940EE5652749A84AB43D439FDA6FB0249738D54C9B8BC65C2461C3D42FA`
+* ZIP SHA256: `2BCECCCCE20042940A35773BF09727B748266BDC94DEEC5256A8A870D066401B`
 
 </details>
 <!-- LATEST_RELEASE_END -->
@@ -132,6 +132,7 @@ pythonw HD2_LOG_VIEWER.pyw    # python on Linux
 ## ⚖️ License
 
 MIT License - Developed for the hardware enthusiast and troubleshooting community.
+
 
 
 
