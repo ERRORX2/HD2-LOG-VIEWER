@@ -2182,7 +2182,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.4"
+CURRENT_VERSION = "1.8.4.1"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -3555,13 +3555,16 @@ _HIST_LOCK            = _threading.Lock()
 
 
 def _history_load():
-    data = {"version": _HISTORY_VERSION, "sessions": []}
+    data = {"version": _HISTORY_VERSION, "sessions": [], "blocked": {}}
     try:
         with open(HISTORY_FILE, "r", encoding="utf-8") as f:
             raw = json.load(f)
         if isinstance(raw, dict) and isinstance(raw.get("sessions"), list):
             data["version"]  = raw.get("version") or _HISTORY_VERSION
             data["sessions"] = [s for s in raw["sessions"] if isinstance(s, dict)]
+            if isinstance(raw.get("blocked"), dict):
+                data["blocked"] = {str(k): v for k, v in raw["blocked"].items()
+                                   if k}
     except Exception:
         pass
     return data
@@ -3673,6 +3676,11 @@ def _history_record(path, analyzer, df, results, sensors_for=None):
         fp = _csv_fingerprint(path)
         if not fp:
             return None
+        try:
+            if fp in (_history_load().get("blocked") or {}):
+                return "blocked"
+        except Exception:
+            pass
         order = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
         agg = {}
         for r in (results or []):
@@ -3702,6 +3710,8 @@ def _history_record(path, analyzer, df, results, sensors_for=None):
         now = _dt.now().strftime("%Y-%m-%d %H:%M")
         with _HIST_LOCK:
             data   = _history_load()
+            if fp in (data.get("blocked") or {}):
+                return "blocked"
             status = "refresh" if any(s.get("csv_hash") == fp
                                       for s in data["sessions"]) else "new"
             rec  = next((s for s in data["sessions"] if s.get("csv_hash") == fp), None)
@@ -3732,9 +3742,10 @@ def _history_record(path, analyzer, df, results, sensors_for=None):
 
 def _history_merge(incoming_sessions):
     with _HIST_LOCK:
-        data  = _history_load()
-        known = {s.get("csv_hash") for s in data["sessions"]}
-        added = skipped = 0
+        data    = _history_load()
+        known   = {s.get("csv_hash") for s in data["sessions"]}
+        blocked = set(data.get("blocked") or {})
+        added = skipped = refused = 0
         for s in list(incoming_sessions or [])[:_HISTORY_MAX_SESSIONS]:
             try:
                 if not isinstance(s, dict):
@@ -3744,6 +3755,9 @@ def _history_merge(incoming_sessions):
                     continue
                 if fp in known:
                     skipped += 1
+                    continue
+                if fp in blocked:
+                    refused += 1
                     continue
                 rec = {
                     "csv_hash":   fp,
@@ -3763,7 +3777,44 @@ def _history_merge(incoming_sessions):
                 continue
         if added:
             _history_save(data)
-    return added, skipped
+    return added, skipped, refused
+
+
+def _history_remove(hashes, block=False):
+    with _HIST_LOCK:
+        data = _history_load()
+        hs = {h for h in (hashes or []) if isinstance(h, str) and h}
+        if not hs:
+            return 0, 0
+        removed = [s for s in data["sessions"] if s.get("csv_hash") in hs]
+        data["sessions"] = [s for s in data["sessions"]
+                            if s.get("csv_hash") not in hs]
+        blocked_added = 0
+        if block and removed:
+            bl  = data.setdefault("blocked", {})
+            now = _dt.now().strftime("%Y-%m-%d %H:%M")
+            for s in removed:
+                fp = s.get("csv_hash")
+                if fp and fp not in bl:
+                    bl[fp] = {"file": str(s.get("file") or "")[:120],
+                              "at": now}
+                    blocked_added += 1
+        _history_save(data)
+        return len(removed), blocked_added
+
+
+def _history_unblock(hashes):
+    with _HIST_LOCK:
+        data = _history_load()
+        bl = data.get("blocked") or {}
+        hs = {h for h in (hashes or []) if isinstance(h, str) and h}
+        gone = [h for h in hs if h in bl]
+        for h in gone:
+            bl.pop(h, None)
+        if gone:
+            data["blocked"] = bl
+            _history_save(data)
+        return len(gone)
 
 
 def _history_export_payload():
@@ -10885,6 +10936,9 @@ class TelemetryApp:
                     self.show_toast("📊 Problem history started - drop "
                                     "problem_history.resync on the window "
                                     "to view statistics")
+                elif rec_state == "blocked":
+                    self.show_toast("🚫 Not recorded - this csv's fingerprint "
+                                    "is blocked")
                 if getattr(self, 'sig_timeline_enabled', True):
                     sel = [c for c, v in self.vars.items() if v.get() and c in self.df.columns]
 
@@ -15062,12 +15116,16 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     self._update_sig_badge()
                     _show(results)
                     try:
-                        if _history_record(self.analyzer.path, self.analyzer,
-                                           self.df, results,
-                                           sensors_for=self._sensors_for_sig) == "first":
+                        _st = _history_record(self.analyzer.path, self.analyzer,
+                                              self.df, results,
+                                              sensors_for=self._sensors_for_sig)
+                        if _st == "first":
                             self.show_toast("📊 Problem history started - "
                                             "drop problem_history.resync on "
                                             "the window to view statistics")
+                        elif _st == "blocked":
+                            self.show_toast("🚫 Not recorded - this csv's "
+                                            "fingerprint is blocked")
                     except Exception:
                         pass
                 self._refresh_history_viewer()
@@ -16003,7 +16061,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         paths = list(paths or [])
         if not paths:
             return
-        added = skipped = 0
+        added = skipped = refused = 0
         bad = []
         for p in paths:
             try:
@@ -16011,20 +16069,22 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             except Exception as e:
                 bad.append("%s (%s)" % (os.path.basename(p), e))
                 continue
-            a, s = _history_merge(incoming)
+            a, s, r = _history_merge(incoming)
             added += a
             skipped += s
+            refused += r
         if bad:
             messagebox.showwarning(
                 "Problem History",
                 "Could not read %d file%s:\n\n%s"
                 % (len(bad), "" if len(bad) == 1 else "s",
                    "\n".join(bad[:6])))
-        if not (added or skipped) and bad:
+        if not (added or skipped or refused) and bad:
             return
-        if added or skipped:
-            self.show_toast("📊 History loaded: %d new · %d duplicate%s skipped"
-                            % (added, skipped, "" if skipped == 1 else "s"))
+        if added or skipped or refused:
+            self.show_toast("📊 History loaded: %d new · %d duplicate%s skipped%s"
+                            % (added, skipped, "" if skipped == 1 else "s",
+                               " · %d blocked" % refused if refused else ""))
             self._history_progress("Merged +%d · skipped %d" % (added, skipped))
         self._open_history_viewer()
 
@@ -16120,7 +16180,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                                 "'Add CSVs…' analyses many logs in one go "
                                 "and fills the charts below.\n\n"
                                 "'Backfill Peaks…' re-reads older csvs so "
-                                "their worst values appear too."))
+                                "their worst values appear too.\n\n"
+                                "Right-click a log (or press Del) to remove "
+                                "corrupt, incompatible or synthetic logs -\n"
+                                "blocked fingerprints keep them out forever."))
         note_lbl.pack(pady=30)
         body.bind('<Configure>',
                   lambda e: note_lbl.configure(wraplength=max(260, e.width - 60)))
@@ -16130,7 +16193,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
         left = tk.Frame(panes, bg=bg)
         tree = ttk.Treeview(left, show='tree', columns=('a', 'b'),
-                            style="Hist.Treeview", selectmode='browse',
+                            style="Hist.Treeview", selectmode='extended',
                             displaycolumns=(0, 1))
         tree.column('#0', stretch=True, minwidth=240, width=320)
         tree.column('a', width=54, minwidth=40, anchor='e', stretch=False)
@@ -16261,6 +16324,13 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 text="🗓 %d logs · %s" % (total,
                                          ("%s → %s" % (a, b)) if a else "no dates")
                 + ("  ·  %d opens" % opens if opens else ""))
+            n_bl = len(d.get("blocked") or {})
+            try:
+                btn_block.config(text=("🚫 Blocked (%d)" % n_bl) if n_bl
+                                 else "🚫 Blocked",
+                                 state='normal' if n_bl else 'disabled')
+            except Exception:
+                pass
 
         hw_group_nodes = {}
         model_nodes = {}
@@ -16663,13 +16733,19 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                               'peak' if h.get("peak") else 'dim'))
             else:
                 L.append(("No issues - this log was clean.", 'dim'))
+            L.append(("", ''))
+            L.append(("Right-click this log (or press Del) to remove it - "
+                      "blocked fingerprints keep corrupt or synthetic csvs "
+                      "out of the statistics.", 'dim'))
             return L
 
         def _on_select(_ev):
             sel = tree.selection()
             if not sel:
                 return
-            node = sel[0]
+            node = tree.focus()
+            if node not in sel:
+                node = sel[0]
             if node in log_nodes:
                 _draw_log(log_nodes[node])
             elif node in model_nodes:
@@ -16681,9 +16757,204 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 _draw_group(hw_group_nodes[node])
         tree.bind('<<TreeviewSelect>>', _on_select)
 
+        def _remove_dialog(fps):
+            recs = [s for s in (_history_load().get("sessions") or [])
+                    if s.get("csv_hash") in set(fps)]
+            if not recs:
+                return
+            box = tk.Toplevel(dialog)
+            box.title("Remove logs from history")
+            box.configure(bg=bg)
+            box.transient(dialog)
+            box.resizable(False, False)
+            tk.Label(box, justify=tk.LEFT, anchor='w', bg=bg, fg=fg,
+                     font=('Segoe UI', 10, 'bold'),
+                     text="Remove %d log%s from the statistics?"
+                     % (len(recs), "" if len(recs) == 1 else "s")
+                     ).pack(fill=tk.X, padx=16, pady=(14, 6))
+            lines = []
+            for s in recs[:6]:
+                k = len({str(h.get("name")) for h in (s.get("hits") or [])
+                         if h.get("name")})
+                lines.append("• %s  ·  %s  ·  %s"
+                             % (str(s.get("file") or "imported log")[:44],
+                                str(s.get("last_seen") or
+                                    s.get("first_seen") or "")[:10],
+                                ("%d issue%s" % (k, "" if k == 1 else "s"))
+                                if k else "clean"))
+            if len(recs) > 6:
+                lines.append("… and %d more" % (len(recs) - 6))
+            tk.Label(box, justify=tk.LEFT, anchor='w', bg=bg2, fg=fg,
+                     font=('Segoe UI', 9), padx=10, pady=8,
+                     text="\n".join(lines)).pack(fill=tk.X, padx=16)
+            blk = tk.BooleanVar(value=True)
+            tk.Checkbutton(box, variable=blk, bg=bg, fg=fg,
+                           activebackground=bg, selectcolor=bg2,
+                           anchor='w', justify=tk.LEFT,
+                           font=('Segoe UI', 9),
+                           text="Block their fingerprints - corrupt, "
+                                "incompatible or synthetic csvs are then "
+                                "never recorded again"
+                     ).pack(fill=tk.X, padx=16, pady=(10, 4))
+            row = tk.Frame(box, bg=bg)
+            row.pack(fill=tk.X, padx=16, pady=(4, 14))
+
+            def _go():
+                removed, n_bl = _history_remove(fps, block=bool(blk.get()))
+                box.destroy()
+                if removed:
+                    self.show_toast("🗑 Removed %d log%s%s"
+                                    % (removed, "" if removed == 1 else "s",
+                                       (" · %d fingerprint%s blocked"
+                                        % (n_bl, "" if n_bl == 1 else "s"))
+                                       if n_bl else ""))
+                _rebuild(restore=True)
+
+            ttk.Button(row, text="Remove", style="Delete.TButton",
+                       command=_go).pack(side=tk.RIGHT)
+            ttk.Button(row, text="Cancel", style="Action.TButton",
+                       command=box.destroy).pack(side=tk.RIGHT, padx=(0, 6))
+            box.bind('<Escape>', lambda _e: box.destroy())
+            box.update_idletasks()
+            box.geometry("+%d+%d" % (dialog.winfo_rootx() +
+                                     max(0, (dialog.winfo_width() -
+                                             box.winfo_reqwidth()) // 2),
+                                     dialog.winfo_rooty() +
+                                     max(0, (dialog.winfo_height() -
+                                             box.winfo_reqheight()) // 2)))
+            box.grab_set()
+            box.focus_set()
+
+        def _remove_logs(clicked=None):
+            sel = list(tree.selection())
+            if clicked is not None and clicked not in sel:
+                sel = [clicked]
+            fps = []
+            for n in sel:
+                fp = log_nodes.get(n)
+                if fp and fp not in fps:
+                    fps.append(fp)
+            if not fps:
+                self.show_toast("Select a log first - right-click it or "
+                                "press Del")
+                return
+            _remove_dialog(fps)
+
+        ctx_menu = tk.Menu(dialog, tearoff=0, bg=bg2, fg=fg, bd=0,
+                           relief='flat', activebackground=accent,
+                           activeforeground='#ffffff',
+                           font=('Segoe UI', 9))
+
+        def _show_ctx(event):
+            node = tree.identify_row(event.y)
+            if not node:
+                return
+            if node not in tree.selection():
+                tree.selection_set(node)
+            if node not in log_nodes:
+                return
+            n = len([x for x in tree.selection() if x in log_nodes])
+            ctx_menu.delete(0, 'end')
+            ctx_menu.add_command(
+                label="🗑 Remove from history%s"
+                      % ("  (%d logs)" % n if n > 1 else ""),
+                command=lambda: _remove_logs(node))
+            try:
+                ctx_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                ctx_menu.grab_release()
+
+        tree.bind('<Button-3>', _show_ctx)
+
+        def _del_key(_ev):
+            if any(n in log_nodes for n in tree.selection()):
+                _remove_logs(None)
+                return "break"
+
+        tree.bind('<Delete>', _del_key)
+        tree.bind('<KP_Delete>', _del_key)
+
+        def _blocked_manager():
+            box = tk.Toplevel(dialog)
+            box.title("Blocked fingerprints")
+            box.configure(bg=bg)
+            box.transient(dialog)
+            box.geometry("600x380")
+            tk.Label(box, justify=tk.LEFT, anchor='w', bg=bg, fg=dim,
+                     font=('Segoe UI', 9),
+                     text="Blocked fingerprints keep corrupt, incompatible "
+                          "or synthetic csvs out of the statistics - they "
+                          "are skipped on record, merge and backfill.\n"
+                          "Unblocking does not re-add a log; it is recorded "
+                          "again the next time it is analysed."
+                     ).pack(fill=tk.X, padx=12, pady=(10, 6))
+            row = tk.Frame(box, bg=bg)
+            row.pack(side=tk.BOTTOM, fill=tk.X, padx=12, pady=(0, 12))
+            lb = tk.Listbox(box, selectmode='extended', bg=bg2, fg=fg,
+                            selectbackground=accent,
+                            selectforeground='#ffffff',
+                            highlightthickness=0, bd=0, activestyle='none',
+                            font=('Segoe UI', 9))
+            sb = tk.Scrollbar(box, orient="vertical", command=lb.yview,
+                              bg=bg3, troughcolor=bg, activebackground=accent,
+                              bd=0, relief='flat')
+            lb.configure(yscrollcommand=sb.set)
+            lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True,
+                    padx=(12, 0), pady=(0, 8))
+            sb.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 12), pady=(0, 8))
+            fps = []
+
+            def _fill():
+                fps.clear()
+                lb.delete(0, 'end')
+                bl = _history_load().get("blocked") or {}
+                for fp, info in sorted(bl.items(),
+                                       key=lambda kv: str((kv[1] or {})
+                                                          .get("at") or ""),
+                                       reverse=True):
+                    fps.append(fp)
+                    lb.insert('end', "  %s  ·  %s  ·  %s"
+                              % (str((info or {}).get("file") or
+                                     "unknown log")[:42],
+                                 str((info or {}).get("at") or "")[:16],
+                                 fp[:12]))
+                if not fps:
+                    lb.insert('end', "  Nothing blocked. Removed logs you "
+                                     "chose to block appear here.")
+
+            def _unblock(sel_only):
+                hs = [fps[i] for i in (lb.curselection() if sel_only
+                                       else range(len(fps)))]
+                if not hs:
+                    return
+                n = _history_unblock(hs)
+                if n:
+                    self.show_toast("Unblocked %d fingerprint%s - %s "
+                                    "recorded again the next time you "
+                                    "analyse %s"
+                                    % (n, "" if n == 1 else "s",
+                                       "it is" if n == 1 else "they are",
+                                       "the csv" if n == 1 else "those csvs"))
+                _fill()
+                _update_header()
+
+            ttk.Button(row, text="Unblock selected", style="Action.TButton",
+                       command=lambda: _unblock(True)).pack(side=tk.LEFT)
+            ttk.Button(row, text="Unblock all", style="Action.TButton",
+                       command=lambda: _unblock(False)).pack(side=tk.LEFT,
+                                                             padx=(6, 0))
+            ttk.Button(row, text="Close",
+                       command=box.destroy).pack(side=tk.RIGHT)
+            box.bind('<Escape>', lambda _e: box.destroy())
+            _fill()
+            box.grab_set()
+
         def _rebuild(restore=True):
             sel = tree.selection()
-            saved = node_key.get(sel[0]) if sel else None
+            node = tree.focus()
+            if node not in sel and sel:
+                node = sel[0]
+            saved = node_key.get(node) if node else None
             state["data"] = _history_load()
             sessions = state["data"].get("sessions") or []
             _update_header()
@@ -16713,7 +16984,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                            ("Legacy JSON history", "*.json")])
             if not paths:
                 return
-            added = skipped = 0
+            added = skipped = refused = 0
             bad = []
             for p in paths:
                 try:
@@ -16721,9 +16992,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 except Exception as e:
                     bad.append("%s (%s)" % (os.path.basename(p), e))
                     continue
-                a, s = _history_merge(incoming)
+                a, s, r = _history_merge(incoming)
                 added += a
                 skipped += s
+                refused += r
             if bad:
                 messagebox.showwarning(
                     "Merge", "Could not read %d file%s:\n\n%s"
@@ -16733,8 +17005,9 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 if not bad:
                     self.show_toast("📊 Nothing new - history is up to date")
                 return
-            self.show_toast("📊 Merged: %d new · %d duplicate%s skipped"
-                            % (added, skipped, "" if skipped == 1 else "s"))
+            self.show_toast("📊 Merged: %d new · %d duplicate%s skipped%s"
+                            % (added, skipped, "" if skipped == 1 else "s",
+                               " · %d blocked" % refused if refused else ""))
             self._history_progress("Merged +%d · skipped %d" % (added, skipped))
             _rebuild(restore=True)
 
@@ -16772,12 +17045,22 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             my_epoch = getattr(self, "_hist_epoch", 0)
 
             def _worker():
-                updated = added = failed = 0
+                updated = added = failed = refused = 0
                 cancelled = False
+                try:
+                    _bl = set(_history_load().get("blocked") or {})
+                except Exception:
+                    _bl = set()
                 for i, p in enumerate(paths):
                     if my_epoch != getattr(self, "_hist_epoch", 0):
                         cancelled = True
                         break
+                    try:
+                        if _csv_fingerprint(p) in _bl:
+                            refused += 1
+                            continue
+                    except Exception:
+                        pass
                     _post_ui(self.root,
                              lambda m=("Backfilling %d/%d: %s"
                                        % (i + 1, len(paths),
@@ -16787,6 +17070,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                         st = _history_backfill_file(p, self)
                         if st in ("refresh", "first"):
                             updated += 1
+                        elif st == "blocked":
+                            refused += 1
                         elif st:
                             added += 1
                         else:
@@ -16804,9 +17089,11 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     self._history_progress(
                         "Backfilled %d log%s" % (n, "" if n == 1 else "s"))
                     self.show_toast("📊 Worst values updated on %d log%s "
-                                    "· %d added · %d failed"
+                                    "· %d added · %d failed%s"
                                     % (updated, "" if updated == 1 else "s",
-                                       added, failed))
+                                       added, failed,
+                                       " · %d blocked" % refused
+                                       if refused else ""))
                     _rebuild(restore=True)
                 _post_ui(self.root, _done)
 
@@ -16863,6 +17150,10 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         btn_backfill.pack(side=tk.LEFT, padx=(0, 6))
         ttk.Button(footer, text="📤 Export .resync…", style="Action.TButton",
                    command=_export).pack(side=tk.LEFT, padx=(0, 6))
+        btn_block = ttk.Button(footer, text="🚫 Blocked",
+                               style="Action.TButton", state='disabled',
+                               command=_blocked_manager)
+        btn_block.pack(side=tk.LEFT, padx=(0, 6))
         ttk.Button(footer, text="🗑 Clear History", style="Delete.TButton",
                    command=_clear).pack(side=tk.RIGHT, padx=(0, 6))
         ttk.Button(footer, text="Close", command=_close).pack(side=tk.RIGHT)
