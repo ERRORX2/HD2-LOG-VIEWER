@@ -2182,7 +2182,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.4.1"
+CURRENT_VERSION = "1.8.4.2"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -15795,6 +15795,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
     def _share_group(self, n):
         data = {"name": n, "sensors": self._group_sensors(n), "modes": self._group_modes(n)}
+        if self._group_pin_names(n):
+            data["pin_names"] = True
         self.root.clipboard_clear()
         self.root.clipboard_append(json.dumps(data))
         self.show_toast(f"Copied '{n}'")
@@ -15873,6 +15875,11 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             sensors = data["sensors"]
             modes   = data.get("modes", {})
             entry   = {"sensors": sensors, "modes": modes} if modes else sensors
+            if data.get("pin_names"):
+                if isinstance(entry, dict):
+                    entry["pin_names"] = True
+                else:
+                    entry = {"sensors": sensors, "pin_names": True}
 
             if imported_name not in self.custom_groups:
                 self.custom_groups[imported_name] = entry
@@ -15956,6 +15963,102 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             return entry.get("modes", {})
         return {}
 
+    @staticmethod
+    def _strip_dupe_suffix(name: str) -> str:
+        m = re.match(r'^(.*)\.\d+$', name)
+        return m.group(1) if m else name
+
+    def _resolve_preset_sensors(self, sensors, trust_literal_names=False,
+                                cluster_delta=False):
+        cols = list(self.df.columns)
+        idx_of = {c: i for i, c in enumerate(cols)}
+        by_base = {}
+        for c in cols:
+            by_base.setdefault(self._strip_dupe_suffix(c), []).append(c)
+
+        region_of = {}
+        dup_lists = [cl for cl in by_base.values() if len(cl) >= 2]
+        if dup_lists:
+            spans = []
+            k = 1
+            while True:
+                kth = [idx_of[c] for cl in dup_lists
+                       for c in cl if c == f"{self._strip_dupe_suffix(c)}.{k}"]
+                if not kth:
+                    break
+                spans.append((min(kth), max(kth)))
+                k += 1
+            if spans:
+                first_dup = min(idx_of[c] for cl in dup_lists for c in cl)
+                spans = [(first_dup, spans[0][0] - 1)] + spans
+                for inst, (lo, hi) in enumerate(spans):
+                    for i in range(lo, hi + 1):
+                        region_of[i] = inst
+
+        def _region(col):
+            return region_of.get(idx_of[col])
+
+        def _candidates(name):
+            cands, seen = [], set()
+            for cand in ([name] if name in idx_of else []) + \
+                         by_base.get(self._strip_dupe_suffix(name), []):
+                if cand not in seen:
+                    seen.add(cand)
+                    cands.append(cand)
+            return cands
+
+        resolved, anchors, deferred = {}, [], []
+        for s in sensors:
+            cands = _candidates(s)
+            if not cands:
+                continue
+            if len(cands) == 1:
+                resolved[s] = cands[0]
+                anchors.append((idx_of[cands[0]], _region(cands[0])))
+            else:
+                deferred.append((s, cands))
+
+        for s, cands in deferred:
+            suffixed = s in idx_of and s != self._strip_dupe_suffix(s)
+            if trust_literal_names and s in idx_of and not suffixed:
+                best = s
+            elif suffixed:
+                regions = {r for _, r in anchors if r is not None}
+                mismatch = bool(regions) and _region(s) not in regions
+                alts = []
+                if mismatch:
+                    base = self._strip_dupe_suffix(s)
+                    alts = [c for c in by_base.get(base, [])
+                            if _region(c) in regions]
+                if trust_literal_names and not (alts and cluster_delta):
+                    best = s
+                elif alts:
+                    def _dist(c):
+                        return min(abs(idx_of[c] - i) for i, _ in anchors)
+                    best = min(alts, key=lambda c: (_dist(c), idx_of[c]))
+                else:
+                    best = s
+            elif not anchors:
+                best = s if s in idx_of else cands[0]
+            else:
+                regions = {r for _, r in anchors if r is not None}
+                pool = [c for c in cands if _region(c) in regions] or cands
+                if len(pool) == 1:
+                    best = pool[0]
+                else:
+                    def _dist(c):
+                        return min(abs(idx_of[c] - i) for i, _ in anchors)
+                    best = min(pool, key=lambda c: (_dist(c), c != s, idx_of[c]))
+            resolved[s] = best
+            anchors.append((idx_of[best], _region(best)))
+
+        redirects = {s: col for s, col in resolved.items() if col != s}
+        return resolved, redirects
+
+    def _group_pin_names(self, name):
+        entry = self.custom_groups.get(name, {})
+        return bool(entry.get("pin_names")) if isinstance(entry, dict) else False
+
     def _apply_group(self, n):
         sensors = self._group_sensors(n)
         modes   = self._group_modes(n)
@@ -15963,15 +16066,26 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         for v in self.vars.values():
             v.set(False)
 
+        resolution, redirects = self._resolve_preset_sensors(
+            sensors, trust_literal_names=self._group_pin_names(n),
+            cluster_delta=bool(modes.get('delta_mode')))
+
         found = 0
         for s in sensors:
-            if s in self.vars:
-                self.vars[s].set(True)
+            col = resolution.get(s)
+            if col is not None and col in self.vars:
+                self.vars[col].set(True)
                 found += 1
 
         missing = len(sensors) - found
         if missing > 0:
             self.show_toast(f"⚠ {found} of {len(sensors)} sensors found - {missing} not in this CSV")
+        elif redirects:
+            names = sorted(set(redirects.values()))
+            if len(names) > 2:
+                self.show_toast(f"Auto-matched {len(names)} sensors to this CSV")
+            else:
+                self.show_toast("Auto-matched: " + ", ".join(names))
 
         if modes:
             if 'multi_mode' in modes and modes['multi_mode'] != self.multi_mode:
@@ -16003,6 +16117,12 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 "heatmap_mode":  self.heatmap_mode,
             }
         }
+        base_counts = {}
+        for c in self.df.columns:
+            b = self._strip_dupe_suffix(c)
+            base_counts[b] = base_counts.get(b, 0) + 1
+        if any(base_counts.get(self._strip_dupe_suffix(c), 0) >= 2 for c in sel):
+            self.custom_groups[name]["pin_names"] = True
         self._save_config()
         self._refresh_group_buttons()
         self.name_var.set("")
