@@ -1,24 +1,55 @@
-﻿import pandas as pd
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.ticker as ticker
-import matplotlib.colors as mcolors
-import matplotlib.cm as mcm
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+﻿class _LazyModule:
+    __slots__ = ('_bind', '_module')
+
+    def __init__(self, bind, module):
+        self._bind = bind
+        self._module = module
+
+    def __getattr__(self, attr):
+        import importlib
+        real = importlib.import_module(self._module)
+        globals()[self._bind] = real
+        return getattr(real, attr)
+
+    def __setattr__(self, attr, value):
+        if attr in _LazyModule.__slots__:
+            object.__setattr__(self, attr, value)
+            return
+        import importlib
+        real = importlib.import_module(self._module)
+        globals()[self._bind] = real
+        setattr(real, attr, value)
+
+    def __dir__(self):
+        import importlib
+        return dir(importlib.import_module(self._module))
 
 
-class _NoHistoryToolbar(NavigationToolbar2Tk):
-    toolitems = tuple(
-        item for item in NavigationToolbar2Tk.toolitems
-        if item[0] not in ('Back', 'Forward')
-    )
+pd = _LazyModule('pd', 'pandas')
+
+
+def _warm_data_stack():
+    try:
+        import pandas
+        import numpy
+        _ = pd.DataFrame
+        _ = np.ndarray
+    except Exception:
+        pass
+
+matplotlib = None
+ticker = None
+mcolors = None
+mcm = None
+Figure = None
+FigureCanvasTkAgg = None
+NavigationToolbar2Tk = None
 
 from pathlib import Path
 from typing import List, Optional, Dict, Set, Tuple
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
-import numpy as np
+np = _LazyModule('np', 'numpy')
 import csv
 import json
 import os
@@ -37,6 +68,67 @@ import threading as _threading
 import tkinter as _tk_module
 
 log = logging.getLogger("HD2_LOG_VIEWER")
+
+
+def _ensure_mpl():
+
+    global matplotlib, ticker, mcolors, mcm, Figure, FigureCanvasTkAgg, \
+        NavigationToolbar2Tk, _NoHistoryToolbar
+    if Figure is not None:
+        return
+    import matplotlib as _matplotlib
+    _matplotlib.use('TkAgg')
+    import matplotlib.ticker as _ticker
+    import matplotlib.colors as _mcolors
+    import matplotlib.cm as _mcm
+    from matplotlib.figure import Figure as _Figure
+    from matplotlib.backends.backend_tkagg import (
+        FigureCanvasTkAgg as _FigureCanvasTkAgg,
+        NavigationToolbar2Tk as _NavigationToolbar2Tk)
+
+    class _NoHistoryToolbar(_NavigationToolbar2Tk):
+        toolitems = tuple(
+            item for item in _NavigationToolbar2Tk.toolitems
+            if item[0] not in ('Back', 'Forward')
+        )
+
+    matplotlib = _matplotlib
+    ticker = _ticker
+    mcolors = _mcolors
+    mcm = _mcm
+    Figure = _Figure
+    FigureCanvasTkAgg = _FigureCanvasTkAgg
+    NavigationToolbar2Tk = _NavigationToolbar2Tk
+
+_DECIM_MAX_PTS = 4096
+
+_FLOAT32_GUARD_BYTES = 500_000_000
+
+def _decimate_plot_arrays(x, y, max_pts=_DECIM_MAX_PTS):
+
+    n = len(y)
+    if n <= max_pts:
+        return x, y
+    nb = max(1, max_pts // 2)
+    bidx = np.minimum(np.arange(n, dtype=np.int64) * nb // n, nb - 1)
+    grp = pd.Series(np.asarray(y, dtype=float)).groupby(bidx)
+    i_min = grp.idxmin().to_numpy(dtype=float)
+    i_max = grp.idxmax().to_numpy(dtype=float)
+    ok = ~(np.isnan(i_min) | np.isnan(i_max))
+    im = i_min[ok].astype(np.int64)
+    ix = i_max[ok].astype(np.int64)
+    lo_first = im <= ix
+    xa = np.asarray(x, dtype=float)
+    ya = np.asarray(y, dtype=float)
+    a = np.where(lo_first, im, ix)
+    b = np.where(lo_first, ix, im)
+    out_x = np.empty(2 * len(im))
+    out_y = np.empty(2 * len(im))
+    out_x[0::2] = xa[a]
+    out_y[0::2] = ya[a]
+    out_x[1::2] = xa[b]
+    out_y[1::2] = ya[b]
+    return out_x, out_y
 
 class LineNumbers(tk.Canvas):
     def __init__(self, parent, text_widget, **kwargs):
@@ -2182,7 +2274,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.4.2"
+CURRENT_VERSION = "1.8.5"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -2615,12 +2707,16 @@ class TelemetryAnalyzer:
                 for row in rdr:
                     if not row:
                         continue
-                    key = str(row[0]).strip().lower() if row[0] else ''
-                    if key == first_key and len(row) > len(widest):
-                        widest = [str(c) for c in row]
-                        grew = True
-                    elif len(row) > max_fields:
-                        max_fields = len(row)
+                    n = len(row)
+                    if n > len(widest):
+                        key = str(row[0]).strip().lower() if row[0] else ''
+                        if key == first_key:
+                            widest = [str(c) for c in row]
+                            grew = True
+                        elif n > max_fields:
+                            max_fields = n
+                    elif n > max_fields:
+                        max_fields = n
                 if not grew and max_fields <= len(first):
                     return None
                 while len(widest) < max_fields:
@@ -2660,15 +2756,29 @@ class TelemetryAnalyzer:
 
         wide_names = self._resolve_schema(sep)
 
-        for enc in ['utf-8-sig', 'latin-1', 'cp1252']:
+        engine = 'python' if sep is None else 'c'
+        encodings = ['utf-8-sig', 'latin-1', 'cp1252']
+        try:
+            with open(self.path, 'rb') as f:
+                _head = f.read(65536)
+            try:
+                _head.decode('utf-8')
+            except UnicodeDecodeError:
+                encodings = ['latin-1', 'cp1252']
+        except OSError:
+            pass
+
+        decimal_kw = {'decimal': ','} if (sep is not None and sep != ',') else {}
+        for enc in encodings:
             try:
                 if wide_names:
                     df = pd.read_csv(self.path, encoding=enc, sep=sep,
-                                     on_bad_lines='skip', engine='python',
-                                     names=wide_names, header=None, skiprows=1)
+                                     on_bad_lines='skip', engine=engine,
+                                     names=wide_names, header=None, skiprows=1,
+                                     **decimal_kw)
                 else:
                     df = pd.read_csv(self.path, encoding=enc, sep=sep, on_bad_lines='skip',
-                                     engine='python')
+                                     engine=engine, **decimal_kw)
                 if len(df.columns) > 0:
                     self.df = df
                     success = True
@@ -2688,9 +2798,24 @@ class TelemetryAnalyzer:
             if '[Yes/No]' in col or '[yes/no]' in col.lower():
                 continue
             try:
-                s = self.df[col].astype(str).str.replace(',', '.', regex=False)
-                cleaned = s.str.replace(r'[^\d\.\-eE]', '', regex=True)
-                self.df[col] = pd.to_numeric(cleaned, errors='coerce')
+                if (pd.api.types.is_numeric_dtype(self.df[col])
+                        and not pd.api.types.is_bool_dtype(self.df[col])):
+                    continue
+                s = self.df[col].astype(str)
+                if any(',' in c for c in s.to_numpy(dtype=object)):
+                    s = s.str.replace(',', '.', regex=False)
+                direct = pd.to_numeric(s, errors='coerce')
+                if np.isinf(direct.to_numpy(dtype=float)).any():
+                    cleaned = s.str.replace(r'[^\d\.\-eE]', '', regex=True)
+                    self.df[col] = pd.to_numeric(cleaned, errors='coerce')
+                else:
+                    bad = direct.isna()
+                    if bad.any():
+                        fixed = pd.to_numeric(
+                            s[bad].str.replace(r'[^\d\.\-eE]', '', regex=True),
+                            errors='coerce')
+                        direct.loc[bad] = fixed
+                    self.df[col] = direct
             except Exception:
                 continue
 
@@ -2721,7 +2846,25 @@ class TelemetryAnalyzer:
         if self.time_series is not None:
             self.time_series = self.time_series.iloc[:len(self.df)].reset_index(drop=True)
         self.df = self.df.reset_index(drop=True)
+        self._downcast_if_memory_pressure()
         self.aliases = self.load_aliases()
+
+    def _downcast_if_memory_pressure(self):
+        try:
+            float_cols = [c for c in self.df.columns
+                          if pd.api.types.is_float_dtype(self.df[c])]
+            if not float_cols:
+                return
+            numeric_bytes = sum(int(self.df[c].memory_usage()) for c in float_cols)
+            if numeric_bytes < _FLOAT32_GUARD_BYTES:
+                return
+            import psutil
+            if psutil.virtual_memory().available > numeric_bytes:
+                return
+            for c in float_cols:
+                self.df[c] = self.df[c].astype(np.float32)
+        except Exception:
+            return
 
     def detect_csv_gaps(self, gap_threshold_seconds: float = 10.0) -> dict:
         """
@@ -2898,7 +3041,7 @@ class TelemetryAnalyzer:
         collect unique device names from that row.
         """
         _KNOWN_TAGS = re.compile(
-            r'^(CPU|iGPU|dGPU|GPU|DDR\d*\s*DIMM|S\.M\.A\.R\.T\.|Drive|'
+            r'^\s*(CPU|iGPU|dGPU|GPU|DDR\d*\s*DIMM|S\.M\.A\.R\.T\.|Drive|'
             r'Network|Battery|System|PresentMon|Memory Timings|'
             r'ASUS\s+NB\s+EC|ASUS\s+FX|PCH|Chipset|EC\b)',
             re.IGNORECASE
@@ -2906,10 +3049,10 @@ class TelemetryAnalyzer:
 
         def _is_label_cell(cell: str) -> bool:
             """Return True if this cell looks like a HWiNFO device label."""
+            if not _KNOWN_TAGS.match(cell):
+                return False
             c = cell.strip()
             if not c:
-                return False
-            if not _KNOWN_TAGS.match(c):
                 return False
             if re.match(r'^-?\d+(\.\d+)?$', c):
                 return False
@@ -2923,31 +3066,36 @@ class TelemetryAnalyzer:
                     return False
             return True
 
-        all_rows = []
+        _row_letters = re.compile(r'[A-Za-z]')
+        any_row = False
+        best_row = []
+        best_score = 0.0
+
         for enc in ('utf-8-sig', 'latin-1', 'cp1252'):
+            any_row = False
+            best_row = []
+            best_score = 0.0
             try:
                 with open(self.path, 'r', encoding=enc, errors='ignore') as f:
-                    reader = csv.reader(f)
-                    all_rows = list(reader)
+
+                    for row in csv.reader(f):
+                        any_row = True
+                        if not _row_letters.search(''.join(row)):
+                            continue
+                        non_empty = [c for c in row if c.strip()]
+                        if not non_empty:
+                            continue
+                        label_cells = [c for c in non_empty if _is_label_cell(c)]
+                        score = len(label_cells) / len(non_empty)
+                        if score > best_score:
+                            best_score = score
+                            best_row = row
                 break
             except Exception:
                 continue
 
-        if not all_rows:
+        if not any_row:
             return {}
-
-        best_row = []
-        best_score = 0.0
-
-        for row in all_rows:
-            non_empty = [c for c in row if c.strip()]
-            if not non_empty:
-                continue
-            label_cells = [c for c in non_empty if _is_label_cell(c)]
-            score = len(label_cells) / len(non_empty)
-            if score > best_score:
-                best_score = score
-                best_row = row
 
         if best_score < 0.25 or not best_row:
             return {}
@@ -3050,6 +3198,15 @@ class TelemetryAnalyzer:
         return ordered
 
     def _parse_dt_column(self, raw, formats):
+        if len(raw) > 1000:
+            sample = raw.iloc[:1000]
+            for fmt in formats:
+                try:
+                    probe = pd.to_datetime(sample, format=fmt, errors='coerce')
+                except Exception:
+                    continue
+                if probe.notna().all():
+                    return pd.to_datetime(raw, format=fmt, errors='coerce')
         attempts = []
         for fmt in formats:
             try:
@@ -15229,6 +15386,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         dialog.deiconify()
 
     def _setup_ui(self):
+        _ensure_mpl()
         flag = " [DEBUG]" if self.debug_mode else ""
         self.root.title(f"RESYNC.ERR v{CURRENT_VERSION} - {self.analyzer.path.name}{flag}")
         self.root.geometry("1440x900")
@@ -16224,6 +16382,7 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             except Exception:
                 pass
     def _open_history_viewer(self):
+        _ensure_mpl()
         _t = self._get_theme()
         bg = _t["bg"]; bg2 = _t["bg2"]; bg3 = _t["bg3"]; fg = _t["fg"]; accent = _t["accent"]
         accent2 = _t.get("accent2") or accent
@@ -18068,6 +18227,51 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self._last_cursor_idx = -1
         self.update_plot()
 
+    def _plot_line(self, ax, xs, ys, **kw):
+        line, = ax.plot(*_decimate_plot_arrays(xs, ys), **kw)
+        if len(ys) > _DECIM_MAX_PTS:
+            self._decim_registry.append(
+                (line, np.asarray(xs, dtype=float), np.asarray(ys, dtype=float)))
+        return line
+
+    def _on_plot_xlim_changed(self, ax):
+        try:
+            reg = getattr(self, '_decim_registry', None)
+            if not reg or not any(line.axes is ax for line, _, _ in reg):
+                return
+            xlim = tuple(ax.get_xlim())
+            if xlim == getattr(self, '_decim_last_xlim', None):
+                return
+            self._decim_last_xlim = xlim
+            if getattr(self, '_decim_after_id', None) is not None:
+                try:
+                    self.root.after_cancel(self._decim_after_id)
+                except Exception:
+                    pass
+            self._decim_after_id = self.root.after(
+                60, lambda: self._apply_decim(xlim))
+        except Exception:
+            pass
+
+    def _apply_decim(self, xlim):
+        self._decim_after_id = None
+        try:
+            reg = getattr(self, '_decim_registry', None)
+            if not reg:
+                return
+            x0, x1 = xlim
+            for line, fx, fy in reg:
+                if line.axes is None:
+                    continue
+                m = (fx >= x0) & (fx <= x1)
+                if not m.any():
+                    continue
+                dx, dy = _decimate_plot_arrays(fx[m], fy[m])
+                line.set_data(dx, dy)
+            self.canvas_widget.draw_idle()
+        except Exception:
+            pass
+
     def _on_plot_click(self, event):
         """Left-click to pin a line; right-click to unpin."""
         if event.inaxes is None:
@@ -18092,19 +18296,16 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             ylim = ax.get_ylim()
             y_range = max(abs(ylim[1] - ylim[0]), 1e-9)
 
-            x_vals = getattr(self, '_last_x_vals', None)
-            if x_vals is not None and len(x_vals):
-                idx = int(np.argmin(np.abs(x_vals - event.xdata)))
-            else:
-                idx = 0
             closest_line, closest_dist = None, float('inf')
             for line in ax.get_lines():
                 lbl = line.get_label()
                 if lbl.startswith('_') or lbl.startswith('REF:'):
                     continue
                 ydata = line.get_ydata()
-                if not len(ydata): continue
-                yi = min(idx, len(ydata) - 1)
+                xdata = line.get_xdata()
+                if not len(ydata) or not len(xdata): continue
+                xi = int(np.argmin(np.abs(np.asarray(xdata, dtype=float) - event.xdata)))
+                yi = min(xi, len(ydata) - 1)
                 nd = abs(float(ydata[yi]) - float(event.ydata)) / y_range
                 if nd < closest_dist:
                     closest_dist, closest_line = nd, line
@@ -18221,7 +18422,9 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     if len(ydata) == 0:
                         continue
                     try:
-                        yi = min(idx, len(ydata) - 1)
+                        xi = int(np.argmin(np.abs(
+                            np.asarray(line.get_xdata(), dtype=float) - raw_x)))
+                        yi = min(xi, len(ydata) - 1)
                         norm_dist = abs(float(ydata[yi]) - float(event.ydata)) / y_range
                         if norm_dist < closest_dist:
                             closest_dist = norm_dist
@@ -18995,11 +19198,13 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     zorder=2, clip_on=True)
 
     def update_plot(self):
+        _ensure_mpl()
         if self.session_compare_active:
             self._draw_session_compare()
             return
         self.fig.clear()
         self._clear_cursors()
+        self._decim_registry = []
         self._hide_tk_tooltip()
         is_dark = self.is_dark
         _t         = self._get_theme()
@@ -19205,9 +19410,9 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 for col_name in category_groups[cat_name]:
                     main_color = colors[color_idx % len(colors)]
                     if self.compare_mode and self.ref_df is not None and col_name in self.ref_df.columns:
-                        ax.plot(ref_x, self.ref_df[col_name],
-                                ls='--', lw=1, alpha=0.5, color=main_color, zorder=2,
-                                label=f"REF: {col_name}")
+                        self._plot_line(ax, ref_x, self.ref_df[col_name],
+                                        ls='--', lw=1, alpha=0.5, color=main_color, zorder=2,
+                                        label=f"REF: {col_name}")
                     series = self.df[col_name].dropna()
                     if show_stats:
                         stats = f"▼{series.min():.1f}  ~{series.mean():.1f}  ▲{series.max():.1f}"
@@ -19218,8 +19423,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                     _is_pin = (_pinned == col_name)
                     _alpha  = 1.0 if (_pinned is None or _is_pin) else 0.25
                     _lw     = 2.5 if _is_pin else 1.5
-                    ax.plot(x_vals, self.df[col_name], label=label,
-                            lw=_lw, color=main_color, zorder=4 if _is_pin else 3, alpha=_alpha)
+                    self._plot_line(ax, x_vals, self.df[col_name], label=label,
+                                    lw=_lw, color=main_color, zorder=4 if _is_pin else 3, alpha=_alpha)
                     _draw_spec_zones(ax, col_name)
                     color_idx += 1
 
@@ -19304,17 +19509,17 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
 
             if self.compare_mode and self.ref_df is not None and sel[0] in self.ref_df.columns and sel[1] in self.ref_df.columns:
                 ref_delta = (self.ref_df[sel[0]] - self.ref_df[sel[1]]).abs()
-                ax.plot(ref_x, ref_delta, color="#ffcc00", ls='--', alpha=0.5, lw=1, zorder=1,
-                        label=f"REF: Δ ({sel[0]} - {sel[1]})")
+                self._plot_line(ax, ref_x, ref_delta, color="#ffcc00", ls='--', alpha=0.5, lw=1, zorder=1,
+                                label=f"REF: Δ ({sel[0]} - {sel[1]})")
 
             def _stats_label(col, series):
                 s = series.dropna()
                 return f"{col}\nMin: {s.min():.1f}  Avg: {s.mean():.1f}  Max: {s.max():.1f}"
 
-            ax.plot(x_vals, s1, label=_stats_label(sel[0], s1), alpha=0.4, ls='--', zorder=2)
-            ax.plot(x_vals, s2, label=_stats_label(sel[1], s2), alpha=0.4, ls='--', zorder=2)
+            self._plot_line(ax, x_vals, s1, label=_stats_label(sel[0], s1), alpha=0.4, ls='--', zorder=2)
+            self._plot_line(ax, x_vals, s2, label=_stats_label(sel[1], s2), alpha=0.4, ls='--', zorder=2)
             d_stats = f"Min: {delta.min():.1f}  Avg: {delta.mean():.1f}  Max: {delta.max():.1f}"
-            ax.plot(x_vals, delta, label=f"Δ ({sel[0]} - {sel[1]})\n{d_stats}", color="#ffcc00", lw=2, zorder=3)
+            self._plot_line(ax, x_vals, delta, label=f"Δ ({sel[0]} - {sel[1]})\n{d_stats}", color="#ffcc00", lw=2, zorder=3)
             ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
             ax.tick_params(colors=text_color, labelsize=8)
             _fmt_xticks(ax)
@@ -19343,17 +19548,17 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
                 if self.compare_mode and self.ref_df is not None and col_name in self.ref_df.columns:
                     ref_s = self.ref_df[col_name].dropna()
                     ref_stats = f"Min: {ref_s.min():.1f}  Avg: {ref_s.mean():.1f}  Max: {ref_s.max():.1f}"
-                    ax.plot(ref_x, self.ref_df[col_name],
-                            ls='--', lw=1, alpha=0.5, color=main_color, zorder=2,
-                            label=f"REF: {col_name}\n{ref_stats}")
+                    self._plot_line(ax, ref_x, self.ref_df[col_name],
+                                    ls='--', lw=1, alpha=0.5, color=main_color, zorder=2,
+                                    label=f"REF: {col_name}\n{ref_stats}")
                 series = self.df[col_name].dropna()
                 stats = f"▼{series.min():.1f}  ~{series.mean():.1f}  ▲{series.max():.1f}"
                 _pinned = getattr(self, '_pinned_line', None)
                 _is_pin = (_pinned == col_name)
                 _alpha  = 1.0 if (_pinned is None or _is_pin) else 0.25
                 _lw     = 2.5 if _is_pin else 1.5
-                ax.plot(x_vals, self.df[col_name], label=f"{col_name}\n{stats}",
-                        lw=_lw, color=main_color, zorder=4 if _is_pin else 3, alpha=_alpha)
+                self._plot_line(ax, x_vals, self.df[col_name], label=f"{col_name}\n{stats}",
+                                lw=_lw, color=main_color, zorder=4 if _is_pin else 3, alpha=_alpha)
                 _draw_spec_zones(ax, col_name)
 
             ax.grid(True, linestyle=':', alpha=0.4, color=grid_color)
@@ -19436,6 +19641,11 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
             self.fig.subplots_adjust(left=0.12, right=0.98, hspace=getattr(self, '_last_multi_hspace', 0.3))
         else:
             self.fig.subplots_adjust(left=0.10, right=0.98)
+        try:
+            for _ax in self.fig.axes:
+                _ax.callbacks.connect('xlim_changed', self._on_plot_xlim_changed)
+        except Exception:
+            pass
         self.canvas_widget.draw_idle()
 
 if __name__ == "__main__":
@@ -19466,6 +19676,7 @@ if __name__ == "__main__":
         if _si_srv is None:
             if _forward_to_running_instance(_cli_csv or ""):
                 sys.exit(0)     # the running window takes over from here
+    threading.Thread(target=_warm_data_stack, daemon=True).start()
     root = tk.Tk()
     root.withdraw()
     _FORWARD_STATE["root"] = root
