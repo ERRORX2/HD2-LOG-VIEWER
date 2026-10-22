@@ -2274,7 +2274,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.5"
+CURRENT_VERSION = "1.8.5.1"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -2704,6 +2704,7 @@ class TelemetryAnalyzer:
                 widest = [str(c) for c in first]
                 grew = False
                 max_fields = len(first)
+                wide_counts = {}
                 for row in rdr:
                     if not row:
                         continue
@@ -2717,10 +2718,15 @@ class TelemetryAnalyzer:
                             max_fields = n
                     elif n > max_fields:
                         max_fields = n
+                    if n > len(first):
+                        wide_counts[n] = wide_counts.get(n, 0) + 1
                 if not grew and max_fields <= len(first):
                     return None
-                while len(widest) < max_fields:
-                    widest.append(f'Extra Sensor {len(widest) - len(first) + 1} []')
+                significant = [w for w, c in wide_counts.items() if c >= 2 and w > len(widest)]
+                if significant:
+                    target = max(significant)
+                    while len(widest) < target:
+                        widest.append(f'Extra Sensor {len(widest) - len(first) + 1} []')
                 widest = self._mangle_duplicates(widest)
                 return widest
         except Exception:
@@ -8933,6 +8939,11 @@ class TelemetryApp:
         series = self.df[col].dropna()
         if series.empty:
             return False
+
+        if not pd.api.types.is_numeric_dtype(series):
+            series = pd.to_numeric(series, errors='coerce').dropna()
+            if series.empty:
+                return False
 
         if 'EXCEEDED' not in raw and 'RUNNING AVERAGE' not in raw:
             if any(x in raw for x in _EXCLUDE_RAW) or any(x in name for x in _EXCLUDE_NAME):
