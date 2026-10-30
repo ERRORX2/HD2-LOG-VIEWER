@@ -2274,7 +2274,7 @@ def save_custom_signatures(signatures: dict):
     except Exception:
         pass
 
-CURRENT_VERSION = "1.8.5.1"
+CURRENT_VERSION = "1.8.5.2"
 GITHUB_REPO = "ERRORX2/HD2-LOG-VIEWER"
 
 SIGNATURE_REGISTRY = [
@@ -2411,6 +2411,31 @@ def _post_ui(root, fn):
         return True
     except (RuntimeError, tk.TclError):
         return False
+
+
+def _post_load_repair_prompt(root, analyzer, app):
+    issues = getattr(analyzer, 'repair_needed', [])
+    if not issues:
+        return
+    msg = ("This CSV has issues that may cause analysis crashes:\n\n"
+           + "\n".join(f"  • {line}" for line in issues)
+           + "\n\nRepair it now?\nA backup .bak will be saved.\n"
+             "The chart will reload with the repaired data.")
+    try:
+        choice = messagebox.askyesno("Repair This CSV?", msg, parent=root,
+                                     default='yes')
+    except Exception:
+        return
+    if not choice:
+        return
+    try:
+        analyzer._repair_csv_file()
+        app._load_csv_threaded(str(analyzer.path), app._apply_new_csv)
+    except Exception as e:
+        try:
+            messagebox.showerror("Repair Failed", str(e), parent=root)
+        except Exception:
+            pass
 
 def check_for_updates(root: tk.Tk, ignored_version: str = "", updates_disabled: bool = False,
                       on_ignore=None, on_disable=None, silent: bool = True):
@@ -2575,6 +2600,9 @@ class TelemetryAnalyzer:
         self.aliases: dict = {}
         self.is_mangohud: bool = False
         self.mangohud_sysinfo: dict = {}
+        self.repair_report: list = []
+        self.repair_needed: list = []
+        self._hw_names_cache = None
 
     @staticmethod
     def load_aliases() -> dict:
@@ -2745,6 +2773,117 @@ class TelemetryAnalyzer:
                 out.append(n)
         return out
 
+    def _detect_repair_needed(self) -> list:
+        issues = []
+        if self.is_mangohud:
+            return issues
+        try:
+            from collections import Counter
+            with open(self.path, 'r', encoding='latin-1', errors='ignore') as f:
+                rdr = csv.reader(f)
+                header = next(rdr, None)
+                if not header:
+                    return issues
+                dupes = {k: v for k, v in Counter(header).items() if v > 1}
+                if dupes:
+                    issues.append(f"{len(dupes)} duplicate column name(s) "
+                                  f"(e.g. {list(dupes.keys())[:2]})")
+                empty = sum(1 for h in header if not str(h).strip())
+                if empty:
+                    issues.append(f"{empty} empty-named column(s) (trailing-comma artifacts)")
+                header_count = len(header)
+                _date_re = re.compile(r'^\s*\d{1,2}[./\-]\d{1,2}[./\-]\d{2,4}\s*$')
+                non_data = 0
+                field_mismatch = 0
+                for row in rdr:
+                    if not row or not any(c.strip() for c in row):
+                        continue
+                    first = row[0].strip() if row else ''
+                    if first and not _date_re.match(first):
+                        non_data += 1
+                    if len(row) != header_count:
+                        field_mismatch += 1
+                if non_data > 0:
+                    issues.append(f"{non_data} non-data row(s) (repeated headers / "
+                                  f"S.M.A.R.T. info lines interspersed in the data)")
+                if field_mismatch > 0:
+                    issues.append(f"{field_mismatch} row(s) with field-count mismatch "
+                                  f"(sensor added/removed mid-log)")
+        except Exception:
+            pass
+        return issues
+
+    def _repair_csv_file(self) -> list:
+        import shutil, os
+        report = []
+        try:
+            if self._hw_names_cache is None:
+                try:
+                    self._hw_names_cache = self.extract_hardware_names()
+                except Exception:
+                    self._hw_names_cache = {}
+            backup = str(self.path) + ".bak"
+            if not os.path.exists(backup):
+                shutil.copy2(self.path, backup)
+                report.append(f"Backed up original → {os.path.basename(backup)}")
+            df = self.df
+            if len(df) == 0:
+                return report
+            coerced = 0
+            for col in df.columns:
+                cl = str(col).lower().strip()
+                if cl in ('date', 'time', 'timestamp'):
+                    continue
+                if '[yes/no]' in str(col).lower():
+                    continue
+                if pd.api.types.is_numeric_dtype(df[col]):
+                    continue
+                before = df[col].dtype
+                df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '.', regex=False),
+                                        errors='coerce')
+                if before != df[col].dtype:
+                    coerced += 1
+            if coerced > 0:
+                report.append(f"Coerced {coerced} column(s) to numeric (string values → NaN)")
+            df.to_csv(self.path, index=False, encoding='latin-1')
+            try:
+                _label_src = backup if os.path.exists(backup) else str(self.path)
+                _label_row = None
+                _label_re = re.compile(
+                    r'^\s*(CPU|iGPU|dGPU|GPU|DDR\d*\s*DIMM|S\.M\.A\.R\.T\.|'
+                    r'Drive|Network|Battery|System|PresentMon|Memory Timings)',
+                    re.IGNORECASE)
+                with open(_label_src, 'r', encoding='latin-1', errors='ignore') as _lf:
+                    _best = []
+                    _best_score = 0.0
+                    for _row in csv.reader(_lf):
+                        _ne = [c for c in _row if c.strip()]
+                        if not _ne:
+                            continue
+                        _lc = sum(1 for c in _ne if _label_re.match(c.strip()))
+                        _s = _lc / len(_ne) if _ne else 0
+                        if _s > _best_score:
+                            _best_score = _s
+                            _best = _row
+                    if _best_score >= 0.5 and _best:
+                        _label_row = _best
+                if _label_row is not None:
+                    _hdr_count = len(df.columns)
+                    if len(_label_row) < _hdr_count:
+                        _label_row = _label_row + [''] * (_hdr_count - len(_label_row))
+                    elif len(_label_row) > _hdr_count:
+                        _label_row = _label_row[:_hdr_count]
+                    with open(self.path, 'a', encoding='latin-1', newline='') as _af:
+                        _af.write(','.join(str(c) for c in _label_row) + '\n')
+            except Exception:
+                pass
+            self.df = df.reset_index(drop=True)
+            if report:
+                report.append(f"Repaired CSV saved to {os.path.basename(self.path)}")
+        except Exception as e:
+            report.append(f"Repair skipped (error: {type(e).__name__}: {e})")
+        return report
+
     def load(self) -> None:
 
         if self._is_mangohud_file():
@@ -2796,10 +2935,22 @@ class TelemetryAnalyzer:
             raise ValueError("File Load Failed")
         self.df.columns = [str(c).strip().replace('\ufeff', '') for c in self.df.columns]
 
+        import re as _re
+        _empty_named = [
+            c for c in self.df.columns
+            if str(c).strip() == '' or _re.fullmatch(r'Unnamed: \d+', str(c))
+        ]
+        if _empty_named:
+            _truly_empty = [c for c in _empty_named if self.df[c].isna().all()]
+            if _truly_empty:
+                self.df = self.df.drop(columns=_truly_empty)
+
         self._detect_time_column()
 
         for col in self.df.columns:
             if col == self.time_col:
+                continue
+            if str(col).lower().strip() == 'date':
                 continue
             if '[Yes/No]' in col or '[yes/no]' in col.lower():
                 continue
@@ -2853,6 +3004,7 @@ class TelemetryAnalyzer:
             self.time_series = self.time_series.iloc[:len(self.df)].reset_index(drop=True)
         self.df = self.df.reset_index(drop=True)
         self._downcast_if_memory_pressure()
+        self.repair_needed = self._detect_repair_needed()
         self.aliases = self.load_aliases()
 
     def _downcast_if_memory_pressure(self):
@@ -3006,6 +3158,9 @@ class TelemetryAnalyzer:
 
     def extract_hardware_names(self) -> dict:
 
+        if self._hw_names_cache is not None:
+            return self._hw_names_cache
+
         if self.is_mangohud and self.mangohud_sysinfo:
             result = {}
             si = self.mangohud_sysinfo
@@ -3103,8 +3258,38 @@ class TelemetryAnalyzer:
         if not any_row:
             return {}
 
-        if best_score < 0.25 or not best_row:
-            return {}
+        _need_bak_fallback = (
+            best_score < 0.25
+            or not best_row
+            or sum(1 for c in best_row if _is_label_cell(c)) < 3
+        )
+        if _need_bak_fallback:
+            import os as _os
+            _bak = str(self.path) + ".bak"
+            if _os.path.exists(_bak):
+                _bak_best = []
+                _bak_score = 0.0
+                for _enc in ('utf-8-sig', 'latin-1', 'cp1252'):
+                    try:
+                        with open(_bak, 'r', encoding=_enc, errors='ignore') as _f:
+                            for _row in csv.reader(_f):
+                                if not _row_letters.search(''.join(_row)):
+                                    continue
+                                _ne = [c for c in _row if c.strip()]
+                                if not _ne:
+                                    continue
+                                _lc = [c for c in _ne if _is_label_cell(c)]
+                                _s = len(_lc) / len(_ne)
+                                if _s > _bak_score:
+                                    _bak_score = _s
+                                    _bak_best = _row
+                        break
+                    except Exception:
+                        continue
+                if _bak_score >= 0.25 and _bak_best:
+                    if sum(1 for c in _bak_best if _is_label_cell(c)) >= 3:
+                        best_row = _bak_best
+                        best_score = _bak_score
         if sum(1 for c in best_row if _is_label_cell(c)) < 3:
             return {}
 
@@ -9177,7 +9362,7 @@ class TelemetryApp:
         n_samples consecutive rows. Prevents single-spike false positives."""
         if col not in self.df.columns:
             return False
-        s = self.df[col].ffill().fillna(0).values
+        s = pd.to_numeric(self.df[col], errors='coerce').ffill().fillna(0).values
         count = 0
         for v in s:
             if (v >= threshold if above else v <= threshold):
@@ -11156,6 +11341,11 @@ class TelemetryApp:
     def _run_signatures(self) -> list:
         hits = []
         df = self.df
+        for col in df.columns:
+            if (df[col].dtype == 'object'
+                    and str(col).lower().strip() not in ('date', 'time', 'timestamp')
+                    and '[yes/no]' not in str(col).lower()):
+                df[col] = pd.to_numeric(df[col], errors='coerce')
 
         def add(name, severity, description, evidence, mask=None, cols=None, advice=None):
             if advice:
@@ -11238,7 +11428,7 @@ class TelemetryApp:
                                     and not any(x in c.upper() for x in
                                                 ('CPU', 'LIMIT', 'MEMORY', 'JUNCTION', 'VR', 'SOC'))]
             if _gpu_temp_candidates:
-                gpu_hotspot = max(_gpu_temp_candidates, key=lambda c: df[c].max())
+                gpu_hotspot = max(_gpu_temp_candidates, key=lambda c: pd.to_numeric(df[c], errors='coerce').max())
         gpu_usage_col = _a('gpu_usage') or self._col_active(('GPU', 'USAGE')) or self._col_active(('GPU', 'LOAD')) or self._col_active(('GPU', 'AUSLASTUNG')) or self._col('GPU USAGE')
         gpu_clock     = _a('gpu_clock') or self._col_active(('GPU', 'EFFECTIVE', 'CLOCK'), excl=('MEMORY', 'CROSSBAR', 'VIDEO')) or self._col_active(('GPU', 'CLOCK', 'MEASURED'), excl=('MEMORY', 'CROSSBAR')) or self._col_active(('GPU', 'CLOCK'), excl=('EFFECTIVE', 'MEMORY', 'CROSSBAR', 'SOC', 'VCN', 'VIDEO')) or self._col_active(('GPU', 'FREQUENCY')) or self._col_active(('GPU', 'TAKT'))
         gpu_throttle  = self._col_excl(('GPU', 'THROTTL'), excl=('CPU',)) or self._col('PERFCAP')
@@ -11274,8 +11464,12 @@ class TelemetryApp:
                               or self._col_excl(['DRAM CLOCK'],   excl=['GPU','VRAM','GDDR','VIDEO'])\
                               or None
 
-        def mx(col): return df[col].max() if col and col in df.columns else 0
-        def avg(col): return df[col].mean() if col and col in df.columns else 0
+        def mx(col):
+            if not col or col not in df.columns: return 0
+            return pd.to_numeric(df[col], errors='coerce').max()
+        def avg(col):
+            if not col or col not in df.columns: return 0
+            return pd.to_numeric(df[col], errors='coerce').mean()
 
         if cpu_temp:
             limit = self.temp_limits.get('TDIE', 95.0)
@@ -11332,7 +11526,7 @@ class TelemetryApp:
 
                 gpu_edge = max(_gpu_t_all, key=_edge_corr)
                 if _edge_corr(gpu_edge) < 0.30:
-                    gpu_edge = min(_gpu_t_all, key=lambda c: df[c].max())
+                    gpu_edge = min(_gpu_t_all, key=lambda c: pd.to_numeric(df[c], errors='coerce').max())
                 if gpu_edge == gpu_hotspot:
                     gpu_edge = next((c for c in _gpu_t_all if c != gpu_hotspot), None)
             elif _gpu_t_all:
@@ -11365,7 +11559,7 @@ class TelemetryApp:
 
         v12 = _a('rail_12v') or resolve_psu_rail_column(df, '+12V')
         if v12:
-            v_min = df[v12].min()
+            v_min = pd.to_numeric(df[v12], errors='coerce').min()
             if v_min < self.sig_v12_lo:
                 severity = "CRITICAL" if v_min < 11.2 else "WARNING"
                 add("PSU +12V Rail Sag", severity,
@@ -11651,7 +11845,7 @@ class TelemetryApp:
                 )
 
         for l_col in life_cols:
-            current_life = df[l_col].min()
+            current_life = pd.to_numeric(df[l_col], errors='coerce').min()
 
             if current_life <= 5.0:
                 add(
@@ -11753,10 +11947,15 @@ class TelemetryApp:
             for r_name, low, high, col in [
                     ('+5V', self.sig_v5_lo, self.sig_v5_hi, v5_col),
                     ('+3.3V', self.sig_v33_lo, self.sig_v33_hi, v33_col)]:
-                if col and (df[col].min() < low or df[col].max() > high):
+                if col:
+                    _rs = pd.to_numeric(df[col], errors='coerce')
+                    _rmin, _rmax = _rs.min(), _rs.max()
+                else:
+                    _rmin = _rmax = 0
+                if col and (_rmin < low or _rmax > high):
                     add(f"PSU {r_name} Rail Unstable", "WARNING",
                         f"Low-voltage rail {r_name} is out of spec. ADVICE: This can cause random USB disconnects or drive errors. Check PSU health.",
-                        [f"Detected Range: {df[col].min():.2f}V - {df[col].max():.2f}V",
+                        [f"Detected Range: {_rmin:.2f}V - {_rmax:.2f}V",
                          f"Spec: {low}V - {high}V"])
 
             _psu_evidence = []
@@ -12275,7 +12474,7 @@ class TelemetryApp:
 
             if high_load_mask.any():
                 min_v = df.loc[high_load_mask, gpu_12v_input_v].min()
-                max_w = df[gpu_12v_input_w].max()
+                max_w = pd.to_numeric(df[gpu_12v_input_w], errors='coerce').max()
 
                 if min_v < 11.7:
                     add(
@@ -12295,7 +12494,7 @@ class TelemetryApp:
                         ]
                     )
         if vram_junction_temp:
-            max_vram_temp = df[vram_junction_temp].max()
+            max_vram_temp = pd.to_numeric(df[vram_junction_temp], errors='coerce').max()
             if max_vram_temp > 102:
                 add(
                     name="VRAM Thermal Throttling",
@@ -12640,7 +12839,7 @@ class TelemetryApp:
                     name="Chipset Thermal Throttling",
                     severity="WARNING",
                     description="Motherboard chipset is overheating. This often causes USB and NVMe dropouts.",
-                    evidence=[f"Max Chipset Temp: {df[chipset_t].max():.1f}°C",
+                    evidence=[f"Max Chipset Temp: {pd.to_numeric(df[chipset_t], errors='coerce').max():.1f}°C",
                               f"Threshold: {self.sig_chipset_temp_max}°C"],
                     advice="Ensure GPU isn't blocking chipset airflow."
                 )
@@ -17584,6 +17783,8 @@ figcaption{{color:var(--muted);font-size:11px;margin-top:6px;text-align:center;}
         self.root.after(300, self._prompt_sensor_aliases)
         if self.debug_mode:
             self._open_debug_window()
+        if getattr(new_analyzer, 'repair_needed', None):
+            self.root.after(1000, lambda: _post_load_repair_prompt(self.root, new_analyzer, self))
 
     def _load_csv_threaded(self, path: str, on_success, on_error=None):
         """Show a spinner dialog, load the CSV in a background thread,
@@ -19834,6 +20035,8 @@ if __name__ == "__main__":
                         splash.grab_release()
                         splash.destroy()
                     root.after(100, lambda: _apply_icon(root))
+                    if getattr(a, 'repair_needed', None):
+                        root.after(1000, lambda: _post_load_repair_prompt(root, a, app))
                 _post_ui(root, _done)
             except Exception as exc:
                 _captured_exc = exc
